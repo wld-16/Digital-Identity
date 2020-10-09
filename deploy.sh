@@ -5,5 +5,5 @@ cd dist
 git init
 git add -A
 git commit -m 'deploy'
-git push -f https://github.com/spacewave1/spacewave1.github.io master:gh-pages
+git push -f https://github.com/spacewave1/Digital-Identity master:gh-pages
 cd -

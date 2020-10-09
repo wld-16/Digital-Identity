@@ -4,3 +4,5 @@ yolov3-spp.weights
 *.log
 package-lock.json
 node_modules/
+dist/
+dist

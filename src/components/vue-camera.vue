@@ -1,5 +1,5 @@
 <template>
-  <video autoplay></video>
+  <input type="file" accept="image/*" capture="camera" />
 </template>
 
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
