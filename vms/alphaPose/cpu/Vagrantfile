@@ -4,11 +4,11 @@ Vagrant.configure("2") do |config|
     v.memory = 16384
     v.cpus = 4
     v.gui = true
-    v.name = "pose-estimator"
+    v.name = "alpha-pose-cpu"
   end
 
-# Add camera drivers for the box
-  config.vm.provision "shell", inline: <<-SHELL
+#Add camera drivers for the box
+ config.vm.provision "shell", inline: <<-SHELL
     sudo apt install libdigest-sha-perl -y
     sudo apt install libproc-processtable-perl -y
     git clone --depth=1 git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux_media
@@ -42,8 +42,8 @@ Vagrant.configure("2") do |config|
   SHELL
 
 ## Provide Models
-  config.vm.provision "file", source: "./duc_se.pth", destination: "/tmp/duc_se.pth"
-  config.vm.provision "file", source: "./yolov3-spp.weights", destination: "/tmp/yolov3-spp.weights"
+  config.vm.provision "file", source: "../duc_se.pth", destination: "/tmp/duc_se.pth"
+  config.vm.provision "file", source: "../yolov3-spp.weights", destination: "/tmp/yolov3-spp.weights"
   config.vm.provision "shell", inline: <<-SHELL 
     sudo mv /tmp/duc_se.pth /home/vagrant/AlphaPose/models/sppe/duc_se.pth
     sudo mv /tmp/yolov3-spp.weights /home/vagrant/AlphaPose/models/yolo/yolov3-spp.weights
