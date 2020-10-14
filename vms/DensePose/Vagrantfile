@@ -1,0 +1,60 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/bionic64"
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 16384
+    v.cpus = 4
+    v.gui = true
+    v.name = "alpha-pose-cpu"
+  end
+
+#Add camera drivers for the box
+ config.vm.provision "shell", inline: <<-SHELL
+    sudo apt install libdigest-sha-perl -y
+    sudo apt install libproc-processtable-perl -y
+    git clone --depth=1 git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux_media
+    cd media_build && ./build
+    sudo make install
+    sudo make unload
+    modprobe uvcvideo
+    cd ..
+  SHELL
+
+## Pull Python, AlphaPose-CPU 
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt-get update
+    sudo apt-get install git -y
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt install python3.8 -y
+    sudo apt install python3-pip -y
+    git clone -b pytorch-cpu https://github.com/nickgrealy/AlphaPose.git
+    pip3 install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+    pip3 install visdom==0.1.8.9
+    pip3 install nibabel==3.1.0
+    pip3 install pandas==1.0.4
+    pip3 install tqdm==4.46.1
+    pip3 install matplotlib==3.2.1
+    pip3 install -vv opencv-python==4.2.0.34
+    pip3 install scikit-build
+    pip3 install numpy
+    pip3 install cmake
+    sudo apt install cmake -y
+    echo "Now provide the models"
+  SHELL
+
+## Provide Models
+  config.vm.provision "file", source: "../duc_se.pth", destination: "/tmp/duc_se.pth"
+  config.vm.provision "file", source: "../yolov3-spp.weights", destination: "/tmp/yolov3-spp.weights"
+  config.vm.provision "shell", inline: <<-SHELL 
+    sudo mv /tmp/duc_se.pth /home/vagrant/AlphaPose/models/sppe/duc_se.pth
+    sudo mv /tmp/yolov3-spp.weights /home/vagrant/AlphaPose/models/yolo/yolov3-spp.weights
+  SHELL
+
+# Install GUI
+  config.vm.provision "shell", inline: "sudo sed -i 's/^# deb/deb/g' /etc/apt/sources.list" 
+  config.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get upgrade -y"
+  config.vm.provision "shell", inline: "sudo loadkeys fr"
+  config.vm.provision "shell", inline: "sudo apt-get install -y gnome-session gdm3"
+  config.vm.provision "shell", inline: "sudo sed -i 's/XKBLAYOUT=\"us\"/XKBLAYOUT=\"fr\"/g' /etc/default/keyboard" 
+  config.vm.provision "shell", inline: "sudo apt-get install -y virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11"
+  config.vm.provision "shell", inline: "sudo shutdown -r now"
+end
