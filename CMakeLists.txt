@@ -1,17 +1,95 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 project(Digital_Identity)
 
 set(CMAKE_CXX_STANDARD 17)
 
 # See https://gist.github.com/UnaNancyOwen/b7bb7b895156a4ed3e6e for FindKinectSDK
 set(CMAKE_MODULE_PATH "C:\\Program Files\\CMake\\share\\cmake-3.13\\Modules")
+
+set(OpenCV_DIR "D:\\Libs\\opencv-4.5.0\\build2019win32")
+
 set(GLUT_ROOT_PATH "D:\\Libs\\freeglut-3.2.1")
+set(FREEGLUT_LIBRARY "${GLUT_ROOT_PATH}\\build2019win32\\lib\\Debug\\freeglutd.lib")
+set(FREEGLUT_INCLUDE_DIR "${GLUT_ROOT_PATH}\\include")
+
+set(GLEW_ROOT_DIR "D:\\Libs\\glew-cmake-glew-cmake-2.1.0")
+set(GLEW_INCLUDE_DIR "${GLEW_ROOT_DIR}\\include")
+set(GLEW_LIBRARIES "${GLEW_ROOT_DIR}\\build2019win32\\Lib\\Debug\\")
+set(GLEW_SHARED_LIBRARY_DEBUG "${GLEW_LIBRARIES}\\libglew_sharedd.lib")
+
+set(ASSIMP_ROOT "D:\\Libs\\assimp-5.0.1")
+set(ASSIMP_INCLUDE_DIR "${ASSIMP_ROOT}\\include")
+set(ASSIMP_LIBRARY "${ASSIMP_ROOT}\\build2019\\code\\Debug\\assimp-vc142-mtd.lib")
+
+set(OGL_ROOT_DIR D:\\Dev\\Tutorials\\ogldev-source)
+set(OGL_INCLUDE_DIR ${OGL_ROOT_DIR}\\Include)
+set(OGL_LIBRARY ${OGL_ROOT_DIR}\\build2019win32\\Debug\\ogl-tutorials.lib)
+
+add_subdirectory(${OGL_ROOT_DIR} ${OGL_ROOT_DIR}\\build2019win32\\Debug)
 
 find_package(GLUT REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(KinectSDK REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(GLEW REQUIRED)
 
-include_directories(${GLUT_INCLUDE_DIR} ${KinectSDK_INCLUDE_DIRS} ${KinectToolkit_INCLUDE_DIRS})
-add_executable(Digital_Identity main.cpp)
 
-target_link_libraries(Digital_Identity ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${KinectSDK_LIBRARIES} ${KinectToolkit_LIBRARIES})
+if(NOT GLEW_FOUND)
+    message(WARNING "GLEW NOT found, can't build FGPanel")
+    set(WITH_FGPANEL 0)
+    return()
+endif()
+
+if(NOT GLEW_LIBRARIES)
+    if(GLEW_LIBRARY_DEBUG AND GLEW_LIBRARY_RELEASE)
+        set(GLEW_LIBRARIES "optimized;${GLEW_LIBRARY_RELEASE};debug;${GLEW_LIBRARY_DEBUG}")
+    else()
+        set(GLEW_LIBRARIES GLEW::GLEW)
+    endif()
+endif()
+
+IF ( NOT GLUT_FOUND )
+    IF ( MSVC )
+        SET ( GLUT_FOUND 1 )
+        SET ( GLUT_INCLUDE_DIR ${FREEGLUT_INCLUDE_DIR} )
+        SET ( GLUT_LIBRARIES ${FREEGLUT_LIBRARY} )
+    ELSE ( MSVC )
+        MESSAGE( WARNING "Please install glut." )
+    ENDIF ( MSVC )
+ENDIF ( NOT GLUT_FOUND )
+
+if ( MSVC )
+    ADD_DEFINITIONS( -D_SCL_SECURE_NO_WARNINGS )
+    ADD_DEFINITIONS( -D_CRT_SECURE_NO_WARNINGS )
+endif ( MSVC )
+
+include_directories(
+        ${OpenCV_INCLUDE_DIRS}
+        ${GLEW_INCLUDE_DIR}
+        ${GLUT_INCLUDE_DIR}
+        ${OPENGL_INCLUDE_DIR}
+        ${ASSIMP_INCLUDE_DIR}
+        ${OGL_INCLUDE_DIR}
+)
+
+add_executable(Digital_Identity
+        src/main.cpp
+        src/ogl/mesh.cpp
+        src/ogl/mesh.h
+        src/ogl/glut_backend.cpp
+        src/ogl/opencv_texture.cpp
+        src/ogl/opencv_texture.h
+        src/ogl/lighting_technique.cpp
+        src/ogl/lighting_technique.h
+        src/ogl/ICallbacks.h
+        src/ogl/glut_backend.h)
+
+target_link_libraries(
+        Digital_Identity
+        ${OpenCV_LIBRARIES}
+        ${FREEGLUT_LIBRARY}
+        ${OPENGL_LIBRARIES}
+        ${ASSIMP_LIBRARY}
+        ${GLEW_LIBRARIES}
+        ${OGL_LIBRARY}
+        ${GLEW_SHARED_LIBRARY_DEBUG}
+)
