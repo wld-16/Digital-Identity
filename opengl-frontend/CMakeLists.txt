@@ -81,7 +81,13 @@ add_executable(Digital_Identity
         src/ogl/lighting_technique.cpp
         src/ogl/lighting_technique.h
         src/ogl/ICallbacks.h
-        src/ogl/glut_backend.h)
+        src/ogl/glut_backend.h
+        src/ogl/skinned_mesh.h
+        src/ogl/shadow_map_fbo.h
+        src/ogl/shadow_map_fbo.cpp
+        src/ogl/shadow_map_technique.cpp
+        src/ogl/shadow_map_technique.h
+        )
 
 target_link_libraries(
         Digital_Identity

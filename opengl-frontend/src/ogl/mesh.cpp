@@ -42,13 +42,13 @@ Mesh::MeshEntry::~MeshEntry()
 }
 
 void Mesh::MeshEntry::Init(const std::vector<Vertex>& Vertices,
-                          const std::vector<unsigned int>& Indices)
+                           const std::vector<unsigned int>& Indices)
 {
     NumIndices = Indices.size();
 
     glGenBuffers(1, &VB);
-  	glBindBuffer(GL_ARRAY_BUFFER, VB);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * Vertices.size(), &Vertices[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VB);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * Vertices.size(), &Vertices[0], GL_STATIC_DRAW);
 
     glGenBuffers(1, &IB);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IB);
@@ -78,12 +78,12 @@ bool Mesh::LoadMesh(const std::string& Filename)
 {
     // Release the previously loaded mesh (if it exists)
     Clear();
-    
+
     bool Ret = false;
     Assimp::Importer Importer;
 
     const aiScene* pScene = Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);
-    
+
     if (pScene) {
         Ret = InitFromScene(pScene, Filename);
     }
@@ -95,7 +95,7 @@ bool Mesh::LoadMesh(const std::string& Filename)
 }
 
 bool Mesh::InitFromScene(const aiScene* pScene, const std::string& Filename)
-{  
+{
     m_Entries.resize(pScene->mNumMeshes);
     m_Textures.resize(pScene->mNumMaterials);
 
@@ -111,7 +111,7 @@ bool Mesh::InitFromScene(const aiScene* pScene, const std::string& Filename)
 void Mesh::InitMesh(unsigned int Index, const aiMesh* paiMesh)
 {
     m_Entries[Index].MaterialIndex = paiMesh->mMaterialIndex;
-    
+
     std::vector<Vertex> Vertices;
     std::vector<unsigned int> Indices;
 
@@ -181,13 +181,6 @@ bool Mesh::InitMaterials(const aiScene* pScene, const std::string& Filename)
                     printf("Loaded texture '%s'\n", FullPath.c_str());
                 }
             }
-        }
-
-        // Load a white texture in case the model does not include its own texture
-        if (!m_Textures[i]) {
-            m_Textures[i] = new Texture(GL_TEXTURE_2D, "../Content/white.png");
-
-            Ret = m_Textures[i]->Load();
         }
     }
 
