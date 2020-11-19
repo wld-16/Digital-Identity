@@ -4,7 +4,6 @@
 #include <websocketpp/server.hpp>
 
 #include <iostream>
-#include <fstream>
 #include "kinect_websocket.h"
 #pragma comment(lib,"Ws2_32.lib")
 
@@ -24,7 +23,7 @@ kinect_websocket::kinect_websocket() {
     print_server.listen(9002);
     print_server.start_accept();
 
-    std::cout << "Running Server" << std::endl;
+    std::cout << "Running Server on 9002" << std::endl;
 }
 
 
@@ -38,7 +37,6 @@ void kinect_websocket::setJson(std::string *json) {
 
 void on_message(websocketpp::connection_hdl conn, server::message_ptr msg) {
     std::cout << msg->get_payload() << std::endl;
-    std::cout << *test << std::endl;
 
     print_server.send(conn,*test,websocketpp::frame::opcode::TEXT);
 }
