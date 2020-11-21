@@ -25,13 +25,25 @@ set(OGL_ROOT_DIR D:\\Dev\\Tutorials\\ogldev-source)
 set(OGL_INCLUDE_DIR ${OGL_ROOT_DIR}\\Include)
 set(OGL_LIBRARY ${OGL_ROOT_DIR}\\build2019win32\\Debug\\ogl-tutorials.lib)
 
+set(ENV{KINECT_TOOLKIT_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\Developer Toolkit v1.8.0")
+set(ENV{KINECTSDK10_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\v1.8")
+
+set(BOOST_ROOT "D:\\Libs\\boost_1_74_0")
+set(BOOST_INCLUDE_DIRS "${BOOST_ROOT}")
+set(BOOST_LIBRARY_DIRS "${BOOST_ROOT}\\stage\\lib")
+
+set(WEBSOCKETS_INCLUDE_DIR "D:\\Libs\\websocketpp-0.8.2")
+
+find_package(KinectSDK REQUIRED)
+
+include_directories(${KinectSDK_INCLUDE_DIRS} ${KinectToolkit_INCLUDE_DIRS} ${JSON_PARSER_INCLUDE_DIR} ${WEBSOCKETS_INCLUDE_DIR} ${JSON_INCLUDE} ${BOOST_INCLUDE_DIRS})
+
 add_subdirectory(${OGL_ROOT_DIR} ${OGL_ROOT_DIR}\\build2019win32\\Debug)
 
 find_package(GLUT REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(GLEW REQUIRED)
-
 
 if(NOT GLEW_FOUND)
     message(WARNING "GLEW NOT found, can't build FGPanel")
@@ -87,7 +99,14 @@ add_executable(Digital_Identity
         src/ogl/shadow_map_fbo.cpp
         src/ogl/shadow_map_technique.cpp
         src/ogl/shadow_map_technique.h
-        )
+        src/ogl/skybox.cpp
+        src/ogl/skybox.h
+        src/ogl/skybox_technique.cpp
+        src/ogl/skybox_technique.h
+        src/ogl/cubemap_texture.cpp
+        src/ogl/cubemap_texture.h
+        src/kinect_data_client.cpp
+        src/kinect_data_client.h)
 
 target_link_libraries(
         Digital_Identity
@@ -98,4 +117,7 @@ target_link_libraries(
         ${GLEW_LIBRARIES}
         ${OGL_LIBRARY}
         ${GLEW_SHARED_LIBRARY_DEBUG}
+        ${BOOST_LIBRARY_DIRS}\\libboost_random-vc142-mt-gd-x32-1_74.lib
+        ${BOOST_LIBRARY_DIRS}\\libboost_date_time-vc142-mt-gd-x32-1_74.lib
+        ${BOOST_LIBRARY_DIRS}\\libboost_regex-vc142-mt-gd-x32-1_74.lib
 )

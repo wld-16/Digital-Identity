@@ -7,15 +7,18 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <ogldev_app.h>
+#include <iostream>
 
 #include "ogl/glut_backend.h"
 #include "ogldev_pipeline.h"
 #include "ogldev_camera.h"
 #include "ogl/opencv_texture.h"
-#include "ogl/Lighting_technique.h"
+#include "ogl/lighting_technique.h"
 #include "ogl/mesh.h"
 #include "ogl/shadow_map_technique.h"
 #include "ogl/shadow_map_fbo.h"
+#include "ogl/skybox.h"
+#include "kinect_data_client.h"
 
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 1024
@@ -33,9 +36,7 @@ public:
         m_pShadowMapEffect = NULL;
         m_pGameCamera = NULL;
         m_pMesh = NULL;
-        m_pQuad = NULL;
         m_scale = 0.0f;
-        m_pGroundTex = NULL;
 
         m_spotLight.AmbientIntensity = 0.1f;
         m_spotLight.DiffuseIntensity = 0.9f;
@@ -58,8 +59,6 @@ public:
         SAFE_DELETE(m_pShadowMapEffect);
         SAFE_DELETE(m_pGameCamera);
         SAFE_DELETE(m_pMesh);
-        SAFE_DELETE(m_pQuad);
-        SAFE_DELETE(m_pGroundTex);
     }
 
     bool Init()
@@ -93,21 +92,21 @@ public:
             return false;
         }
 
-        m_pQuad = new Mesh();
+        m_pSkyBox = new SkyBox(m_pGameCamera, m_persProjInfo);
 
-        if (!m_pQuad->LoadMesh("../res/quad.obj")) {
-            return false;
-        }
-
-        m_pGroundTex = new Texture(GL_TEXTURE_2D, "../res/test.png");
-
-        if (!m_pGroundTex->Load()) {
+        if (!m_pSkyBox->Init(".",
+                             "../res/sp3right.jpg",
+                             "../res/sp3left.jpg",
+                             "../res/sp3top.jpg",
+                             "../res/sp3bot.jpg",
+                             "../res/sp3front.jpg",
+                             "../res/sp3back.jpg")) {
             return false;
         }
 
         m_pMesh = new Mesh();
 
-        return m_pMesh->LoadMesh("../res/frog_big.obj");
+        return m_pMesh->LoadMesh("../res/curl.obj");
     }
 
     void Run()
@@ -167,8 +166,7 @@ public:
         m_pLightingEffect->SetWorldMatrix(p.GetWorldTrans());
         p.SetCamera(m_spotLight.Position, m_spotLight.Direction, Vector3f(0.0f, 1.0f, 0.0f));
         m_pLightingEffect->SetLightWVP(p.GetWVPTrans());
-        m_pGroundTex->Bind(GL_TEXTURE0);
-        m_pQuad->Render();
+        m_pSkyBox->Render();
 
         p.Scale(0.1f, 0.1f, 0.1f);
         p.Rotate(0.0f, m_scale, 0.0f);
@@ -188,6 +186,9 @@ public:
             case OGLDEV_KEY_q:
                 GLUTBackendLeaveMainLoop();
                 break;
+            case OGLDEV_KEY_w:
+                kinectDataClient->readJson();
+                break;
             default:
                 m_pGameCamera->OnKeyboard(OgldevKey);
         }
@@ -199,6 +200,14 @@ public:
         m_pGameCamera->OnMouse(x, y);
     }
 
+    void RequestFrame(){
+
+    }
+
+    void setKinectClient(kinect_data_client* kinectDataClient) {
+        this->kinectDataClient = kinectDataClient;
+    }
+
 private:
 
     LightingTechnique* m_pLightingEffect;
@@ -207,16 +216,23 @@ private:
     float m_scale;
     SpotLight m_spotLight;
     Mesh* m_pMesh;
-    Mesh* m_pQuad;
-    Texture* m_pGroundTex;
+    SkyBox* m_pSkyBox;
     ShadowMapFBO m_shadowMapFBO;
     PersProjInfo m_persProjInfo;
-
+    kinect_data_client* kinectDataClient;
 };
+
+kinect_data_client kinectDataClient;
+
+void initKinectDataClient(App* app){
+    app->setKinectClient(&kinectDataClient);
+    kinectDataClient.run();
+}
 
 
 int main(int argc, char** argv)
 {
+
 //    Magick::InitializeMagick(*argv);
     GLUTBackendInit(argc, argv, false, false);
 
@@ -225,6 +241,8 @@ int main(int argc, char** argv)
     }
 
     App* pApp = new App();
+
+    //thread t1(std::bind(initKinectDataClient,pApp));
 
     if (!pApp->Init()) {
         return 1;
