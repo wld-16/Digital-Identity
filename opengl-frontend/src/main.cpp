@@ -63,7 +63,7 @@ public:
 
     bool Init()
     {
-        Vector3f Pos(3.0f, 8.0f, -10.0f);
+        Vector3f Pos(0.0f, 0.0f, 0.0f);
         Vector3f Target(0.0f, -0.2f, 1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
 
@@ -216,7 +216,7 @@ private:
     float m_scale;
     SpotLight m_spotLight;
     Mesh* m_pMesh;
-    SkyBox* m_pSkyBox;
+        SkyBox* m_pSkyBox;
     ShadowMapFBO m_shadowMapFBO;
     PersProjInfo m_persProjInfo;
     kinect_data_client* kinectDataClient;

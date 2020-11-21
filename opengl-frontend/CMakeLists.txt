@@ -101,10 +101,14 @@ add_executable(Digital_Identity
         src/ogl/shadow_map_technique.h
         src/ogl/skybox.cpp
         src/ogl/skybox.h
+        src/ogl/skinning_technique.cpp
+        src/ogl/skinning_technique.h
         src/ogl/skybox_technique.cpp
         src/ogl/skybox_technique.h
         src/ogl/cubemap_texture.cpp
         src/ogl/cubemap_texture.h
+        src/ogl/opencv_skinned_mesh.cpp
+        src/ogl/opencv_skinned_mesh.h
         src/kinect_data_client.cpp
         src/kinect_data_client.h)
 
