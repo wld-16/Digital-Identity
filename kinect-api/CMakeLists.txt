@@ -54,7 +54,7 @@ add_executable(kinect-api
         src/glut.cpp
         src/kinect_websocket.cpp
         src/kinect_websocket.h
-        )
+        src/kinect_processor.cpp src/kinect_processor.h)
 
 target_link_libraries(kinect-api
         ${JSON_LIBRARY}
