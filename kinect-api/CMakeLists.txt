@@ -2,8 +2,6 @@ project(kinect-api)
 
 cmake_minimum_required(VERSION 2.8)
 
-set(ENV{KINECT_TOOLKIT_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\Developer Toolkit v1.8.0")
-set(ENV{KINECTSDK10_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\v1.8")
 set(GLUT_ROOT_PATH "D:\\Libs\\freeglut-3.2.1")
 set(FREEGLUT_LIBRARY "${GLUT_ROOT_PATH}\\build2013win32\\lib\\Debug\\freeglutd.lib")
 set(FREEGLUT_INCLUDE_DIR "${GLUT_ROOT_PATH}\\include")
@@ -23,6 +21,8 @@ set(BOOST_ROOT "D:\\Libs\\boost_1_55_0")
 set(BOOST_INCLUDE_DIRS "${BOOST_ROOT}")
 set(BOOST_LIBRARY_DIR "${BOOST_ROOT}\\stage\\lib")
 
+set(KinectToolkit_FACE TRUE)
+
 find_package(OpenGL REQUIRED)
 find_package(KinectSDK REQUIRED)
 
@@ -39,7 +39,6 @@ ENDIF ( NOT GLUT_FOUND )
 include_directories(
         ${KinectSDK_INCLUDE_DIRS}
         ${KinectToolkit_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIRS}
         ${FREEGLUT_INCLUDE_DIR}
         ${GLEW_INCLUDE_DIR}
         ${JSON_INCLUDE_DIR}
@@ -54,13 +53,18 @@ add_executable(kinect-api
         src/glut.cpp
         src/kinect_websocket.cpp
         src/kinect_websocket.h
-        src/kinect_processor.cpp src/kinect_processor.h)
+        src/kinect_processor.cpp
+        src/kinect_processor.h
+        src/faceTracking/FTHelper.cpp
+        src/faceTracking/FTHelper.h
+        src/faceTracking/KinectSensor.cpp
+        src/faceTracking/KinectSensor.h
+        )
 
 target_link_libraries(kinect-api
         ${JSON_LIBRARY}
         ${KinectToolkit_LIBRARIES}
         ${KinectSDK_LIBRARIES}
-        ${OpenCV_LIBRARIES}
         ${FREEGLUT_LIBRARY}
         ${OPENGL_LIBRARIES}
         ${GLEW_SHARED_LIBRARY_DEBUG}

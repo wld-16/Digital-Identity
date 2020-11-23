@@ -11,10 +11,42 @@
 GLuint vboId;
 GLuint cboId;
 
-void draw() {
+void drawKinectHeadData();
+
+void drawSkeletonCallback() {
    drawKinectData();
    glutSwapBuffers();
 }
+
+void drawHeadCallback(){
+    drawKinectHeadData();
+    glutSwapBuffers();
+}
+
+void drawKinectHeadData() {
+    getKinectHeadData();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vboId);
+    glVertexPointer(3, GL_FLOAT, 0, NULL);
+
+    glBindBuffer(GL_ARRAY_BUFFER, cboId);
+    glColorPointer(3, GL_FLOAT, 0, NULL);
+
+    //fillKinectIntoJson();
+
+    glPointSize(1.f);
+    glDrawArrays(GL_POINTS, 0, width * height);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+
+    glEnd();
+}
+
 
 void drawKinectData() {
     getKinectData();
@@ -59,9 +91,22 @@ bool init(int argc, char* argv[]) {
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(width,height);
     glutCreateWindow("Kinect SDK Tutorial");
-    glutDisplayFunc(draw);
-    glutIdleFunc(draw);
+    glutDisplayFunc(drawSkeletonCallback);
+    glutIdleFunc(drawSkeletonCallback);
 	glewInit();
+    return true;
+}
+
+bool initHead(int argc, char* argv[]) {
+    argc = 0;
+    argv = NULL;
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+    glutInitWindowSize(width,height);
+    glutCreateWindow("Kinect SDK Tutorial");
+    glutDisplayFunc(drawHeadCallback);
+    glutIdleFunc(drawHeadCallback);
+    glewInit();
     return true;
 }
 

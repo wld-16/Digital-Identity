@@ -19,8 +19,9 @@ Texture::Texture(GLenum TextureTarget, const std::string& FileName)
 bool Texture::Load()
 {
     m_image = cv::imread(m_fileName);
+
     cv::cvtColor(m_image,m_image,cv::COLOR_BGR2RGB);
-    cv::flip(m_image, m_blob,-1);
+    cv::flip(m_image, m_blob,1);
 
     if(m_image.empty()){
         std::cout << "image empty" << std::endl;

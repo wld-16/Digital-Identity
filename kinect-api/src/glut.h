@@ -7,11 +7,11 @@
 #include <gl/glut.h>
 #include <string>
 
-
+BOOL ShowVideo(HDC hdc, int width, int height, int originX, int originY);
 bool init(int argc, char* argv[]);
-bool initKinect();
+bool initHead(int argc, char* argv[]);
 void initGL();
-void draw();
+void drawSkeletonCallback();
 void execute();
 std::string *getJson();
 GLuint &getVboId();

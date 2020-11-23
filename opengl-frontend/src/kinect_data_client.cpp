@@ -41,7 +41,9 @@ void on_connection(client* c, client::connection_ptr con){
 }
 
 void kinect_data_client::readJson(){
-    con.get()->send("test");
+    if(con != nullptr){
+        con.get()->send("test");
+    }
 }
 
 

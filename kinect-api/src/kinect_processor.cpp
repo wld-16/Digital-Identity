@@ -7,14 +7,20 @@
 #include "kinect_processor.h"
 #include "main.h"
 #include "glut.h"
+#include "faceTracking/FTHelper.h"
+#include <FaceTrackLib.h>
 
 #include <json/json.h>
 #include <GL/glew.h>
 #include <array>
+#include <list>
+#include <iostream>
 
 
 INuiSensor *sensor;
+FTHelper m_FTHelper;
 std::string jsonData;
+IFTImage* m_pVideoBuffer;
 
 // OpenGL Variables
 long depthToRgbMap[width * height * 2];
@@ -23,13 +29,39 @@ int frame = 0;
 
 // Stores the coordinates of each joint
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> skeletonPosition;
+std::list<Vector4> headData;
 
 // Kinect variables
 HANDLE depthStream;
 HANDLE rgbStream;
 
 
-bool initKinect() {
+void FTHelperCallingBack(PVOID pVoid)
+{
+    std::cout << "Callback" << std::endl;
+    /*
+    SingleFace* pApp = reinterpret_cast<SingleFace*>(pVoid);
+    if (pApp)
+    {
+        IFTResult* pResult = pApp->m_FTHelper.GetResult();
+        if (pResult && SUCCEEDED(pResult->GetStatus()))
+        {
+            FLOAT* pAU = NULL;
+            UINT numAU;
+            pResult->GetAUCoefficients(&pAU, &numAU);
+            FLOAT scale;
+            FLOAT rotationXYZ[3];
+            FLOAT translationXYZ[3];
+            pResult->Get3DPose(&scale, rotationXYZ, translationXYZ);
+        }
+
+    }
+     */
+}
+
+
+
+bool initKinectSkeletonTracking() {
     // Get a working kinect sensor
     int numSensors;
     if (NuiGetSensorCount(&numSensors) < 0 || numSensors < 1) return false;
@@ -52,6 +84,53 @@ bool initKinect() {
                                &rgbStream);
     sensor->NuiSkeletonTrackingEnable(NULL, 0); // NUI_SKELETON_TRACKING_FLAG_ENABLE_SEATED_SUPPORT for only upper body
     return sensor;
+}
+
+bool initKinectFaceTracking(){
+    IFTFaceTracker* pFT = FTCreateFaceTracker();
+    if(!pFT)
+    {
+        // Handle errors
+    }
+    // Video camera config with width, height, focal length in pixels
+    // NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS focal length is computed for 640x480 resolution
+    // If you use different resolutions, multiply this focal length by the scaling factor
+    FT_CAMERA_CONFIG videoCameraConfig = {640, 480, NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS};
+
+    // Depth camera config with width, height, focal length in pixels
+    // NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS focal length is computed for 320x240 resolution
+    // If you use different resolutions, multiply this focal length by the scaling factor
+    FT_CAMERA_CONFIG depthCameraConfig = {320, 240, NUI_CAMERA_DEPTH_NOMINAL_FOCAL_LENGTH_IN_PIXELS};
+
+    // Initialize the face tracker
+    HRESULT hr = pFT->Initialize(&videoCameraConfig, &depthCameraConfig, NULL, NULL);
+    if( FAILED(hr) )
+    {
+        // Handle errors
+    }
+    IFTResult* pFTResult = NULL;
+    hr = pFT->CreateFTResult(&pFTResult);
+    if(FAILED(hr))
+    {
+        // Handle errors
+    }
+    // Prepare image interfaces that hold RGB and depth data
+    IFTImage* pColorFrame = FTCreateImage();
+    IFTImage* pDepthFrame = FTCreateImage();
+    if(!pColorFrame || !pDepthFrame)
+    {
+        // Handle errors
+    }
+
+    //
+    m_FTHelper.Init(FTHelperCallingBack,nullptr,NUI_IMAGE_TYPE_DEPTH_AND_PLAYER_INDEX,
+                    NUI_IMAGE_RESOLUTION_320x240,
+                    TRUE,
+                    TRUE, // if near mode doesn't work, fall back to default mode
+                    NUI_IMAGE_TYPE_COLOR,
+                    NUI_IMAGE_RESOLUTION_640x480,
+                    FALSE);
+    return true;
 }
 
 void getSkeletalData() {
@@ -106,6 +185,36 @@ void getDepthData(GLubyte *dest) {
     sensor->NuiImageStreamReleaseFrame(depthStream, &imageFrame);
 }
 
+void getRgbHeadData(GLubyte *dest, IFTImage* colorImage){
+    float *fdest = (float *) dest;
+    long *depth2rgb = (long *) depthToRgbMap;
+    NUI_IMAGE_FRAME imageFrame;
+    NUI_LOCKED_RECT LockedRect;
+
+    INuiFrameTexture *texture = imageFrame.pFrameTexture;
+    texture->LockRect(0, &LockedRect, NULL, 0);
+    if (LockedRect.Pitch != 0) {
+        const BYTE *start = (const BYTE *) LockedRect.pBits;
+        for (int j = 0; j < height; ++j) {
+            for (int i = 0; i < width; ++i) {
+                // Determine rgb color for each depth pixel
+                long x = *depth2rgb++;
+                long y = *depth2rgb++;
+                // If out of bounds, then don't color it at all
+                if (x < 0 || y < 0 || x > width || y > height) {
+                    for (int n = 0; n < 3; ++n) *(fdest++) = 0.0f;
+                } else {
+                    const BYTE *curr = start + (x + width * y) * 4;
+                    for (int n = 0; n < 3; ++n) *(fdest++) = curr[2 - n] / 255.0f;
+                }
+
+            }
+        }
+    }
+    texture->UnlockRect(0);
+    sensor->NuiImageStreamReleaseFrame(rgbStream, &imageFrame);
+}
+
 void getRgbData(GLubyte *dest) {
     float *fdest = (float *) dest;
     long *depth2rgb = (long *) depthToRgbMap;
@@ -136,6 +245,26 @@ void getRgbData(GLubyte *dest) {
     sensor->NuiImageStreamReleaseFrame(rgbStream, &imageFrame);
 }
 
+void getKinectHeadData() {
+    GLuint &vboIdPtr = getVboId();
+    GLuint &cboIdPtr = getCboId();
+    const int dataSize = width * height * 3 * 4;
+    GLubyte *ptr;
+    glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
+    ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    if (ptr) {
+        getDepthData(ptr);
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, cboIdPtr);
+    ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    if (ptr) {
+        getRgbData(ptr);
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    //getSkeletalData();
+}
+
 void getKinectData() {
     GLuint &vboIdPtr = getVboId();
     GLuint &cboIdPtr = getCboId();
@@ -153,7 +282,7 @@ void getKinectData() {
         getRgbData(ptr);
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
-    getSkeletalData();
+    //getSkeletalData();
 }
 
 Json::Value fillJoint(Json::Value json, std::string jointIdentifier, Vector4 input) {
@@ -200,4 +329,86 @@ std::string *getJson(){
 
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition(){
     return &skeletonPosition;
+}
+
+std::list<Vector4> *getHeadData(){
+    return &headData;
+}
+
+BOOL getImage(GLubyte *dest, int originX, int originY)
+{
+    BOOL ret = TRUE;
+
+    // Now, copy a fraction of the camera image into the screen.
+    IFTImage* colorImage = m_FTHelper.GetColorImage();
+    if (colorImage)
+    {
+        int iWidth = colorImage->GetWidth();
+        int iHeight = colorImage->GetHeight();
+        if (iWidth > 0 && iHeight > 0)
+        {
+            int iTop = 0;
+            int iBottom = iHeight;
+            int iLeft = 0;
+            int iRight = iWidth;
+
+            // Keep a separate buffer.
+            if (m_pVideoBuffer && SUCCEEDED(m_pVideoBuffer->Allocate(iWidth, iHeight, FTIMAGEFORMAT_UINT8_B8G8R8A8)))
+            {
+                // Copy do the video buffer while converting bytes
+                colorImage->CopyTo(m_pVideoBuffer, NULL, 0, 0);
+
+                // Compute the best approximate copy ratio.
+                float w1 = (float)iHeight * (float)width;
+                float w2 = (float)iWidth * (float)height;
+                if (w2 > w1 && height > 0)
+                {
+                    // video image too wide
+                    float wx = w1/height;
+                    iLeft = (int)max(0, m_FTHelper.GetXCenterFace() - wx / 2);
+                    iRight = iLeft + (int)wx;
+                    if (iRight > iWidth)
+                    {
+                        iRight = iWidth;
+                        iLeft = iRight - (int)wx;
+                    }
+                }
+                else if (w1 > w2 && width > 0)
+                {
+                    // video image too narrow
+                    float hy = w2/width;
+                    iTop = (int)max(0, m_FTHelper.GetYCenterFace() - hy / 2);
+                    iBottom = iTop + (int)hy;
+                    if (iBottom > iHeight)
+                    {
+                        iBottom = iHeight;
+                        iTop = iBottom - (int)hy;
+                    }
+                }
+
+                int const bmpPixSize = m_pVideoBuffer->GetBytesPerPixel();
+
+
+            }
+        }
+        GLuint &vboIdPtr = getVboId();
+        GLuint &cboIdPtr = getCboId();
+        const int dataSize = width * height * 3 * 4;
+        GLubyte *ptr;
+        glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
+        ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+        if (ptr) {
+            //getDepthHeadData(ptr);
+        }
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glBindBuffer(GL_ARRAY_BUFFER, reinterpret_cast<GLuint>(colorImage->GetBuffer()));
+        ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+        if (ptr) {
+            getRgbHeadData(ptr, colorImage);
+        }
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+
+        colorImage->GetBuffer();
+    }
+    return ret;
 }

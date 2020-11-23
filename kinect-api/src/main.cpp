@@ -1,5 +1,6 @@
 #include "glut.h"
 #include "kinect_websocket.h"
+#include "kinect_processor.h"
 #include <thread>
 
 void runWebserver(){
@@ -10,10 +11,13 @@ void runWebserver(){
 }
 
 int main(int argc, char *argv[]) {
+    //if (!initHead(argc, argv)) return 1;
     if (!init(argc, argv)) return 1;
-    if (!initKinect()) return 1;
 
-    thread t1(runWebserver);
+    //if (!initKinectFaceTracking()) return 1;
+    if (!initKinectSkeletonTracking()) return 1;
+
+    //thread t1(runWebserver);
 
     initGL();
 

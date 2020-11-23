@@ -90,8 +90,6 @@ add_executable(Digital_Identity
         src/ogl/glut_backend.cpp
         src/ogl/opencv_texture.cpp
         src/ogl/opencv_texture.h
-        src/ogl/lighting_technique.cpp
-        src/ogl/lighting_technique.h
         src/ogl/ICallbacks.h
         src/ogl/glut_backend.h
         src/ogl/skinned_mesh.h

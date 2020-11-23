@@ -11,3 +11,6 @@
 void getKinectData();
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition();
 void fillKinectIntoJson();
+bool initKinectSkeletonTracking();
+bool initKinectFaceTracking();
+void getKinectHeadData();
