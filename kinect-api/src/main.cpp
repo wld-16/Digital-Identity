@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     //if (!initKinectFaceTracking()) return 1;
     if (!initKinectSkeletonTracking()) return 1;
 
-    //thread t1(runWebserver);
+     thread t1(runWebserver);
 
     initGL();
 

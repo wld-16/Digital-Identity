@@ -103,6 +103,119 @@ BOOL FTHelper::SubmitFraceTrackingResult(IFTResult* pResult)
             HRESULT hr = m_pFaceTracker->GetFaceModel(&ftModel);
             if (SUCCEEDED(hr))
             {
+
+                IFTModel* pModel;
+                IFTResult* pAAMRlt = GetResult();
+                FLOAT* pSUCoef;
+                UINT coefCount;
+                POINT viewOffset = {0, 0};
+                float zoomFactor =  1.0;
+                pAAMRlt->GetAUCoefficients(&pSUCoef,&coefCount);
+                GetTracker()->GetFaceModel(&pModel);
+
+                if (!pModel  || !pSUCoef || !pAAMRlt)
+                {
+                    std::cout << "Null pointers error" << std::endl;
+                    return false;
+                }
+
+                HRESULT hr = S_OK;
+                UINT vertexCount = pModel->GetVertexCount();
+                FT_VECTOR2D* pPts2D = reinterpret_cast<FT_VECTOR2D*>(_malloca(sizeof(FT_VECTOR2D) * vertexCount));
+                if (pPts2D)
+                {
+                    FLOAT *pAUs;
+                    UINT auCount;
+                    hr = pAAMRlt->GetAUCoefficients(&pAUs, &auCount);
+                    if (SUCCEEDED(hr))
+                    {
+                        FLOAT scale, rotationXYZ[3], translationXYZ[3];
+                        hr = pAAMRlt->Get3DPose(&scale, rotationXYZ, translationXYZ);
+                        if (SUCCEEDED(hr))
+                        {
+                            hr = pModel->GetProjectedShape(&cameraConfig, zoomFactor, viewOffset, pSUCoef, pModel->GetSUCount(), pAUs, auCount,
+                                                           scale, rotationXYZ, translationXYZ, pPts2D, vertexCount);
+                            if (SUCCEEDED(hr))
+                            {
+                                POINT* p3DMdl   = reinterpret_cast<POINT*>(_malloca(sizeof(POINT) * vertexCount));
+                                if (p3DMdl)
+                                {
+                                    std::cout << "{" << std::endl;
+                                    for (UINT i = 0; i < vertexCount; ++i)
+                                    {
+                                        p3DMdl[i].x = LONG(pPts2D[i].x + 0.5f);
+                                        p3DMdl[i].y = LONG(pPts2D[i].y + 0.5f);
+                                        std::cout << "\"" << i << "\":" << "{ \"x\":" << p3DMdl[i].x << ",\"y\":" << p3DMdl[i].y << "}" << std::endl;
+                                    }
+
+                                    std::cout << "}" << std::endl;
+
+
+                                    FT_TRIANGLE* pTriangles;
+                                    UINT triangleCount;
+                                    hr = pModel->GetTriangles(&pTriangles, &triangleCount);
+                                    if (SUCCEEDED(hr))
+                                    {
+                                        struct EdgeHashTable
+                                        {
+                                            UINT32* pEdges;
+                                            UINT edgesAlloc;
+
+                                            void Insert(int a, int b)
+                                            {
+                                                UINT32 v = (min(a, b) << 16) | max(a, b);
+                                                UINT32 index = (v + (v << 8)) * 49157, i;
+                                                for (i = 0; i < edgesAlloc - 1 && pEdges[(index + i) & (edgesAlloc - 1)] && v != pEdges[(index + i) & (edgesAlloc - 1)]; ++i)
+                                                {
+                                                }
+                                                pEdges[(index + i) & (edgesAlloc - 1)] = v;
+                                            }
+                                        } eht;
+
+                                        eht.edgesAlloc = 1 << UINT(log(2.f * (1 + vertexCount + triangleCount)) / log(2.f));
+                                        eht.pEdges = reinterpret_cast<UINT32*>(_malloca(sizeof(UINT32) * eht.edgesAlloc));
+                                        if (eht.pEdges)
+                                        {
+                                            ZeroMemory(eht.pEdges, sizeof(UINT32) * eht.edgesAlloc);
+                                            for (UINT i = 0; i < triangleCount; ++i)
+                                            {
+                                                eht.Insert(pTriangles[i].i, pTriangles[i].j);
+                                                eht.Insert(pTriangles[i].j, pTriangles[i].k);
+                                                eht.Insert(pTriangles[i].k, pTriangles[i].i);
+                                            }
+                                            for (UINT i = 0; i < eht.edgesAlloc; ++i)
+                                            {
+                                                if(eht.pEdges[i] != 0)
+                                                {
+                                                    //pColorImg->DrawLine(p3DMdl[eht.pEdges[i] >> 16], p3DMdl[eht.pEdges[i] & 0xFFFF], color, 1);
+                                                }
+                                            }
+                                            _freea(eht.pEdges);
+                                        }
+
+                                        // Render the face rect in magenta
+                                        RECT rectFace;
+                                        hr = pAAMRlt->GetFaceRect(&rectFace);
+                                    }
+
+                                    _freea(p3DMdl);
+                                }
+                                else
+                                {
+                                    hr = E_OUTOFMEMORY;
+                                }
+                            }
+                        }
+                    }
+                    _freea(pPts2D);
+                }
+                else
+                {
+                    hr = E_OUTOFMEMORY;
+                }
+
+                return false ;
+                //hr = VisualizeFaceModel(m_colorImage, ftModel, &cameraConfig, pSU, 1.0, viewOffset, pResult, 0x00FFFF00);
                 //hr = VisualizeFaceModel(m_colorImage, ftModel, &cameraConfig, pSU, 1.0, viewOffset, pResult, 0x00FFFF00);
                 //ftModel->Release();
             }
@@ -247,6 +360,7 @@ DWORD WINAPI FTHelper::FaceTrackingThread()
     {
         return 5;
     }
+    std::cout << "Has allocated color image memory" << std::endl;
 
     if (pDepthConfig)
     {
@@ -256,6 +370,7 @@ DWORD WINAPI FTHelper::FaceTrackingThread()
             return 6;
         }
     }
+    std::cout << "Has allocated depth image memory" << std::endl;
 
     SetCenterOfImage(NULL);
     m_LastTrackSucceeded = false;

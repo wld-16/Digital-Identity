@@ -20,7 +20,42 @@
 INuiSensor *sensor;
 FTHelper m_FTHelper;
 std::string jsonData;
-IFTImage* m_pVideoBuffer;
+IFTImage *m_pVideoBuffer;
+
+typedef struct JointData {
+    JointData(Vector4 position, Vector4 rotation) {
+        this->position = position;
+        this->rotation = rotation;
+    }
+
+    Vector4 position;
+    Vector4 rotation;
+};
+
+typedef std::array<JointData, NUI_SKELETON_POSITION_COUNT> SkeletonData;
+
+SkeletonData skeletonStructure = {
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4()),
+        JointData(Vector4(), Vector4())
+};
 
 // OpenGL Variables
 long depthToRgbMap[width * height * 2];
@@ -36,8 +71,7 @@ HANDLE depthStream;
 HANDLE rgbStream;
 
 
-void FTHelperCallingBack(PVOID pVoid)
-{
+void FTHelperCallingBack(PVOID pVoid) {
     std::cout << "Callback" << std::endl;
     /*
     SingleFace* pApp = reinterpret_cast<SingleFace*>(pVoid);
@@ -58,7 +92,6 @@ void FTHelperCallingBack(PVOID pVoid)
     }
      */
 }
-
 
 
 bool initKinectSkeletonTracking() {
@@ -86,10 +119,9 @@ bool initKinectSkeletonTracking() {
     return sensor;
 }
 
-bool initKinectFaceTracking(){
-    IFTFaceTracker* pFT = FTCreateFaceTracker();
-    if(!pFT)
-    {
+bool initKinectFaceTracking() {
+    IFTFaceTracker *pFT = FTCreateFaceTracker();
+    if (!pFT) {
         // Handle errors
     }
     // Video camera config with width, height, focal length in pixels
@@ -104,50 +136,62 @@ bool initKinectFaceTracking(){
 
     // Initialize the face tracker
     HRESULT hr = pFT->Initialize(&videoCameraConfig, &depthCameraConfig, NULL, NULL);
-    if( FAILED(hr) )
-    {
+    if (FAILED(hr)) {
         // Handle errors
     }
-    IFTResult* pFTResult = NULL;
+    IFTResult *pFTResult = NULL;
     hr = pFT->CreateFTResult(&pFTResult);
-    if(FAILED(hr))
-    {
+    if (FAILED(hr)) {
         // Handle errors
     }
     // Prepare image interfaces that hold RGB and depth data
-    IFTImage* pColorFrame = FTCreateImage();
-    IFTImage* pDepthFrame = FTCreateImage();
-    if(!pColorFrame || !pDepthFrame)
-    {
+    IFTImage *pColorFrame = FTCreateImage();
+    IFTImage *pDepthFrame = FTCreateImage();
+    if (!pColorFrame || !pDepthFrame) {
         // Handle errors
     }
 
     //
-    m_FTHelper.Init(FTHelperCallingBack,nullptr,NUI_IMAGE_TYPE_DEPTH_AND_PLAYER_INDEX,
+    m_FTHelper.Init(FTHelperCallingBack, nullptr, NUI_IMAGE_TYPE_DEPTH_AND_PLAYER_INDEX,
                     NUI_IMAGE_RESOLUTION_320x240,
                     TRUE,
                     TRUE, // if near mode doesn't work, fall back to default mode
                     NUI_IMAGE_TYPE_COLOR,
                     NUI_IMAGE_RESOLUTION_640x480,
-                    FALSE);
+                    TRUE);
     return true;
 }
 
 void getSkeletalData() {
     NUI_SKELETON_FRAME skeletonFrame = {0};
+
     if (sensor->NuiSkeletonGetNextFrame(0, &skeletonFrame) >= 0) {
         sensor->NuiTransformSmooth(&skeletonFrame, NULL);
+
+
         // Loop over all sensed skeletons
         for (int z = 0; z < NUI_SKELETON_COUNT; ++z) {
+            _NUI_SKELETON_BONE_ORIENTATION bones[ NUI_SKELETON_POSITION_COUNT ];
             const NUI_SKELETON_DATA &skeleton = skeletonFrame.SkeletonData[z];
+            const NUI_SKELETON_DATA test = skeletonFrame.SkeletonData[z];
             // Check the state of the skeleton
+
             if (skeleton.eTrackingState == NUI_SKELETON_TRACKED) {
+
+                NuiSkeletonCalculateBoneOrientations(&test, bones);
+
                 // Copy the joint positions into our array
                 for (int i = 0; i < NUI_SKELETON_POSITION_COUNT; ++i) {
+
                     skeletonPosition[i] = skeleton.SkeletonPositions[i];
+
                     if (skeleton.eSkeletonPositionTrackingState[i] == NUI_SKELETON_POSITION_NOT_TRACKED) {
                         skeletonPosition[i].w = 0;
                     }
+                }
+                for(size_t i = 0; i < NUI_SKELETON_POSITION_COUNT; i++){
+                    skeletonStructure[i].position = skeletonPosition[i];
+                    skeletonStructure[i].rotation = bones[i].hierarchicalRotation.rotationQuaternion;
                 }
             }
         }
@@ -185,11 +229,12 @@ void getDepthData(GLubyte *dest) {
     sensor->NuiImageStreamReleaseFrame(depthStream, &imageFrame);
 }
 
-void getRgbHeadData(GLubyte *dest, IFTImage* colorImage){
+void getRgbHeadData(GLubyte *dest, IFTImage *colorImage) {
     float *fdest = (float *) dest;
     long *depth2rgb = (long *) depthToRgbMap;
     NUI_IMAGE_FRAME imageFrame;
     NUI_LOCKED_RECT LockedRect;
+
 
     INuiFrameTexture *texture = imageFrame.pFrameTexture;
     texture->LockRect(0, &LockedRect, NULL, 0);
@@ -249,19 +294,11 @@ void getKinectHeadData() {
     GLuint &vboIdPtr = getVboId();
     GLuint &cboIdPtr = getCboId();
     const int dataSize = width * height * 3 * 4;
-    GLubyte *ptr;
-    glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
-    ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    if (ptr) {
-        getDepthData(ptr);
-    }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, cboIdPtr);
-    ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    if (ptr) {
-        getRgbData(ptr);
-    }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
+    //GLubyte *ptr;
+    //glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
+    //ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    //getHeadColorImage(ptr);
+    //glUnmapBuffer(GL_ARRAY_BUFFER);
     //getSkeletalData();
 }
 
@@ -282,14 +319,19 @@ void getKinectData() {
         getRgbData(ptr);
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
-    //getSkeletalData();
+    getSkeletalData();
 }
 
-Json::Value fillJoint(Json::Value json, std::string jointIdentifier, Vector4 input) {
-    json[jointIdentifier]["x"] = input.x;
-    json[jointIdentifier]["y"] = input.y;
-    json[jointIdentifier]["z"] = input.z;
-    json[jointIdentifier]["w"] = input.w;
+Json::Value fillJoint(Json::Value json, std::string jointIdentifier, JointData input) {
+    json[jointIdentifier]["rotation"]["x"] = input.rotation.x;
+    json[jointIdentifier]["rotation"]["y"] = input.rotation.y;
+    json[jointIdentifier]["rotation"]["z"] = input.rotation.z;
+    json[jointIdentifier]["rotation"]["w"] = input.rotation.w;
+
+    json[jointIdentifier]["position"]["x"] = input.position.x;
+    json[jointIdentifier]["position"]["y"] = input.position.y;
+    json[jointIdentifier]["position"]["z"] = input.position.z;
+    json[jointIdentifier]["position"]["w"] = input.position.w;
     return json;
 }
 
@@ -298,117 +340,81 @@ void fillKinectIntoJson() {
 
     Json::Value json;
 
-    json = fillJoint(json, "hip-center", skeletonPosition[NUI_SKELETON_POSITION_HIP_CENTER]);
-    json = fillJoint(json, "spine", skeletonPosition[NUI_SKELETON_POSITION_SPINE]);
-    json = fillJoint(json, "shoulder-center", skeletonPosition[NUI_SKELETON_POSITION_SHOULDER_CENTER]);
-    json = fillJoint(json, "head", skeletonPosition[NUI_SKELETON_POSITION_HEAD]);
-    json = fillJoint(json, "shoulder-left", skeletonPosition[NUI_SKELETON_POSITION_SHOULDER_LEFT]);
-    json = fillJoint(json, "elbow-left", skeletonPosition[NUI_SKELETON_POSITION_ELBOW_LEFT]);
-    json = fillJoint(json, "wrist-left", skeletonPosition[NUI_SKELETON_POSITION_WRIST_LEFT]);
-    json = fillJoint(json, "hand-left", skeletonPosition[NUI_SKELETON_POSITION_HAND_LEFT]);
-    json = fillJoint(json, "shoulder-right", skeletonPosition[NUI_SKELETON_POSITION_SHOULDER_RIGHT]);
-    json = fillJoint(json, "elbow-right", skeletonPosition[NUI_SKELETON_POSITION_ELBOW_RIGHT]);
-    json = fillJoint(json, "wrist-right", skeletonPosition[NUI_SKELETON_POSITION_WRIST_RIGHT]);
-    json = fillJoint(json, "hand-right", skeletonPosition[NUI_SKELETON_POSITION_HAND_RIGHT]);
-    json = fillJoint(json, "hip-left", skeletonPosition[NUI_SKELETON_POSITION_HIP_LEFT]);
-    json = fillJoint(json, "knee-left", skeletonPosition[NUI_SKELETON_POSITION_KNEE_LEFT]);
-    json = fillJoint(json, "ankle-left", skeletonPosition[NUI_SKELETON_POSITION_ANKLE_LEFT]);
-    json = fillJoint(json, "foot-left", skeletonPosition[NUI_SKELETON_POSITION_FOOT_LEFT]);
-    json = fillJoint(json, "hip-right", skeletonPosition[NUI_SKELETON_POSITION_HIP_RIGHT]);
-    json = fillJoint(json, "knee-right", skeletonPosition[NUI_SKELETON_POSITION_KNEE_RIGHT]);
-    json = fillJoint(json, "ankle-right", skeletonPosition[NUI_SKELETON_POSITION_ANKLE_RIGHT]);
-    json = fillJoint(json, "foot-right", skeletonPosition[NUI_SKELETON_POSITION_FOOT_RIGHT]);
+    json = fillJoint(json, "hip-center", skeletonStructure[NUI_SKELETON_POSITION_HIP_CENTER]);
+    json = fillJoint(json, "spine", skeletonStructure[NUI_SKELETON_POSITION_SPINE]);
+    json = fillJoint(json, "shoulder-center", skeletonStructure[NUI_SKELETON_POSITION_SHOULDER_CENTER]);
+    json = fillJoint(json, "head", skeletonStructure[NUI_SKELETON_POSITION_HEAD]);
+    json = fillJoint(json, "shoulder-left", skeletonStructure[NUI_SKELETON_POSITION_SHOULDER_LEFT]);
+    json = fillJoint(json, "elbow-left", skeletonStructure[NUI_SKELETON_POSITION_ELBOW_LEFT]);
+    json = fillJoint(json, "wrist-left", skeletonStructure[NUI_SKELETON_POSITION_WRIST_LEFT]);
+    json = fillJoint(json, "hand-left", skeletonStructure[NUI_SKELETON_POSITION_HAND_LEFT]);
+    json = fillJoint(json, "shoulder-right", skeletonStructure[NUI_SKELETON_POSITION_SHOULDER_RIGHT]);
+    json = fillJoint(json, "elbow-right", skeletonStructure[NUI_SKELETON_POSITION_ELBOW_RIGHT]);
+    json = fillJoint(json, "wrist-right", skeletonStructure[NUI_SKELETON_POSITION_WRIST_RIGHT]);
+    json = fillJoint(json, "hand-right", skeletonStructure[NUI_SKELETON_POSITION_HAND_RIGHT]);
+    json = fillJoint(json, "hip-left", skeletonStructure[NUI_SKELETON_POSITION_HIP_LEFT]);
+    json = fillJoint(json, "knee-left", skeletonStructure[NUI_SKELETON_POSITION_KNEE_LEFT]);
+    json = fillJoint(json, "ankle-left", skeletonStructure[NUI_SKELETON_POSITION_ANKLE_LEFT]);
+    json = fillJoint(json, "foot-left", skeletonStructure[NUI_SKELETON_POSITION_FOOT_LEFT]);
+    json = fillJoint(json, "hip-right", skeletonStructure[NUI_SKELETON_POSITION_HIP_RIGHT]);
+    json = fillJoint(json, "knee-right", skeletonStructure[NUI_SKELETON_POSITION_KNEE_RIGHT]);
+    json = fillJoint(json, "ankle-right", skeletonStructure[NUI_SKELETON_POSITION_ANKLE_RIGHT]);
+    json = fillJoint(json, "foot-right", skeletonStructure[NUI_SKELETON_POSITION_FOOT_RIGHT]);
 
     jsonData = json.toStyledString();
 
 }
 
-std::string *getJson(){
+std::string *getJson() {
     return &jsonData;
 }
 
-std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition(){
+
+std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition() {
     return &skeletonPosition;
 }
 
-std::list<Vector4> *getHeadData(){
+std::list<Vector4> *getHeadData() {
     return &headData;
 }
 
-BOOL getImage(GLubyte *dest, int originX, int originY)
-{
+BOOL getHeadColorImage(GLubyte *dest) {
     BOOL ret = TRUE;
 
     // Now, copy a fraction of the camera image into the screen.
-    IFTImage* colorImage = m_FTHelper.GetColorImage();
-    if (colorImage)
-    {
+    IFTImage *colorImage = m_FTHelper.GetColorImage();
+
+    if (colorImage) {
         int iWidth = colorImage->GetWidth();
         int iHeight = colorImage->GetHeight();
-        if (iWidth > 0 && iHeight > 0)
-        {
-            int iTop = 0;
-            int iBottom = iHeight;
-            int iLeft = 0;
-            int iRight = iWidth;
 
-            // Keep a separate buffer.
-            if (m_pVideoBuffer && SUCCEEDED(m_pVideoBuffer->Allocate(iWidth, iHeight, FTIMAGEFORMAT_UINT8_B8G8R8A8)))
-            {
-                // Copy do the video buffer while converting bytes
-                colorImage->CopyTo(m_pVideoBuffer, NULL, 0, 0);
-
-                // Compute the best approximate copy ratio.
-                float w1 = (float)iHeight * (float)width;
-                float w2 = (float)iWidth * (float)height;
-                if (w2 > w1 && height > 0)
-                {
-                    // video image too wide
-                    float wx = w1/height;
-                    iLeft = (int)max(0, m_FTHelper.GetXCenterFace() - wx / 2);
-                    iRight = iLeft + (int)wx;
-                    if (iRight > iWidth)
-                    {
-                        iRight = iWidth;
-                        iLeft = iRight - (int)wx;
-                    }
-                }
-                else if (w1 > w2 && width > 0)
-                {
-                    // video image too narrow
-                    float hy = w2/width;
-                    iTop = (int)max(0, m_FTHelper.GetYCenterFace() - hy / 2);
-                    iBottom = iTop + (int)hy;
-                    if (iBottom > iHeight)
-                    {
-                        iBottom = iHeight;
-                        iTop = iBottom - (int)hy;
-                    }
-                }
-
-                int const bmpPixSize = m_pVideoBuffer->GetBytesPerPixel();
-
-
-            }
-        }
+        std::cout << "Copy bitmap" << std::endl;
         GLuint &vboIdPtr = getVboId();
         GLuint &cboIdPtr = getCboId();
         const int dataSize = width * height * 3 * 4;
-        GLubyte *ptr;
-        glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
-        ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        if (ptr) {
+        if (dest) {
+
+            float *fdest = (float *) dest;
+            long *depth2rgb = (long *) depthToRgbMap;
+
+            const BYTE *start = (const BYTE *) m_FTHelper.GetColorImage()->GetBytesPerPixel();
+            for (int j = 0; j < height; ++j) {
+                for (int i = 0; i < width; ++i) {
+                    // Determine rgb color for each depth pixel
+                    long x = *depth2rgb++;
+                    long y = *depth2rgb++;
+                    // If out of bounds, then don't color it at all
+                    if (x < 0 || y < 0 || x > width || y > height) {
+                        for (int n = 0; n < 3; ++n) *(fdest++) = 0.0f;
+                    } else {
+                        const BYTE *curr = start + (x + width * y) * 4;
+                        for (int n = 0; n < 3; ++n) *(fdest++) = curr[2 - n] / 255.0f;
+                    }
+
+                }
+            }
             //getDepthHeadData(ptr);
         }
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glBindBuffer(GL_ARRAY_BUFFER, reinterpret_cast<GLuint>(colorImage->GetBuffer()));
-        ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        if (ptr) {
-            getRgbHeadData(ptr, colorImage);
-        }
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-
-        colorImage->GetBuffer();
     }
     return ret;
 }

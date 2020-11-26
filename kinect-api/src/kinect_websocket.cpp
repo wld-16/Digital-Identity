@@ -11,7 +11,7 @@
 typedef websocketpp::server<websocketpp::config::asio> server;
 void on_message(websocketpp::connection_hdl conn, server::message_ptr msg);
 server print_server;
-std::string *test;
+std::string *data;
 
 kinect_websocket::kinect_websocket() {
 
@@ -32,11 +32,11 @@ void kinect_websocket::run() {
 }
 
 void kinect_websocket::setJson(std::string *json) {
-    test = json;
+    data = json;
 }
 
 void on_message(websocketpp::connection_hdl conn, server::message_ptr msg) {
     std::cout << msg->get_payload() << std::endl;
 
-    print_server.send(conn,*test,websocketpp::frame::opcode::TEXT);
+    print_server.send(conn,*data,websocketpp::frame::opcode::TEXT);
 }

@@ -7,6 +7,7 @@
 #include <NuiImageCamera.h>
 #include <NuiSensor.h>
 #include <array>
+#include <GL/glew.h>
 
 void getKinectData();
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition();
@@ -14,3 +15,4 @@ void fillKinectIntoJson();
 bool initKinectSkeletonTracking();
 bool initKinectFaceTracking();
 void getKinectHeadData();
+BOOL getHeadColorImage(GLubyte *dest);

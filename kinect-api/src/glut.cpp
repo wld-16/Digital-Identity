@@ -110,6 +110,18 @@ bool initHead(int argc, char* argv[]) {
     return true;
 }
 
+void rotateCamera() {
+    static double angle = 0.;
+    static double radius = 3.;
+    double x = radius * sin(angle);
+    double z = radius * (1 - cos(angle)) - radius / 2;
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(x, 0, z, 0, 0, radius / 2, 0, 1, 0);
+    angle += 0.05;
+}
+
+
 void initGL(){
     // OpenGL setup
     glClearColor(0, 0, 0, 0);
@@ -132,17 +144,6 @@ void initGL(){
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
-}
-
-void rotateCamera() {
-    static double angle = 0.;
-    static double radius = 3.;
-    double x = radius * sin(angle);
-    double z = radius * (1 - cos(angle)) - radius / 2;
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(x, 0, z, 0, 0, radius / 2, 0, 1, 0);
-    angle += 0.05;
 }
 
 GLuint &getVboId(){

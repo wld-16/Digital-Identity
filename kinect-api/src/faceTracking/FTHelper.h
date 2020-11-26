@@ -22,6 +22,7 @@ public:
     IFTResult* GetResult()      { return(m_pFTResult);}
     BOOL IsKinectPresent()      { return(m_KinectSensorPresent);}
     IFTImage* GetColorImage()   { return(m_colorImage);}
+    IFTImage* GetDepthImage()   { return(m_depthImage);}
     float GetXCenterFace()      { return(m_XCenterFace);}
     float GetYCenterFace()      { return(m_YCenterFace);}
     void SetDrawMask(BOOL drawMask) { m_DrawMask = drawMask;}
