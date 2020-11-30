@@ -59,7 +59,7 @@ add_executable(kinect-api
         src/faceTracking/FTHelper.h
         src/faceTracking/KinectSensor.cpp
         src/faceTracking/KinectSensor.h
-        )
+        src/json_file_io.cpp src/json_file_io.h)
 
 target_link_libraries(kinect-api
         ${JSON_LIBRARY}
@@ -73,5 +73,7 @@ target_link_libraries(kinect-api
         ${BOOST_LIBRARY_DIR}\\libboost_system-vc120-mt-gd-1_55.lib
         ${BOOST_LIBRARY_DIR}\\libboost_chrono-vc120-mt-gd-1_55.lib
         ${BOOST_LIBRARY_DIR}\\libboost_regex-vc120-mt-gd-1_55.lib
+        ${BOOST_LIBRARY_DIR}\\libboost_filesystem-vc120-mt-gd-1_55.lib
+
 
 )

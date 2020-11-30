@@ -84,6 +84,14 @@ void execute() {
     glutMainLoop();
 }
 
+void KeyboardCB(unsigned char key, int x, int y){
+    switch(key) {
+        case 'q':
+            std::exit(0);
+    }
+
+}
+
 bool init(int argc, char* argv[]) {
     argc = 0;
     argv = NULL;
@@ -91,6 +99,7 @@ bool init(int argc, char* argv[]) {
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(width,height);
     glutCreateWindow("Kinect SDK Tutorial");
+    glutKeyboardFunc(KeyboardCB);
     glutDisplayFunc(drawSkeletonCallback);
     glutIdleFunc(drawSkeletonCallback);
 	glewInit();

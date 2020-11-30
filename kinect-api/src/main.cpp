@@ -1,6 +1,7 @@
 #include "glut.h"
 #include "kinect_websocket.h"
 #include "kinect_processor.h"
+#include "json_file_io.h"
 #include <thread>
 
 void runWebserver(){
@@ -10,6 +11,16 @@ void runWebserver(){
     kinectWebsocket.run();
 }
 
+void runFileWrite(){
+    json_file_io jsonFileIo;
+    std::string *json = getJson();
+    jsonFileIo.setJson(json);
+    jsonFileIo.setWritePath("../../test.json");
+    jsonFileIo.run();
+}
+
+
+
 int main(int argc, char *argv[]) {
     //if (!initHead(argc, argv)) return 1;
     if (!init(argc, argv)) return 1;
@@ -17,7 +28,8 @@ int main(int argc, char *argv[]) {
     //if (!initKinectFaceTracking()) return 1;
     if (!initKinectSkeletonTracking()) return 1;
 
-     thread t1(runWebserver);
+    thread websocketThread(runWebserver);
+    //thread fileIOThread(runFileWrite);
 
     initGL();
 

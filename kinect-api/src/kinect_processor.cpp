@@ -9,6 +9,7 @@
 #include "glut.h"
 #include "faceTracking/FTHelper.h"
 #include <FaceTrackLib.h>
+#include <boost/algorithm/string.hpp>
 
 #include <json/json.h>
 #include <GL/glew.h>
@@ -23,38 +24,40 @@ std::string jsonData;
 IFTImage *m_pVideoBuffer;
 
 typedef struct JointData {
-    JointData(Vector4 position, Vector4 rotation) {
+    JointData(Vector4 position, Vector4 rotation, Matrix4 rotationMatrix) {
         this->position = position;
         this->rotation = rotation;
+        this->rotationMatrix = rotationMatrix;
     }
 
     Vector4 position;
     Vector4 rotation;
+    Matrix4 rotationMatrix;
 };
 
 typedef std::array<JointData, NUI_SKELETON_POSITION_COUNT> SkeletonData;
 
 SkeletonData skeletonStructure = {
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4()),
-        JointData(Vector4(), Vector4())
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4()),
+        JointData(Vector4(), Vector4(), Matrix4())
 };
 
 // OpenGL Variables
@@ -72,25 +75,7 @@ HANDLE rgbStream;
 
 
 void FTHelperCallingBack(PVOID pVoid) {
-    std::cout << "Callback" << std::endl;
-    /*
-    SingleFace* pApp = reinterpret_cast<SingleFace*>(pVoid);
-    if (pApp)
-    {
-        IFTResult* pResult = pApp->m_FTHelper.GetResult();
-        if (pResult && SUCCEEDED(pResult->GetStatus()))
-        {
-            FLOAT* pAU = NULL;
-            UINT numAU;
-            pResult->GetAUCoefficients(&pAU, &numAU);
-            FLOAT scale;
-            FLOAT rotationXYZ[3];
-            FLOAT translationXYZ[3];
-            pResult->Get3DPose(&scale, rotationXYZ, translationXYZ);
-        }
-
-    }
-     */
+    std::cout << "Callback executed" << std::endl;
 }
 
 
@@ -192,6 +177,7 @@ void getSkeletalData() {
                 for(size_t i = 0; i < NUI_SKELETON_POSITION_COUNT; i++){
                     skeletonStructure[i].position = skeletonPosition[i];
                     skeletonStructure[i].rotation = bones[i].hierarchicalRotation.rotationQuaternion;
+                    skeletonStructure[i].rotationMatrix = bones[i].hierarchicalRotation.rotationMatrix;
                 }
             }
         }
@@ -323,15 +309,33 @@ void getKinectData() {
 }
 
 Json::Value fillJoint(Json::Value json, std::string jointIdentifier, JointData input) {
-    json[jointIdentifier]["rotation"]["x"] = input.rotation.x;
-    json[jointIdentifier]["rotation"]["y"] = input.rotation.y;
-    json[jointIdentifier]["rotation"]["z"] = input.rotation.z;
-    json[jointIdentifier]["rotation"]["w"] = input.rotation.w;
+    //json[jointIdentifier]["rotation"]["x"] = input.rotation.x;
+    //json[jointIdentifier]["rotation"]["y"] = input.rotation.y;
+    //json[jointIdentifier]["rotation"]["z"] = input.rotation.z;
+    //json[jointIdentifier]["rotation"]["w"] = input.rotation.w;
 
-    json[jointIdentifier]["position"]["x"] = input.position.x;
-    json[jointIdentifier]["position"]["y"] = input.position.y;
-    json[jointIdentifier]["position"]["z"] = input.position.z;
-    json[jointIdentifier]["position"]["w"] = input.position.w;
+    json[jointIdentifier]["M11"] = input.rotationMatrix.M11;
+    json[jointIdentifier]["M12"] = input.rotationMatrix.M12;
+    json[jointIdentifier]["M13"] = input.rotationMatrix.M13;
+    json[jointIdentifier]["M14"] = input.rotationMatrix.M14;
+    json[jointIdentifier]["M21"] = input.rotationMatrix.M21;
+    json[jointIdentifier]["M22"] = input.rotationMatrix.M22;
+    json[jointIdentifier]["M23"] = input.rotationMatrix.M23;
+    json[jointIdentifier]["M24"] = input.rotationMatrix.M24;
+    json[jointIdentifier]["M31"] = input.rotationMatrix.M31;
+    json[jointIdentifier]["M32"] = input.rotationMatrix.M32;
+    json[jointIdentifier]["M33"] = input.rotationMatrix.M33;
+    json[jointIdentifier]["M34"] = input.rotationMatrix.M34;
+    json[jointIdentifier]["M41"] = input.rotationMatrix.M41;
+    json[jointIdentifier]["M42"] = input.rotationMatrix.M42;
+    json[jointIdentifier]["M43"] = input.rotationMatrix.M43;
+    json[jointIdentifier]["M44"] = input.rotationMatrix.M44;
+
+
+    //json[jointIdentifier]["position"]["x"] = input.position.x;
+    //json[jointIdentifier]["position"]["y"] = input.position.y;
+    //json[jointIdentifier]["position"]["z"] = input.position.z;
+    //json[jointIdentifier]["position"]["w"] = input.position.w;
     return json;
 }
 
@@ -361,7 +365,12 @@ void fillKinectIntoJson() {
     json = fillJoint(json, "ankle-right", skeletonStructure[NUI_SKELETON_POSITION_ANKLE_RIGHT]);
     json = fillJoint(json, "foot-right", skeletonStructure[NUI_SKELETON_POSITION_FOOT_RIGHT]);
 
-    jsonData = json.toStyledString();
+    std::string styledJsonString = json.toStyledString();
+    // Uglyfy Json
+    boost::replace_all(styledJsonString,"\n","");
+    boost::replace_all(styledJsonString," ","");
+
+    jsonData = styledJsonString;
 
 }
 
@@ -388,7 +397,6 @@ BOOL getHeadColorImage(GLubyte *dest) {
         int iWidth = colorImage->GetWidth();
         int iHeight = colorImage->GetHeight();
 
-        std::cout << "Copy bitmap" << std::endl;
         GLuint &vboIdPtr = getVboId();
         GLuint &cboIdPtr = getCboId();
         const int dataSize = width * height * 3 * 4;
