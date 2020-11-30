@@ -51,6 +51,8 @@ if(NOT GLEW_FOUND)
     return()
 endif()
 
+message("${OpenGL_VERSION}")
+
 if(NOT GLEW_LIBRARIES)
     if(GLEW_LIBRARY_DEBUG AND GLEW_LIBRARY_RELEASE)
         set(GLEW_LIBRARIES "optimized;${GLEW_LIBRARY_RELEASE};debug;${GLEW_LIBRARY_DEBUG}")
@@ -108,7 +110,7 @@ add_executable(Digital_Identity
         src/ogl/opencv_skinned_mesh.cpp
         src/ogl/opencv_skinned_mesh.h
         src/kinect_data_client.cpp
-        src/kinect_data_client.h)
+        src/kinect_data_client.h src/json_file_reader.cpp src/json_file_reader.h)
 
 target_link_libraries(
         Digital_Identity
@@ -122,4 +124,5 @@ target_link_libraries(
         ${BOOST_LIBRARY_DIRS}\\libboost_random-vc142-mt-gd-x32-1_74.lib
         ${BOOST_LIBRARY_DIRS}\\libboost_date_time-vc142-mt-gd-x32-1_74.lib
         ${BOOST_LIBRARY_DIRS}\\libboost_regex-vc142-mt-gd-x32-1_74.lib
+        ${BOOST_LIBRARY_DIRS}\\libboost_filesystem-vc142-mt-gd-x32-1_74.lib
 )

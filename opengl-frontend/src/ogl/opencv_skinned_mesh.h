@@ -48,7 +48,8 @@ public:
     {
         return m_NumBones;
     }
-    
+
+    void KinectBoneTransform(vector<Matrix4f> &Transforms, float scale, float tranlateX);
     void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
     
 private:

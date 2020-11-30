@@ -18,6 +18,7 @@
 
 
 
+#include <iostream>
 #include "opencv_skinned_mesh.h"
 
 #define POSITION_LOCATION    0
@@ -37,7 +38,7 @@ void SkinnedMesh::VertexBoneData::AddBoneData(uint BoneID, float Weight)
     }
     
     // should never get here - more bones than we have space for
-    assert(0);
+    //assert(0);
 }
 
 SkinnedMesh::SkinnedMesh()
@@ -84,10 +85,10 @@ bool SkinnedMesh::LoadMesh(const string& Filename)
     // Create the buffers for the vertices attributes
     glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
 
-    bool Ret = false;    
-  
+    bool Ret = false;
+
     m_pScene = m_Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);
-    
+
     if (m_pScene) {  
         m_GlobalInverseTransform = m_pScene->mRootNode->mTransformation;
         m_GlobalInverseTransform.Inverse();
@@ -222,8 +223,9 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
             m_NumBones++;            
 	        BoneInfo bi;			
 			m_BoneInfo.push_back(bi);
-            m_BoneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;            
+            m_BoneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;
             m_BoneMapping[BoneName] = BoneIndex;
+            std::cout << BoneName << std::endl;
         }
         else {
             BoneIndex = m_BoneMapping[BoneName];
@@ -295,6 +297,7 @@ bool SkinnedMesh::InitMaterials(const aiScene* pScene, const string& Filename)
 
 void SkinnedMesh::Render()
 {
+
     glBindVertexArray(m_VAO);
     
     for (uint i = 0 ; i < m_Entries.size() ; i++) {
@@ -469,6 +472,31 @@ void SkinnedMesh::ReadNodeHeirarchy(float AnimationTime, const aiNode* pNode, co
     }
 }
 
+void SkinnedMesh::KinectBoneTransform(vector<Matrix4f>& Transforms, float scale, float translateX){
+    Matrix4f Identity;
+    Identity.InitIdentity();
+
+
+    Matrix4f NodeTransformation;
+    NodeTransformation.InitIdentity();
+
+
+    // Interpolate rotation and generate rotation transformation matrix
+    aiQuaternion RotationQ;
+
+    Transforms.resize(m_NumBones);
+
+    Matrix4f changeMatrix(  1/scale,0,0,translateX,
+                            0,1/scale,0,0,
+                            0,0,1/scale,0,
+                            0,0,0,1/scale
+            );
+
+    for (uint i = 0 ; i < m_NumBones ; i++) {
+        Transforms[i] = m_BoneInfo[i].FinalTransformation;
+    }
+}
+
 
 void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms)
 {
@@ -480,7 +508,6 @@ void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transform
     float AnimationTime = fmod(TimeInTicks, (float)m_pScene->mAnimations[0]->mDuration);
 
     ReadNodeHeirarchy(AnimationTime, m_pScene->mRootNode, Identity);
-
     Transforms.resize(m_NumBones);
 
     for (uint i = 0 ; i < m_NumBones ; i++) {
