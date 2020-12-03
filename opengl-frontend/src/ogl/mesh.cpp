@@ -20,6 +20,8 @@
 
 #include "mesh.h"
 
+using namespace ogl;
+
 Mesh::MeshEntry::MeshEntry()
 {
     VB = INVALID_OGL_VALUE;

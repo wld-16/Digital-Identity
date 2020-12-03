@@ -31,8 +31,8 @@ bool Texture::Load()
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,m_blob.cols, m_blob.rows,0,GL_RGB,GL_UNSIGNED_BYTE, m_blob.data);
         glTexParameterf(m_textureTarget,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
         glTexParameterf(m_textureTarget,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-        glTexParameterf( m_textureTarget, GL_TEXTURE_WRAP_S , GL_REPEAT );
-        glTexParameterf( m_textureTarget, GL_TEXTURE_WRAP_T, GL_REPEAT );
+        glTexParameterf(m_textureTarget, GL_TEXTURE_WRAP_S , GL_REPEAT );
+        glTexParameterf(m_textureTarget, GL_TEXTURE_WRAP_T, GL_REPEAT );
         return true;
     }
     return false;

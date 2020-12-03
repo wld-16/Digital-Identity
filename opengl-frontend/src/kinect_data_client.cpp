@@ -22,7 +22,6 @@ typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 
 // Create a client endpoint
 client::connection_ptr con;
-
 std::unique_ptr<kinect_data_client> instance_pointer;
 
 json jsonFrame;
@@ -45,7 +44,7 @@ void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) {
 }
 
 void on_connection(client* c, client::connection_ptr con){
-    std::cout << "Connected" << std::endl;
+    std::cout << "Connected to " << con->get_host() << ":" << con->get_port() << std::endl;
 }
 
 void kinect_data_client::readJson(){
@@ -62,7 +61,7 @@ int kinect_data_client::run(){
 
     try {
         // Set logging to be pretty verbose (everything except message payloads)
-        c.set_access_channels(websocketpp::log::alevel::none);
+        c.set_access_channels(websocketpp::log::alevel::connect);
         c.clear_access_channels(websocketpp::log::alevel::none);
 
         // Initialize ASIO

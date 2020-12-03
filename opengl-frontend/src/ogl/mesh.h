@@ -30,22 +30,29 @@
 #include "./math_3d.h"
 #include "opencv_texture.h"
 
-
-struct Vertex
-{
-    Vector3f m_pos;
-    Vector2f m_tex;
-    Vector3f m_normal;
-
-    Vertex() {}
-
-    Vertex(const Vector3f& pos, const Vector2f& tex, const Vector3f& normal)
+namespace ogl{
+    struct Vertex
     {
-        m_pos    = pos;
-        m_tex    = tex;
-        m_normal = normal;
-    }
-};
+        Vector3f m_pos;
+        Vector2f m_tex;
+        Vector3f m_normal;
+
+        Vertex() {}
+
+        Vertex(const Vector3f& pos, const Vector2f& tex)
+        {
+            m_pos    = pos;
+            m_tex    = tex;
+        }
+
+        Vertex(const Vector3f& pos, const Vector2f& tex, const Vector3f& normal)
+        {
+            m_pos    = pos;
+            m_tex    = tex;
+            m_normal = normal;
+        }
+    };
+}
 
 
 class Mesh
@@ -72,7 +79,7 @@ private:
 
         ~MeshEntry();
 
-        void Init(const std::vector<Vertex>& Vertices,
+        void Init(const std::vector<ogl::Vertex>& Vertices,
                   const std::vector<unsigned int>& Indices);
 
         GLuint VB;

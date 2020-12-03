@@ -28,6 +28,10 @@ set(OGL_LIBRARY ${OGL_ROOT_DIR}\\build2019win32\\Debug\\ogl-tutorials.lib)
 set(ENV{KINECT_TOOLKIT_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\Developer Toolkit v1.8.0")
 set(ENV{KINECTSDK10_DIR} "C:\\Program Files\\Microsoft SDKs\\Kinect\\v1.8")
 
+set(FT_ROOT "D:\\Libs\\freetype-windows-binaries-2.10.4")
+set(FT_LIBRARY "${FT_ROOT}\\win32\\freetype.lib")
+set(FT_INCLUDE_DIR "${FT_ROOT}\\include")
+
 set(BOOST_ROOT "D:\\Libs\\boost_1_74_0")
 set(BOOST_INCLUDE_DIRS "${BOOST_ROOT}")
 set(BOOST_LIBRARY_DIRS "${BOOST_ROOT}\\stage\\lib")
@@ -83,6 +87,7 @@ include_directories(
         ${OPENGL_INCLUDE_DIR}
         ${ASSIMP_INCLUDE_DIR}
         ${OGL_INCLUDE_DIR}
+        ${FT_INCLUDE_DIR}
 )
 
 add_executable(Digital_Identity
@@ -110,7 +115,7 @@ add_executable(Digital_Identity
         src/ogl/opencv_skinned_mesh.cpp
         src/ogl/opencv_skinned_mesh.h
         src/kinect_data_client.cpp
-        src/kinect_data_client.h src/json_file_reader.cpp src/json_file_reader.h)
+        src/kinect_data_client.h src/json_file_reader.cpp src/json_file_reader.h src/Matf4f.h src/Quaternion.h src/ogl/font_technique.cpp src/ogl/font_technique.h)
 
 target_link_libraries(
         Digital_Identity
@@ -125,4 +130,5 @@ target_link_libraries(
         ${BOOST_LIBRARY_DIRS}\\libboost_date_time-vc142-mt-gd-x32-1_74.lib
         ${BOOST_LIBRARY_DIRS}\\libboost_regex-vc142-mt-gd-x32-1_74.lib
         ${BOOST_LIBRARY_DIRS}\\libboost_filesystem-vc142-mt-gd-x32-1_74.lib
+        ${FT_LIBRARY}
 )

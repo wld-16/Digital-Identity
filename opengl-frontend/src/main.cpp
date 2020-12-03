@@ -21,9 +21,10 @@
 #include "ogl/skinning_technique.h"
 #include "ogl/opencv_skinned_mesh.h"
 #include "json_file_reader.h"
-#include <boost/interprocess/shared_memory_object.hpp>
+#include "Matf4f.h"
 #include <boost/interprocess/mapped_region.hpp>
-#include "json/json.hpp"
+#include "Quaternion.h"
+#include "ogl/font_technique.h"
 
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 1024
@@ -31,29 +32,6 @@
 static const float FieldDepth = 10.0f;
 static const float FieldWidth = 10.0f;
 
-
-namespace ns {
-    struct Mat4f{
-        float M11;float M21;float M31;float M41;
-        float M12;float M22;float M32;float M42;
-        float M13;float M23;float M33;float M43;
-        float M14;float M24;float M34;float M44;
-    };
-
-    void to_json(json& j, const Mat4f& m) {
-        j = json{{"M11", m.M11}, {"M21", m.M21}, {"M31", m.M31}, {"M41", m.M41},
-                 {"M12", m.M12}, {"M22", m.M22}, {"M32", m.M32}, {"M42", m.M42},
-                 {"M13", m.M13}, {"M23", m.M23}, {"M33", m.M33}, {"M43", m.M43},
-                 {"M14", m.M14}, {"M24", m.M24}, {"M34", m.M34}, {"M44", m.M44}};
-    }
-
-    void from_json(const json& j, Mat4f& m) {
-        j.at("M11").get_to(m.M11); j.at("M21").get_to(m.M21); j.at("M31").get_to(m.M31); j.at("M41").get_to(m.M41);
-        j.at("M12").get_to(m.M12); j.at("M22").get_to(m.M22); j.at("M32").get_to(m.M32); j.at("M42").get_to(m.M42);
-        j.at("M13").get_to(m.M13); j.at("M23").get_to(m.M23); j.at("M33").get_to(m.M33); j.at("M43").get_to(m.M43);
-        j.at("M14").get_to(m.M14); j.at("M24").get_to(m.M24); j.at("M34").get_to(m.M34); j.at("M44").get_to(m.M44);
-    }
-}
 
 class App : public ICallbacks, public OgldevApp {
 public:
@@ -82,6 +60,7 @@ public:
     }
 
     bool Init() {
+
         Vector3f Pos(0.0f, 10.0f, 20.0f);
         Vector3f Target(0.0f, 0.2f, -1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
@@ -96,7 +75,6 @@ public:
         }
 
         m_pEffect->Enable();
-
         m_pEffect->SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
         m_pEffect->SetDirectionalLight(m_directionalLight);
         m_pEffect->SetMatSpecularIntensity(0.0f);
@@ -107,12 +85,18 @@ public:
             printf("Mesh with path \'%s\' load failed\n", filename.c_str());
             return false;
         }
+        Matrix4f identity;
+        identity.InitIdentity();
+        for (size_t i = 0; i < m_mesh.NumBones(); i++) {
+            lastTransforms.push_back(identity);
+        }
 
 #ifndef WIN32
         if (!m_fontRenderer.InitFontRenderer()) {
             return false;
         }
 #endif
+
         return true;
     }
 
@@ -120,65 +104,81 @@ public:
         GLUTBackendRun(this);
     }
 
-    vector<Matrix4f>
-    insertJoint(vector<Matrix4f> &boneRotations, bool validKinect, nlohmann::json json, std::string jointStr,
-                ns::Mat4f &mat4f) {
+    void RenderText(FontTechnique &s, std::string text, float x, float y, float scale, Vector3f color)
+    {
+        // activate corresponding render state
+        s.Enable();
+        glUniform3f(glGetUniformLocation(s.Program, "textColor"), color.x, color.y, color.z);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(VAO);
 
-        if (validKinect) {
-            mat4f = json[jointStr].get<ns::Mat4f>();
+        // iterate through all characters
+        std::string::const_iterator c;
+        for (c = text.begin(); c != text.end(); c++)
+        {
+            Character ch = Characters[*c];
 
-            Matrix4f matrix4F(mat4f.M11,mat4f.M21,mat4f.M31,mat4f.M41,
-                              mat4f.M12,mat4f.M22,mat4f.M32,mat4f.M42,
-                              mat4f.M13,mat4f.M23,mat4f.M33,mat4f.M43,
-                              mat4f.M14,mat4f.M24,mat4f.M34,mat4f.M44);
-            std::cout << json[jointStr] << std::endl;
+            float xpos = x + ch.Bearing[0] * scale;
+            float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
 
-            boneRotations.push_back(matrix4F);
-        } else {
-            Matrix4f matrix4F;
-            matrix4F.InitIdentity();
-            boneRotations.push_back(matrix4F);
+            float w = ch.Size[0] * scale;
+            float h = ch.Size[1] * scale;
+            // update VBO for each character
+            float vertices[6][4] = {
+                    { xpos,     ypos + h,   0.0f, 0.0f },
+                    { xpos,     ypos,       0.0f, 1.0f },
+                    { xpos + w, ypos,       1.0f, 1.0f },
+
+                    { xpos,     ypos + h,   0.0f, 0.0f },
+                    { xpos + w, ypos,       1.0f, 1.0f },
+                    { xpos + w, ypos + h,   1.0f, 0.0f }
+            };
+            // render glyph texture over quad
+            glBindTexture(GL_TEXTURE_2D, ch.textureID);
+            // update content of VBO memory
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            // render quad
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+            x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
         }
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void
+    insertJoint(vector<Matrix4f> &boneRotations, nlohmann::json json, std::string jointStr) {
+
+        wn::Quaternion quaternion;
+        quaternion = json[jointStr].get<wn::Quaternion>();
+        aiQuaternion aiQuaternion(quaternion.w, quaternion.x, quaternion.y, quaternion.z);
+        Matrix4f RotationM = Matrix4f(aiQuaternion.GetMatrix());
+        boneRotations.push_back(RotationM);
+    }
+
+    vector<Matrix4f> insertAllJoints(vector<Matrix4f> &boneRotations, nlohmann::json jointsData) {
+
+        std::array<std::string, 20> jointIdentifiers = {
+                "knee-right", "foot-right", "ankle-right", "hip-right", "knee-left",
+                "ankle-left", "foot-left", "hip-left", "hip-center", "spine", "shoulder-left",
+                "shoulder-center", "head", "elbow-left", "wrist-left", "shoulder-right",
+                "elbow-right", "wrist-right", "hand-right", "hand-left"
+        };
+
+        std::for_each(jointIdentifiers.begin(), jointIdentifiers.end(),
+                      [&, idx = 0](std::string jointStr) mutable {
+                          insertJoint(boneRotations, jointsData, jointStr);
+                          ++idx;
+                      }
+        );
 
         return boneRotations;
     }
 
-    vector<Matrix4f> insertAllJoints(vector<Matrix4f> &boneRotations) {
-        nlohmann::json jointsData;
-        bool validKinectdata = kinectDataClient->attemptPopJsonQueue(jointsData);
-
-        ns::Mat4f mat4;
-
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "knee-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "foot-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "ankle-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "hip-right", mat4);
-
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "knee-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "ankle-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "foot-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "hip-left", mat4);
-
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "hip-center", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "spine", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "shoulder-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "shoulder-center", mat4);
-
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "head", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "elbow-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "wrist-left", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "shoulder-right", mat4);
-
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "elbow-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "wrist-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "hand-right", mat4);
-        boneRotations = insertJoint(boneRotations, validKinectdata, jointsData, "hand-left", mat4);
-        return boneRotations;
-    }
-
-    virtual void RenderSceneCB() {
+    void RenderSceneCB() {
         CalcFPS();
-
         m_pGameCamera->OnRender();
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -190,9 +190,18 @@ public:
         float RunningTime = GetRunningTime();
 
         if (!is_idle_render) {
-            Matrix4f identity;
-            identity.InitIdentity();
-            Transforms = insertAllJoints(Transforms);
+            nlohmann::json jointsData;
+            bool validKinectdata = kinectDataClient->attemptPopJsonQueue(jointsData);
+            if (validKinectdata) {
+                Transforms = insertAllJoints(Transforms, jointsData);
+            } else {
+                Matrix4f identity;
+                identity.InitIdentity();
+                for (size_t i = 0; i < m_mesh.NumBones(); i++) {
+                    Transforms.push_back(this->lastTransforms[i]);
+                }
+            }
+
             //m_mesh.KinectBoneTransform(Transforms, scale_bigger, translateX);
         } else {
             Matrix4f identity;
@@ -219,12 +228,15 @@ public:
         Vector3f Pos(m_position);
         p.WorldPos(Pos);
         p.Rotate(0.0f, 0.0f, 0.0f);
+        //std::printf("mesh: (%.2f,%.2f,%.2f)\n",m_position. x, m_position.y,m_position.z);
+
         m_pEffect->SetWVP(p.GetWVPTrans());
         m_pEffect->SetWorldMatrix(p.GetWorldTrans());
 
         m_mesh.Render();
-
         RenderFPS();
+
+        lastTransforms = Transforms;
 
         glutSwapBuffers();
     }
@@ -235,10 +247,6 @@ public:
 
     void KeyboardCB(OGLDEV_KEY OgldevKey, OGLDEV_KEY_STATE State) {
         switch (OgldevKey) {
-            case OGLDEV_KEY_ESCAPE:
-            case OGLDEV_KEY_q:
-                std::exit(0);
-                break;
             case OGLDEV_KEY_w: {
                 kinectDataClient->readJson();
                 getJsonThread();
@@ -278,6 +286,7 @@ public:
 
     nlohmann::json jsonData;
 
+    Texture *pTexture = NULL;
 private:
     Camera *m_pGameCamera;
     float m_scale;
@@ -289,8 +298,8 @@ private:
     Vector3f m_position;
     SkinnedMesh m_mesh;
     bool is_idle_render = true;
+    vector<Matrix4f> lastTransforms;
     DirectionalLight m_directionalLight;
-    nlohmann::json renderJson;
 };
 
 kinect_data_client kinectDataClient;
@@ -315,6 +324,12 @@ int main(int argc, char **argv) {
     }
 
     App *pApp = new App();
+
+    pApp->pTexture = new Texture(GL_TEXTURE_2D, "../res/test.png");
+
+    if (!pApp->pTexture->Load()) {
+        return 1;
+    }
 
     thread kinectWebsocketClient(std::bind(initKinectDataClient, pApp));
     //thread fileReadThread(std::bind(initFileIORead));

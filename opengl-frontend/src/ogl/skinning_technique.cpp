@@ -18,6 +18,7 @@
 
 #include <limits.h>
 #include <string>
+#include <iostream>
 
 
 #include "skinning_technique.h"
@@ -250,5 +251,9 @@ void SkinningTechnique::SetBoneTransform(uint Index, const Matrix4f& Transform)
 {
     assert(Index < MAX_BONES);
     //Transform.Print();
+    //std::cout << Index << ": " << std::endl;
+    //std::cout << std::endl;
+
+
     glUniformMatrix4fv(m_boneLocation[Index], 1, GL_TRUE, (const GLfloat*)Transform);       
 }
