@@ -7,10 +7,14 @@
 
 
 #include <technique.h>
+#include "math_3d.h"
 
 class FontTechnique : public Technique{
 public:
     virtual bool Init();
+    void RenderText(std::string text, float x, float y, float scale, Vector3f color);
+    int InitFonts();
+    unsigned int VAO, VBO;
 };
 
 

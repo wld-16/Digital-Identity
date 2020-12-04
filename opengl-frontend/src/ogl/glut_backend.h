@@ -7,6 +7,7 @@
 
 #include "ogldev_types.h"
 #include "ogldev_callbacks.h"
+#include "font_technique.h"
 
 void GLUTBackendInit(int argc, char** argv, bool WithDepth, bool WithStencil);
 

@@ -32,6 +32,8 @@
 static const float FieldDepth = 10.0f;
 static const float FieldWidth = 10.0f;
 
+FontTechnique font_technique;
+
 
 class App : public ICallbacks, public OgldevApp {
 public:
@@ -44,12 +46,11 @@ public:
         m_directionalLight.DiffuseIntensity = 0.9f;
         m_directionalLight.Direction = Vector3f(1.0f, 0.0, 0.0);
 
-
         m_persProjInfo.FOV = 60.0f;
         m_persProjInfo.Height = WINDOW_HEIGHT;
         m_persProjInfo.Width = WINDOW_WIDTH;
         m_persProjInfo.zNear = 0.10f;
-        m_persProjInfo.zFar = 10000.0f;
+        m_persProjInfo.zFar = 1000.0f;
 
         m_position = Vector3f(0.0f, 0.0f, 0.0f);
     }
@@ -65,31 +66,38 @@ public:
         Vector3f Target(0.0f, 0.2f, -1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
 
+        font_technique.Init();
         m_pGameCamera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
+        font_technique.Enable();
+        // TODO:
+        m_shaderProg
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-        m_pEffect = new SkinningTechnique();
+        font_technique.InitFonts();
 
-        if (!m_pEffect->Init()) {
-            printf("Error initializing the lighting technique\n");
-            return false;
-        }
+        //m_pEffect = new SkinningTechnique();
 
-        m_pEffect->Enable();
-        m_pEffect->SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
-        m_pEffect->SetDirectionalLight(m_directionalLight);
-        m_pEffect->SetMatSpecularIntensity(0.0f);
-        m_pEffect->SetMatSpecularPower(0);
+        //if (!m_pEffect->Init()) {
+        //    printf("Error initializing the lighting technique\n");
+        //    return false;
+        //}
+
+        //m_pEffect->Enable();
+        //m_pEffect->SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+        //m_pEffect->SetDirectionalLight(m_directionalLight);
+        //m_pEffect->SetMatSpecularIntensity(0.0f);
+        //m_pEffect->SetMatSpecularPower(0);
 
         const std::string filename = "../res/blender.dae";
-        if (!m_mesh.LoadMesh(filename)) {
-            printf("Mesh with path \'%s\' load failed\n", filename.c_str());
-            return false;
-        }
-        Matrix4f identity;
-        identity.InitIdentity();
-        for (size_t i = 0; i < m_mesh.NumBones(); i++) {
-            lastTransforms.push_back(identity);
-        }
+        //if (!m_mesh.LoadMesh(filename)) {
+        //    printf("Mesh with path \'%s\' load failed\n", filename.c_str());
+        //    return false;
+        //}
+        //Matrix4f identity;
+        //identity.InitIdentity();
+        //for (size_t i = 0; i < m_mesh.NumBones(); i++) {
+        //    lastTransforms.push_back(identity);
+        //}
 
 #ifndef WIN32
         if (!m_fontRenderer.InitFontRenderer()) {
@@ -102,50 +110,6 @@ public:
 
     void Run() {
         GLUTBackendRun(this);
-    }
-
-    void RenderText(FontTechnique &s, std::string text, float x, float y, float scale, Vector3f color)
-    {
-        // activate corresponding render state
-        s.Enable();
-        glUniform3f(glGetUniformLocation(s.Program, "textColor"), color.x, color.y, color.z);
-        glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(VAO);
-
-        // iterate through all characters
-        std::string::const_iterator c;
-        for (c = text.begin(); c != text.end(); c++)
-        {
-            Character ch = Characters[*c];
-
-            float xpos = x + ch.Bearing[0] * scale;
-            float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
-
-            float w = ch.Size[0] * scale;
-            float h = ch.Size[1] * scale;
-            // update VBO for each character
-            float vertices[6][4] = {
-                    { xpos,     ypos + h,   0.0f, 0.0f },
-                    { xpos,     ypos,       0.0f, 1.0f },
-                    { xpos + w, ypos,       1.0f, 1.0f },
-
-                    { xpos,     ypos + h,   0.0f, 0.0f },
-                    { xpos + w, ypos,       1.0f, 1.0f },
-                    { xpos + w, ypos + h,   1.0f, 0.0f }
-            };
-            // render glyph texture over quad
-            glBindTexture(GL_TEXTURE_2D, ch.textureID);
-            // update content of VBO memory
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            // render quad
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-            x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
-        }
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void
@@ -178,16 +142,21 @@ public:
     }
 
     void RenderSceneCB() {
-        CalcFPS();
-        m_pGameCamera->OnRender();
+        //m_pGameCamera->OnRender();
 
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        font_technique.RenderText("WWWWWWWWWWWW",25.0f, 25.0f,1, Vector3f(1,0,0));
 
+        /*CalcFPS();
         m_pEffect->Enable();
+
 
         vector<Matrix4f> Transforms;
 
         float RunningTime = GetRunningTime();
+
+
 
         if (!is_idle_render) {
             nlohmann::json jointsData;
@@ -202,7 +171,7 @@ public:
                 }
             }
 
-            //m_mesh.KinectBoneTransform(Transforms, scale_bigger, translateX);
+            m_mesh.KinectBoneTransform(Transforms, scale_bigger, translateX);
         } else {
             Matrix4f identity;
             identity.InitIdentity();
@@ -228,7 +197,7 @@ public:
         Vector3f Pos(m_position);
         p.WorldPos(Pos);
         p.Rotate(0.0f, 0.0f, 0.0f);
-        //std::printf("mesh: (%.2f,%.2f,%.2f)\n",m_position. x, m_position.y,m_position.z);
+        std::printf("mesh: (%.2f,%.2f,%.2f)\n",m_position. x, m_position.y,m_position.z);
 
         m_pEffect->SetWVP(p.GetWVPTrans());
         m_pEffect->SetWorldMatrix(p.GetWorldTrans());
@@ -236,8 +205,11 @@ public:
         m_mesh.Render();
         RenderFPS();
 
-        lastTransforms = Transforms;
+        Vector4f vector4F(1,1,0,0);
+        Vector4f end = p.GetWorldTrans() * vector4F;
 
+        lastTransforms = Transforms;
+*/
         glutSwapBuffers();
     }
 
@@ -331,7 +303,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    thread kinectWebsocketClient(std::bind(initKinectDataClient, pApp));
+    //thread kinectWebsocketClient(std::bind(initKinectDataClient, pApp));
     //thread fileReadThread(std::bind(initFileIORead));
 
     if (!pApp->Init()) {
