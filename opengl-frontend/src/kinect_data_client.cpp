@@ -62,7 +62,7 @@ int kinect_data_client::run(){
     try {
         // Set logging to be pretty verbose (everything except message payloads)
         c.set_access_channels(websocketpp::log::alevel::connect);
-        c.clear_access_channels(websocketpp::log::alevel::none);
+        c.clear_access_channels(websocketpp::log::alevel::all);
 
         // Initialize ASIO
         c.init_asio();
@@ -101,6 +101,7 @@ json kinect_data_client::getLastJsonFrame() {
 }
 
 bool kinect_data_client::attemptPopJsonQueue(json &json) {
+    std::cout<< "Queue Size:" << this->jsonQueue.size() << std::endl;
     if(this->jsonQueue.size() < 10){
         return false;
     } else {

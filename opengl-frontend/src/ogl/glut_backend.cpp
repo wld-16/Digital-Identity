@@ -121,20 +121,8 @@ static void SpecialKeyboardCB(int Key, int x, int y)
 
 static void KeyboardCB(unsigned char Key, int x, int y)
 {
-
-    if (
-            ((Key >= '+') && (Key <= '9')) ||
-            ((Key >= 'A') && (Key <= 'Z')) ||
-            ((Key >= 'a') && (Key <= 'z'))
-            ) {
-        OGLDEV_KEY OgldevKey = (OGLDEV_KEY)Key;
-        s_pCallbacks->KeyboardCB(OgldevKey);
-    }
-    else {
-        printf("%d\n", Key);
-        OGLDEV_ERROR0("Unimplemented GLUT key");
-    }
-
+    OGLDEV_KEY OgldevKey = (OGLDEV_KEY) Key;
+    s_pCallbacks->KeyboardCB(OgldevKey);
 }
 
 
@@ -179,29 +167,34 @@ static void InitCallbacks()
 void GLUTBackendInit(int argc, char** argv, bool WithDepth, bool WithStencil)
 {
 
-    sWithDepth = WithDepth;
-    sWithStencil = WithStencil;
+   // sWithDepth = WithDepth;
+    //sWithStencil = WithStencil;
 
     glutInit(&argc, argv);
 
 
     // Create Context for Render doc
-    glutInitContextVersion( 4, 3 );
-    glutInitContextProfile( GLUT_CORE_PROFILE );
+    //glutInitContextVersion( 4, 3 );
+    //glutInitContextProfile( GLUT_CORE_PROFILE );
+    glEnable(GL_DEBUG_OUTPUT);
 
     uint DisplayMode = GLUT_DOUBLE|GLUT_RGBA;
 
-    if (WithDepth) {
-        DisplayMode |= GLUT_DEPTH;
-    }
+    //if (WithDepth) {
+    //    DisplayMode |= GLUT_DEPTH;
+    //}
 
-    if (WithStencil) {
-        DisplayMode |= GLUT_STENCIL;
-    }
+   // if (WithStencil) {
+    //    DisplayMode |= GLUT_STENCIL;
+    //}
 
     glutInitDisplayMode(DisplayMode);
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_EXIT);
+
+    //glEnable(GL_CULL_FACE);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
@@ -239,14 +232,11 @@ void GLUTBackendRun(ICallbacks* pCallbacks)
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     //glFrontFace(GL_CW);
-    glCullFace(GL_FRONT);
+    //glCullFace(GL_FRONT);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    //if (sWithDepth) {
-    //    glEnable(GL_DEPTH_TEST);
-    //}
+    if (sWithDepth) {
+        glEnable(GL_DEPTH_TEST);
+    }
 
     s_pCallbacks = pCallbacks;
     InitCallbacks();

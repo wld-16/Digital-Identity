@@ -43,32 +43,34 @@ public:
     bool LoadMesh(const string& Filename);
 
     void Render();
-	
+
+    std::array<std::pair<std::string,Vector3f>,20> getJointPositionOutput();
+
     uint NumBones() const
     {
         return m_NumBones;
     }
 
-    void KinectBoneTransform(vector<Matrix4f> &Transforms, float scale, float tranlateX);
+    void UpdateDebugPositions(vector<Matrix4f> &Transforms);
     void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
-    
+
 private:
     #define NUM_BONES_PER_VEREX 4
 
     struct BoneInfo
     {
         Matrix4f BoneOffset;
-        Matrix4f FinalTransformation;        
+        Matrix4f FinalTransformation;
 
         BoneInfo()
         {
             BoneOffset.SetZero();
-            FinalTransformation.SetZero();            
+            FinalTransformation.SetZero();
         }
     };
-    
+
     struct VertexBoneData
-    {        
+    {
         uint IDs[NUM_BONES_PER_VEREX];
         float Weights[NUM_BONES_PER_VEREX];
 
@@ -76,19 +78,19 @@ private:
         {
             Reset();
         };
-        
+
         void Reset()
         {
             ZERO_MEM(IDs);
-            ZERO_MEM(Weights);        
+            ZERO_MEM(Weights);
         }
-        
+
         void AddBoneData(uint BoneID, float Weight);
     };
 
     void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
     void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
-    void CalcInterpolatedPosition(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);    
+    void CalcInterpolatedPosition(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
     uint FindScaling(float AnimationTime, const aiNodeAnim* pNodeAnim);
     uint FindRotation(float AnimationTime, const aiNodeAnim* pNodeAnim);
     uint FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim);
@@ -107,14 +109,14 @@ private:
     void Clear();
 
 #define INVALID_MATERIAL 0xFFFFFFFF
-  
+
 enum VB_TYPES {
     INDEX_BUFFER,
     POS_VB,
     NORMAL_VB,
     TEXCOORD_VB,
     BONE_VB,
-    NUM_VBs            
+    NUM_VBs
 };
 
     GLuint m_VAO;
@@ -128,21 +130,22 @@ enum VB_TYPES {
             BaseIndex     = 0;
             MaterialIndex = INVALID_MATERIAL;
         }
-        
+
         unsigned int NumIndices;
         unsigned int BaseVertex;
         unsigned int BaseIndex;
         unsigned int MaterialIndex;
     };
-    
+
     vector<MeshEntry> m_Entries;
     vector<Texture*> m_Textures;
-     
+
     map<string,uint> m_BoneMapping; // maps a bone name to its index
     uint m_NumBones;
     vector<BoneInfo> m_BoneInfo;
     Matrix4f m_GlobalInverseTransform;
-    
+    std::array<std::pair<std::string, Vector3f>,20> skeletonJointPositions;
+
     const aiScene* m_pScene;
     Assimp::Importer m_Importer;
 };

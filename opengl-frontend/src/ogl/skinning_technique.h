@@ -98,6 +98,7 @@ public:
     void SetMatSpecularIntensity(float Intensity);
     void SetMatSpecularPower(float Power);
     void SetBoneTransform(uint Index, const Matrix4f& Transform);
+    void Disable();
 
 private:
     

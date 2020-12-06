@@ -215,7 +215,14 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh *pMesh, vector<VertexBo
             BoneInfo bi;
             m_BoneInfo.push_back(bi);
             m_BoneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;
+            //m_BoneInfo[BoneIndex].FinalTransformation = m_BoneInfo[BoneIndex].BoneOffset;
             m_BoneMapping[BoneName] = BoneIndex;
+
+            skeletonJointPositions[i] = std::make_pair(
+                    BoneName.substr(BoneName.find('_'), BoneName.size() - BoneName.find('_')),
+                    Vector3f(m_BoneInfo[BoneIndex].BoneOffset.m[0][3], m_BoneInfo[BoneIndex].BoneOffset.m[1][3],
+                             m_BoneInfo[BoneIndex].BoneOffset.m[2][3]));
+
             std::string subString = BoneName.substr(BoneName.find('_'), BoneName.size() - BoneName.find('_'));
             std::printf("%s:(%.2f,%.2f,%.2f)\n", subString.c_str(), m_BoneInfo[BoneIndex].BoneOffset.m[0][3],
                         m_BoneInfo[BoneIndex].BoneOffset.m[1][3], m_BoneInfo[BoneIndex].BoneOffset.m[2][3]);
@@ -457,24 +464,13 @@ void SkinnedMesh::ReadNodeHeirarchy(float AnimationTime, const aiNode *pNode, co
     }
 }
 
-void SkinnedMesh::KinectBoneTransform(vector<Matrix4f> &Transforms, float scale, float translateX) {
-    Matrix4f Identity;
-    Identity.InitIdentity();
-
-
-    Matrix4f NodeTransformation;
-    NodeTransformation.InitIdentity();
-
-
-    // Interpolate rotation and generate rotation transformation matrix
-    aiQuaternion RotationQ;
-
-    Transforms.resize(m_NumBones);
-
-
+void SkinnedMesh::UpdateDebugPositions(vector<Matrix4f> &Transforms) {
     for (uint i = 0; i < m_NumBones; i++) {
-        Transforms[i] = m_BoneInfo[i].FinalTransformation;
+        skeletonJointPositions[i].second = Vector3f(Transforms[i].m[0][3],
+                                                    Transforms[i].m[1][3], Transforms[i].m[2][3]);
     }
+
+
 }
 
 
@@ -506,4 +502,8 @@ const aiNodeAnim *SkinnedMesh::FindNodeAnim(const aiAnimation *pAnimation, const
     }
 
     return NULL;
+}
+
+std::array<std::pair<std::string, Vector3f>, 20> SkinnedMesh::getJointPositionOutput() {
+    return skeletonJointPositions;
 }

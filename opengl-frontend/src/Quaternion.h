@@ -27,4 +27,20 @@ namespace wn {
         j.at("z").get_to(quaternion.z);
         j.at("w").get_to(quaternion.w);
     }
+
+    struct Vector3f {
+        float x;
+        float y;
+        float z;
+    };
+
+    void to_json(nlohmann::json &j, const Vector3f &vector3) {
+        j = nlohmann::json{{"x", vector3.x},{"y", vector3.y},{"z", vector3.z}};
+    }
+
+    void from_json(const nlohmann::json &j, Vector3f &position) {
+        j.at("x").get_to(position.x);
+        j.at("y").get_to(position.y);
+        j.at("z").get_to(position.z);
+    }
 }

@@ -15,6 +15,7 @@ public:
     void RenderText(std::string text, float x, float y, float scale, Vector3f color);
     int InitFonts();
     unsigned int VAO, VBO;
+    GLuint getShaderId();
 };
 
 
