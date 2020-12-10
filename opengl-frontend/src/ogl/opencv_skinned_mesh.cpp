@@ -19,6 +19,7 @@
 
 
 #include <iostream>
+#include <fstream>
 #include "opencv_skinned_mesh.h"
 
 #define POSITION_LOCATION    0
@@ -204,17 +205,31 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 
 
 void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh *pMesh, vector<VertexBoneData> &Bones) {
+    std::ofstream myfile;
+    myfile.open("../model_offset.csv");
+    for (uint i = 0; i < pMesh->mNumBones; i++) {
+        string BoneName(pMesh->mBones[i]->mName.data);
+        myfile << BoneName << "X;Y;Z;W;";
+    }
+    myfile << "\n";
+
     for (uint i = 0; i < pMesh->mNumBones; i++) {
         uint BoneIndex = 0;
         string BoneName(pMesh->mBones[i]->mName.data);
 
+
         if (m_BoneMapping.find(BoneName) == m_BoneMapping.end()) {
+
             // Allocate an index for a new bone
             BoneIndex = m_NumBones;
             m_NumBones++;
             BoneInfo bi;
             m_BoneInfo.push_back(bi);
             m_BoneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;
+            aiMatrix3x3t mat3(pMesh->mBones[i]->mOffsetMatrix);
+            aiQuaternion quat(mat3);
+            quat.Normalize();
+
             //m_BoneInfo[BoneIndex].FinalTransformation = m_BoneInfo[BoneIndex].BoneOffset;
             m_BoneMapping[BoneName] = BoneIndex;
 
@@ -223,9 +238,10 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh *pMesh, vector<VertexBo
                     Vector3f(m_BoneInfo[BoneIndex].BoneOffset.m[0][3], m_BoneInfo[BoneIndex].BoneOffset.m[1][3],
                              m_BoneInfo[BoneIndex].BoneOffset.m[2][3]));
 
-            std::string subString = BoneName.substr(BoneName.find('_'), BoneName.size() - BoneName.find('_'));
-            std::printf("%s:(%.2f,%.2f,%.2f)\n", subString.c_str(), m_BoneInfo[BoneIndex].BoneOffset.m[0][3],
-                        m_BoneInfo[BoneIndex].BoneOffset.m[1][3], m_BoneInfo[BoneIndex].BoneOffset.m[2][3]);
+            std::string subString = BoneName.substr(BoneName.find('_') + 1, BoneName.size() - BoneName.find('_'));
+            std::printf("%s Position:(%.2f,%.2f,%.2f), Rotation(%.2f,%.2f,%.2f,%.2f)\n", subString.c_str(), m_BoneInfo[BoneIndex].BoneOffset.m[0][3],
+                        m_BoneInfo[BoneIndex].BoneOffset.m[1][3], m_BoneInfo[BoneIndex].BoneOffset.m[2][3],quat.x, quat.y, quat.z, quat.w);
+            jointOrientationsMap[subString] = quat;
 
         } else {
             BoneIndex = m_BoneMapping[BoneName];
@@ -237,6 +253,7 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh *pMesh, vector<VertexBo
             Bones[VertexID].AddBoneData(BoneIndex, Weight);
         }
     }
+    myfile.close();
 }
 
 
@@ -502,6 +519,10 @@ const aiNodeAnim *SkinnedMesh::FindNodeAnim(const aiAnimation *pAnimation, const
     }
 
     return NULL;
+}
+
+std::map<std::string, aiQuaternion> SkinnedMesh::getJointOrientationsMap(){
+    return jointOrientationsMap;
 }
 
 std::array<std::pair<std::string, Vector3f>, 20> SkinnedMesh::getJointPositionOutput() {

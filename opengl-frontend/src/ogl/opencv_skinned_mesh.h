@@ -53,6 +53,7 @@ public:
 
     void UpdateDebugPositions(vector<Matrix4f> &Transforms);
     void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
+    map<string, aiQuaternion> getJointOrientationsMap();
 
 private:
     #define NUM_BONES_PER_VEREX 4
@@ -87,6 +88,8 @@ private:
 
         void AddBoneData(uint BoneID, float Weight);
     };
+
+
 
     void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
     void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
@@ -145,6 +148,7 @@ enum VB_TYPES {
     vector<BoneInfo> m_BoneInfo;
     Matrix4f m_GlobalInverseTransform;
     std::array<std::pair<std::string, Vector3f>,20> skeletonJointPositions;
+    map<string, aiQuaternion> jointOrientationsMap;
 
     const aiScene* m_pScene;
     Assimp::Importer m_Importer;

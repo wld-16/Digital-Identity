@@ -101,8 +101,7 @@ json kinect_data_client::getLastJsonFrame() {
 }
 
 bool kinect_data_client::attemptPopJsonQueue(json &json) {
-    std::cout<< "Queue Size:" << this->jsonQueue.size() << std::endl;
-    if(this->jsonQueue.size() < 10){
+    if(this->jsonQueue.size() < 5){
         return false;
     } else {
         json = json::parse(this->jsonQueue.front());

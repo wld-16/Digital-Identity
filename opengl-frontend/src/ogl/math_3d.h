@@ -242,6 +242,8 @@ struct Quaternion
     Quaternion Conjugate();  
     
     Vector3f ToDegrees();
+
+
  };
 
 

@@ -1,9 +1,8 @@
 
 
 #include <stdio.h>
-#include <string.h>
 
-#include <math.h>
+#include "./ogldev_math_3d.h"
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <ogldev_app.h>
@@ -24,7 +23,7 @@
 #include "Matf4f.h"
 #include <boost/interprocess/mapped_region.hpp>
 #include "Quaternion.h"
-#include "ogl/font_technique.h"
+#include "Calibration.h"
 
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 1024
@@ -33,7 +32,6 @@ static const float FieldDepth = 10.0f;
 static const float FieldWidth = 10.0f;
 
 FontTechnique font_technique;
-
 
 class App : public ICallbacks, public OgldevApp {
 public:
@@ -49,10 +47,13 @@ public:
         m_persProjInfo.FOV = 60.0f;
         m_persProjInfo.Height = WINDOW_HEIGHT;
         m_persProjInfo.Width = WINDOW_WIDTH;
-        m_persProjInfo.zNear = 0.0f;
+        m_persProjInfo.zNear = 1.0f;
         m_persProjInfo.zFar = 1000.0f;
 
         m_position = Vector3f(0.0f, 0.0f, 0.0f);
+
+        calibrationUnit.setJointIdentifiers(jointIdentifiers);
+
     }
 
     ~App() {
@@ -62,7 +63,7 @@ public:
 
     bool Init() {
 
-        Vector3f Pos(0.0f, 0.0f, 0.0f);
+        Vector3f Pos(0.0f, 15.0f, 30.0f);
         Vector3f Target(0.0f, 0.0f, -1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
 
@@ -97,6 +98,13 @@ public:
             lastTransforms.push_back(identity);
         }
 
+        calibrationUnit.set_output_t_pose_orientation_offset(m_mesh.getJointOrientationsMap());
+        calibrationUnit.calculateOrientationInverse();
+
+        kinect_t_pose_inverse_orientations = calibrationUnit.get_calibration_result();
+
+
+
 #ifndef WIN32
         if (!m_fontRenderer.InitFontRenderer()) {
             return false;
@@ -117,20 +125,21 @@ public:
         wn::Vector3f position;
         rotation = json[jointStr]["rotation"].get<wn::Quaternion>();
         position = json[jointStr]["position"].get<wn::Vector3f>();
-        joint_positions[jointStr] = position;
-        aiQuaternion aiQuaternion(rotation.w, rotation.x, rotation.y, rotation.z);
-        Matrix4f RotationM = Matrix4f(aiQuaternion.GetMatrix());
+        std::cout << "X: "<< position.x << ", Y:"<< position.y << ", Z: "<< position.z << std::endl;
+
+        Vector3f test = Vector3f(position.x, position.y, position.z);
+        joint_positions[jointStr] = test - m_pGameCamera->GetPos();
+
+        aiQuaternion kinectQuat(rotation.w, rotation.x, rotation.y, rotation.z);
+        aiQuaternion orientationInverse = kinect_t_pose_inverse_orientations[jointStr];
+
+        aiQuaternion calibratedQuaternion = m_mesh.getJointOrientationsMap()[jointStr] * kinectQuat * orientationInverse;
+
+        Matrix4f RotationM = Matrix4f(calibratedQuaternion.GetMatrix());
         boneRotations.push_back(RotationM);
     }
 
     vector<Matrix4f> insertAllJoints(vector<Matrix4f> &boneRotations, nlohmann::json jointsData) {
-
-        std::array<std::string, 20> jointIdentifiers = {
-                "knee-right", "foot-right", "ankle-right", "hip-right", "knee-left",
-                "ankle-left", "foot-left", "hip-left", "hip-center", "spine", "shoulder-left",
-                "shoulder-center", "head", "elbow-left", "wrist-left", "shoulder-right",
-                "elbow-right", "wrist-right", "hand-right", "hand-left"
-        };
 
         std::for_each(jointIdentifiers.begin(), jointIdentifiers.end(),
                       [&, idx = 0](std::string jointStr) mutable {
@@ -143,145 +152,144 @@ public:
     }
 
     double aspect_ratio = 0;
-    void reshape(int w, int h)
-    {
-        aspect_ratio = (double)w / (double)h;
-        glViewport(0,0, w, h);
+
+    void reshape(int w, int h) {
+        aspect_ratio = (double) w / (double) h;
+        glViewport(0, 0, w, h);
     }
 
-    void output(GLfloat x, GLfloat y, char* text)
-    {
+    void output(GLfloat x, GLfloat y, char *text) {
         glPushMatrix();
         glTranslatef(x, y, 0);
         glScalef(1 / 152.38 * font_scale, 1 / 152.38 * font_scale, 1 / 152.38 * font_scale);
-        for( char* p = text; *p; p++)
-        {
-            if(fontType == 0){
+        for (char *p = text; *p; p++) {
+            if (fontType == 0) {
                 glutStrokeCharacter(GLUT_STROKE_ROMAN, *p);
-            } else if(fontType == 1) {
+            } else if (fontType == 1) {
                 glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, *p);
-            } else if(fontType == 2){
+            } else if (fontType == 2) {
                 glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, *p);
-            } else{
+            } else {
                 glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *p);
             }
         }
         glPopMatrix();
     }
 
-    void RenderText(){
+    void RenderText() {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(-10*aspect_ratio, 10*aspect_ratio, -10, 10, -1, 1);
-
+        glOrtho(-10 * aspect_ratio, 10 * aspect_ratio, -10, 10, -1, 1);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        glColor3ub(255,0,0);
+        glColor3ub(255, 0, 0);
 
-        std::string test = "Variables:";
-        std::string x_position_string = "PosX:" + std::to_string(font_position_x);
-        std::string y_position_string = "PosY:" + std::to_string(font_position_y);
-        std::string power_string = "Pow:" + std::to_string(power);
-        std::string line_spacing_str = "LSp:" + std::to_string(line_spacing);
-        std::string mode_string = "Mode:" + std::string(modes[currentMode]);
-        std::string scale_string = "Scale:" + std::to_string(font_scale);
+        std::vector<std::string> displayLines;
 
+        displayLines.push_back("Variables:");
+        displayLines.push_back("PosX:" + std::to_string(font_position_x));
+        displayLines.push_back("PosY:" + std::to_string(font_position_y));
+        displayLines.push_back("Pow:" + std::to_string(power));
+        displayLines.push_back("LSp:" + std::to_string(line_spacing));
+        displayLines.push_back("Mode:" + std::string(modes[currentMode]));
+        displayLines.push_back("Scale:" + std::to_string(font_scale));
+        displayLines.push_back("CamX:" + std::to_string(m_pGameCamera->GetPos().x));
+        displayLines.push_back("CamY:" + std::to_string(m_pGameCamera->GetPos().y));
+        displayLines.push_back("CamZ:" + std::to_string(m_pGameCamera->GetPos().z));
 
-        char *output_string = const_cast<char *>(test.c_str());
-        output(font_position_x, font_position_y,output_string);
-        output_string = const_cast<char *>(x_position_string.c_str());
-        output(font_position_x, font_position_y-line_spacing,output_string);
-        output_string = const_cast<char *>(y_position_string.c_str());
-        output(font_position_x, font_position_y-line_spacing*2,output_string);
-        output_string = const_cast<char *>(power_string.c_str());
-        output(font_position_x, font_position_y-line_spacing*3,output_string);
-        output_string = const_cast<char *>(line_spacing_str.c_str());
-        output(font_position_x, font_position_y-line_spacing*4,output_string);
-        output_string = const_cast<char *>(mode_string.c_str());
-        output(font_position_x, font_position_y-line_spacing*5,output_string);
-        output_string = const_cast<char *>(scale_string.c_str());
-        output(font_position_x, font_position_y-line_spacing*6,output_string);
-
-        int index = 6;
-
-        std::for_each(joint_positions.begin(), joint_positions.end(),[&,index](const auto &pair) mutable{
-            index += 1;
-            std::string joint_str = pair.first + ":(" + std::to_string(pair.second.x) + ", "+ std::to_string(pair.second.y) + ", "+
-                    std::to_string(pair.second.z) + ")";
-            output(font_position_x,font_position_y-line_spacing*index,joint_str.data());
+        std::for_each(kinect_t_pose_inverse_orientations.begin(), kinect_t_pose_inverse_orientations.end(), [&](const auto &pair) {
+            std::string selected = "  ";
+            if (jointIdentifiers[selected_joint_orientation_offset] == pair.first) {
+                selected = "->";
+            }
+            displayLines.push_back(selected + pair.first + ":(" + std::to_string(pair.second.x) + ", " +
+                                   std::to_string(pair.second.y) + ", " +
+                                   std::to_string(pair.second.z) + "," + std::to_string(pair.second.w) + ")");
         });
-        ;
+
+        std::for_each(joint_positions.begin(), joint_positions.end(), [&](const auto &pair) {
+            displayLines.push_back(
+                    pair.first + ":(" + std::to_string(pair.second.x) + ", " + std::to_string(pair.second.y) + ", " +
+                    std::to_string(pair.second.z) + ")");
+        });
+
+        size_t lineIndex = 0;
+
+        std::for_each(displayLines.begin(), displayLines.end(), [&, lineIndex](const std::string &line) mutable {
+            output(font_position_x, font_position_y - line_spacing * lineIndex, const_cast<char *>(line.c_str()));
+            lineIndex += 1;
+        });;
         m_mesh.NumBones();
 
     }
 
-    void RenderSkeleton(){
-        glColor3f(1,0,0);
+    void RenderSkeleton() {
+        glColor3f(1, 0, 0);
         glBegin(GL_LINES);
         glLineWidth(10);
-        wn::Vector3f jp = joint_positions.at("hand-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        Vector3f jp = joint_positions.at("hand-right");
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("wrist-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("elbow-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("shoulder-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         glEnd();
         glFlush();
 
-        glColor3f(0,1,0);
+        glColor3f(0, 1, 0);
         glBegin(GL_LINES);
         glLineWidth(10);
         jp = joint_positions.at("head");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("shoulder-center");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("spine");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         glEnd();
         glFlush();
 
-        glColor3f(1,0,0);
+        glColor3f(1, 0, 0);
         glBegin(GL_LINES);
         glLineWidth(10);
         jp = joint_positions.at("hand-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("wrist-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("elbow-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("shoulder-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         glEnd();
         glFlush();
 
-        glColor3f(0,0,1);
+        glColor3f(0, 0, 1);
         glBegin(GL_LINES);
         glLineWidth(10);
         jp = joint_positions.at("foot-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("ankle-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("knee-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("hip-right");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         glEnd();
         glFlush();
 
-        glColor3f(0,0,1);
+        glColor3f(0, 0, 1);
         glBegin(GL_LINES);
         glLineWidth(10);
         jp = joint_positions.at("foot-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("ankle-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("knee-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         jp = joint_positions.at("hip-left");
-        glVertex3f(jp.x,jp.y,jp.z);
+        glVertex3f(jp.x, jp.y, jp.z);
         glEnd();
         glFlush();
 
@@ -291,7 +299,6 @@ public:
         m_pGameCamera->OnRender();
         //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
         CalcFPS();
 
@@ -343,22 +350,20 @@ public:
         m_pEffect->SetWVP(p.GetWVPTrans());
         m_pEffect->SetWorldMatrix(p.GetWorldTrans());
 
-        //m_mesh.Render();
+        m_mesh.Render();
         RenderFPS();
 
-        Vector4f vector4F(1,1,0,0);
+        Vector4f vector4F(1, 1, 0, 0);
         Vector4f end = p.GetWorldTrans() * vector4F;
-
 
 
         // TODO: Multiple shaders
         lastTransforms = Transforms;
         m_pEffect->Disable();
 
-        if(joint_positions.size() == 20){
+        if (joint_positions.size() == 20) {
             RenderSkeleton();
         }
-
         RenderText();
 
         glutSwapBuffers();
@@ -384,18 +389,18 @@ public:
                 fontType %= 4;
                 break;
             case OGLDEV_KEY_PLUS:
-                switch(currentMode){
+                switch (currentMode) {
                     case 1:
-                        font_scale += 1.0f * std::pow(10, power) ;
+                        font_scale += 1.0f * std::pow(10, power);
                         break;
                     case 2:
-                        line_spacing += 1.0f * std::pow(10,power);
+                        line_spacing += 1.0f * std::pow(10, power);
                         break;
                 }
                 break;
 
             case OGLDEV_KEY_MINUS:
-                switch(currentMode){
+                switch (currentMode) {
                     case 1:
                         font_scale -= 1.0f * std::pow(10, power);
                         break;
@@ -404,24 +409,64 @@ public:
                         break;
                 }
                 break;
+
+            // Moving UI
             case OGLDEV_KEY_d:
-                font_position_x += 1.0f * std::pow(10, power);
+                font_position_x += 1.0 * std::pow(10, power);
                 break;
             case OGLDEV_KEY_a:
-                font_position_x -= 1.0f * std::pow(10, power);
+                font_position_x -= 1.0 * std::pow(10, power);
                 break;
             case OGLDEV_KEY_w:
-                font_position_y += 1.0f * std::pow(10, power);
+                font_position_y += 1.0 * std::pow(10, power);
                 break;
             case OGLDEV_KEY_s:
-                font_position_y -= 1.0f * std::pow(10, power);
+                font_position_y -= 1.0 * std::pow(10, power);
                 break;
+
+            // Change Power of Text scaling
             case OGLDEV_KEY_PAGE_UP:
                 power += 1;
                 break;
             case OGLDEV_KEY_PAGE_DOWN:
                 power -= 1;
                 break;
+
+            // Control Rotation Orientation
+            case OGLDEV_KEY_x:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].x -= (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_c:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].y -= (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_v:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].z -= (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_b:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].w -= (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_f:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].x += (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_g:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].y += (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_h:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].z += (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+            case OGLDEV_KEY_j:
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].w += (1.0 * power);
+                kinect_t_pose_inverse_orientations[jointIdentifiers.at(selected_joint_orientation_offset)].Normalize();
+                break;
+
+            // Switch Text Settings option
             case OGLDEV_KEY_0:
                 currentMode = 0;
                 break;
@@ -430,6 +475,15 @@ public:
                 break;
             case OGLDEV_KEY_2:
                 currentMode = 2;
+                break;
+            case OGLDEV_KEY_m:
+                selected_joint_orientation_offset++;
+                selected_joint_orientation_offset %= 20;
+                break;
+            case OGLDEV_KEY_n:
+                selected_joint_orientation_offset--;
+                selected_joint_orientation_offset += 20;
+                selected_joint_orientation_offset %= 20;
                 break;
 
             case OGLDEV_KEY_e:
@@ -476,11 +530,20 @@ private:
     bool is_idle_render = true;
     vector<Matrix4f> lastTransforms;
     DirectionalLight m_directionalLight;
-    const char *modes[3] = {"Idle","Scale","Line Spacing"};
+    const char *modes[3] = {"Idle", "Scale", "Line Spacing"};
     int currentMode = 0;
     bool validKinectdata = false;
+    std::map<std::string, aiQuaternion> kinect_t_pose_inverse_orientations;
+    int selected_joint_orientation_offset = 0;
 
-    std::map<std::string, wn::Vector3f> joint_positions;
+    std::map<std::string, Vector3f> joint_positions;
+    std::array<std::string, 20> jointIdentifiers = {
+            "knee-right", "foot-right", "ankle-right", "hip-right", "knee-left",
+            "ankle-left", "foot-left", "hip-left", "hip-center", "spine", "shoulder-left",
+            "shoulder-center", "head", "elbow-left", "wrist-left", "shoulder-right",
+            "elbow-right", "wrist-right", "hand-right", "hand-left"
+    };
+    Calibration calibrationUnit;
 
 };
 

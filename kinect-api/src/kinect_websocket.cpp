@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include "kinect_websocket.h"
+#include "../../../../Libs/websocketpp-0.8.2/websocketpp/frame.hpp"
+
 #pragma comment(lib,"Ws2_32.lib")
 
 
@@ -16,7 +18,7 @@ std::string *data;
 kinect_websocket::kinect_websocket() {
 
     print_server.set_message_handler(&on_message);
-    print_server.set_access_channels(websocketpp::log::alevel::message_header);
+    print_server.set_access_channels(websocketpp::log::alevel::all);
     print_server.set_error_channels(websocketpp::log::elevel::all);
 
     print_server.init_asio();
@@ -36,5 +38,6 @@ void kinect_websocket::setJson(std::string *json) {
 }
 
 void on_message(websocketpp::connection_hdl conn, server::message_ptr msg) {
+    std::cout << msg->get_payload() << std::endl;
     print_server.send(conn,*data,websocketpp::frame::opcode::TEXT);
 }

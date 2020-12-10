@@ -16,6 +16,7 @@
 #include <array>
 #include <list>
 #include <iostream>
+#include <fstream>
 
 
 INuiSensor *sensor;
@@ -34,6 +35,8 @@ typedef struct JointData {
     Vector4 rotation;
     Matrix4 rotationMatrix;
 };
+
+bool writeToCSVFile = false;
 
 typedef std::array<JointData, NUI_SKELETON_POSITION_COUNT> SkeletonData;
 
@@ -149,6 +152,7 @@ bool initKinectFaceTracking() {
 
 void getSkeletalData() {
     NUI_SKELETON_FRAME skeletonFrame = {0};
+    std::ofstream myfile;
 
     if (sensor->NuiSkeletonGetNextFrame(0, &skeletonFrame) >= 0) {
         sensor->NuiTransformSmooth(&skeletonFrame, NULL);
@@ -165,6 +169,7 @@ void getSkeletalData() {
 
                 NuiSkeletonCalculateBoneOrientations(&test, bones);
 
+
                 // Copy the joint positions into our array
                 for (int i = 0; i < NUI_SKELETON_POSITION_COUNT; ++i) {
 
@@ -176,8 +181,8 @@ void getSkeletalData() {
                 }
                 for(size_t i = 0; i < NUI_SKELETON_POSITION_COUNT; i++){
                     skeletonStructure[i].position = skeletonPosition[i];
-                    skeletonStructure[i].rotation = bones[i].hierarchicalRotation.rotationQuaternion;
-                    skeletonStructure[i].rotationMatrix = bones[i].hierarchicalRotation.rotationMatrix;
+                    skeletonStructure[i].rotation = bones[i].absoluteRotation.rotationQuaternion;
+                    skeletonStructure[i].rotationMatrix = bones[i].absoluteRotation.rotationMatrix;
                 }
             }
         }
@@ -309,33 +314,39 @@ void getKinectData() {
 }
 
 Json::Value fillJoint(Json::Value json, std::string jointIdentifier, JointData input) {
-    //json[jointIdentifier]["rotation"]["x"] = input.rotation.x;
-    //json[jointIdentifier]["rotation"]["y"] = input.rotation.y;
-    //json[jointIdentifier]["rotation"]["z"] = input.rotation.z;
-    //json[jointIdentifier]["rotation"]["w"] = input.rotation.w;
+    json[jointIdentifier]["rotation"]["x"] = input.rotation.x;
+    json[jointIdentifier]["rotation"]["y"] = input.rotation.y;
+    json[jointIdentifier]["rotation"]["z"] = input.rotation.z;
+    json[jointIdentifier]["rotation"]["w"] = input.rotation.w;
 
-    json[jointIdentifier]["M11"] = input.rotationMatrix.M11;
-    json[jointIdentifier]["M12"] = input.rotationMatrix.M12;
-    json[jointIdentifier]["M13"] = input.rotationMatrix.M13;
-    json[jointIdentifier]["M14"] = input.rotationMatrix.M14;
-    json[jointIdentifier]["M21"] = input.rotationMatrix.M21;
-    json[jointIdentifier]["M22"] = input.rotationMatrix.M22;
-    json[jointIdentifier]["M23"] = input.rotationMatrix.M23;
-    json[jointIdentifier]["M24"] = input.rotationMatrix.M24;
-    json[jointIdentifier]["M31"] = input.rotationMatrix.M31;
-    json[jointIdentifier]["M32"] = input.rotationMatrix.M32;
-    json[jointIdentifier]["M33"] = input.rotationMatrix.M33;
-    json[jointIdentifier]["M34"] = input.rotationMatrix.M34;
-    json[jointIdentifier]["M41"] = input.rotationMatrix.M41;
-    json[jointIdentifier]["M42"] = input.rotationMatrix.M42;
-    json[jointIdentifier]["M43"] = input.rotationMatrix.M43;
-    json[jointIdentifier]["M44"] = input.rotationMatrix.M44;
+    if(writeToCSVFile){
+        std::ofstream myfile;
+        myfile.open ("../kinect_t_pose.csv", std::ios_base::app);
+        myfile << input.rotation.x << "," << input.rotation.y << "," << input.rotation.z << "," << input.rotation.w << ",";
+        myfile.close();
+    }
+
+    //json[jointIdentifier]["M11"] = input.rotationMatrix.M11;
+    //json[jointIdentifier]["M12"] = input.rotationMatrix.M12;
+    //json[jointIdentifier]["M13"] = input.rotationMatrix.M13;
+    //json[jointIdentifier]["M14"] = input.rotationMatrix.M14;
+    //json[jointIdentifier]["M21"] = input.rotationMatrix.M21;
+    //json[jointIdentifier]["M22"] = input.rotationMatrix.M22;
+    //json[jointIdentifier]["M23"] = input.rotationMatrix.M23;
+    //json[jointIdentifier]["M24"] = input.rotationMatrix.M24;
+    //json[jointIdentifier]["M31"] = input.rotationMatrix.M31;
+    //json[jointIdentifier]["M32"] = input.rotationMatrix.M32;
+    //json[jointIdentifier]["M33"] = input.rotationMatrix.M33;
+    //json[jointIdentifier]["M34"] = input.rotationMatrix.M34;
+    //json[jointIdentifier]["M41"] = input.rotationMatrix.M41;
+    //json[jointIdentifier]["M42"] = input.rotationMatrix.M42;
+    //json[jointIdentifier]["M43"] = input.rotationMatrix.M43;
+    //json[jointIdentifier]["M44"] = input.rotationMatrix.M44;
 
 
-    //json[jointIdentifier]["position"]["x"] = input.position.x;
-    //json[jointIdentifier]["position"]["y"] = input.position.y;
-    //json[jointIdentifier]["position"]["z"] = input.position.z;
-    //json[jointIdentifier]["position"]["w"] = input.position.w;
+    json[jointIdentifier]["position"]["x"] = input.position.x;
+    json[jointIdentifier]["position"]["y"] = input.position.y;
+    json[jointIdentifier]["position"]["z"] = input.position.z;
     return json;
 }
 
@@ -343,6 +354,13 @@ void fillKinectIntoJson() {
     getKinectData();
 
     Json::Value json;
+
+    if(writeToCSVFile){
+        std::ofstream myfile;
+        myfile.open ("../kinect_t_pose.csv", std::ios_base::app);
+        myfile << std::time(0) << ",";
+        myfile.close();
+    }
 
     json = fillJoint(json, "hip-center", skeletonStructure[NUI_SKELETON_POSITION_HIP_CENTER]);
     json = fillJoint(json, "spine", skeletonStructure[NUI_SKELETON_POSITION_SPINE]);
@@ -364,6 +382,15 @@ void fillKinectIntoJson() {
     json = fillJoint(json, "knee-right", skeletonStructure[NUI_SKELETON_POSITION_KNEE_RIGHT]);
     json = fillJoint(json, "ankle-right", skeletonStructure[NUI_SKELETON_POSITION_ANKLE_RIGHT]);
     json = fillJoint(json, "foot-right", skeletonStructure[NUI_SKELETON_POSITION_FOOT_RIGHT]);
+
+    if(writeToCSVFile){
+        std::ofstream myfile;
+        myfile.open ("../kinect_t_pose.csv", std::ios_base::app);
+        myfile << "\n";
+        myfile.close();
+    }
+
+
 
     std::string styledJsonString = json.toStyledString();
     // Uglyfy Json

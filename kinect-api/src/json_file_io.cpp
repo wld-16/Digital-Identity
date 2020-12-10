@@ -32,8 +32,6 @@ void json_file_io::write(){
 }
 
 void json_file_io::run() {
-    std::remove("../../test.json");
-    std::atexit([]{std::remove("../../test.json.lock");});
     while(true){
         write();
     }

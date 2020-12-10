@@ -115,7 +115,7 @@ add_executable(Digital_Identity
         src/ogl/opencv_skinned_mesh.cpp
         src/ogl/opencv_skinned_mesh.h
         src/kinect_data_client.cpp
-        src/kinect_data_client.h src/json_file_reader.cpp src/json_file_reader.h src/Matf4f.h src/Quaternion.h src/ogl/font_technique.cpp src/ogl/font_technique.h)
+        src/kinect_data_client.h src/json_file_reader.cpp src/json_file_reader.h src/Matf4f.h src/Quaternion.h src/ogl/font_technique.cpp src/ogl/font_technique.h src/Calibration.cpp src/Calibration.h)
 
 target_link_libraries(
         Digital_Identity
