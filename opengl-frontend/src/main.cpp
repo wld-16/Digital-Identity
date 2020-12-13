@@ -87,7 +87,7 @@ public:
         m_pEffect->SetMatSpecularIntensity(0.0f);
         m_pEffect->SetMatSpecularPower(0);
 
-        const std::string filename = "../res/blender.dae";
+        const std::string filename = "../res/test.dae";
         if (!m_mesh.LoadMesh(filename)) {
             printf("Mesh with path \'%s\' load failed\n", filename.c_str());
             return false;
@@ -99,7 +99,7 @@ public:
         }
 
         calibrationUnit.set_output_t_pose_orientation_offset(m_mesh.getJointOrientationsMap());
-        calibrationUnit.calculateOrientationInverse();
+        calibrationUnit.init();
 
         kinect_t_pose_inverse_orientations = calibrationUnit.get_calibration_result();
 
@@ -131,6 +131,11 @@ public:
         joint_positions[jointStr] = test - m_pGameCamera->GetPos();
 
         aiQuaternion kinectQuat(rotation.w, rotation.x, rotation.y, rotation.z);
+
+        if(is_collecting_data){
+            current_skeleton_frame[jointStr] = kinectQuat;
+        }
+
         aiQuaternion orientationInverse = kinect_t_pose_inverse_orientations[jointStr];
 
         aiQuaternion calibratedQuaternion = m_mesh.getJointOrientationsMap()[jointStr] * kinectQuat * orientationInverse;
@@ -486,6 +491,18 @@ public:
                 selected_joint_orientation_offset %= 20;
                 break;
 
+            case OGLDEV_KEY_u:
+                is_collecting_data = true;
+                break;
+
+            case OGLDEV_KEY_t:
+                if(!current_skeleton_frame.empty()){
+                    calibrationUnit.performCalibration(current_skeleton_frame);
+                    kinect_t_pose_inverse_orientations = calibrationUnit.get_calibration_result();
+                }
+                is_collecting_data = false;
+                break;
+
             case OGLDEV_KEY_e:
                 std::cout << "Play Animation" << std::endl;
                 is_idle_render = !is_idle_render;
@@ -535,6 +552,8 @@ private:
     bool validKinectdata = false;
     std::map<std::string, aiQuaternion> kinect_t_pose_inverse_orientations;
     int selected_joint_orientation_offset = 0;
+    bool is_collecting_data = false;
+    std::map<std::string, aiQuaternion> current_skeleton_frame;
 
     std::map<std::string, Vector3f> joint_positions;
     std::array<std::string, 20> jointIdentifiers = {

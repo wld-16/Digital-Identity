@@ -13,7 +13,8 @@ aiQuaternion conjugate(aiQuaternion quat){
 }
 
 aiQuaternion
-Calibration::calculateCalibrationRotation(aiQuaternion kinectTPoseaiQuaternion, aiQuaternion openGlPoseaiQuaternion) {
+Calibration::calculateCalibrationRotation(aiQuaternion kinectTPoseaiQuaternion, aiQuaternion openGlPoseaiQuaternion,
+                                          Vector3f kinectPosition, Vector3f openGlPosition) {
     return openGlPoseaiQuaternion *
            scalarMultiplication(conjugate(kinectTPoseaiQuaternion), 1 / quatMagnitude(kinectTPoseaiQuaternion));
 }
@@ -30,16 +31,27 @@ float Calibration::quatMagnitude(aiQuaternion aiQuaternion) {
     return sqrt(pow(aiQuaternion.x, 2) + pow(aiQuaternion.y, 2) + pow(aiQuaternion.z, 2) + pow(aiQuaternion.w, 2));
 }
 
-void Calibration::calculateOrientationInverse() {
+void Calibration::init() {
     std::for_each(initialKinectTPoseOrientations.begin(), initialKinectTPoseOrientations.end(),
                   [&](std::pair<std::string, aiQuaternion> jointOrientation) {
                       joint_orientation_inverse_map[jointOrientation.first] = calculateCalibrationRotation(
-                              jointOrientation.second, t_pose_orientations_map[jointOrientation.first]);
+                              jointOrientation.second, avatar_t_pose_orientations_map[jointOrientation.first],
+                              Vector3f(0.0, 0.0, 0.0), Vector3f(0.f,0.f,0.f));
                   });
 }
 
+void Calibration::performCalibration(std::map<std::string, aiQuaternion> skeletonFrame) {
+    std::for_each(skeletonFrame.begin(), skeletonFrame.end(),
+                  [&](std::pair<std::string, aiQuaternion> jointOrientation) {
+                      joint_orientation_inverse_map[jointOrientation.first] = calculateCalibrationRotation(
+                              jointOrientation.second, avatar_t_pose_orientations_map[jointOrientation.first],
+                              Vector3f(0.0, 0.0, 0.0), Vector3f(0.f,0.f,0.f));
+                  });
+}
+
+
 void Calibration::set_output_t_pose_orientation_offset(std::map<std::string, aiQuaternion> quatMap) {
-    this->t_pose_orientations_map = quatMap;
+    this->avatar_t_pose_orientations_map = quatMap;
 }
 
 aiQuaternion Calibration::scalarMultiplication(aiQuaternion quaternion, float scalar) {
@@ -58,3 +70,5 @@ void Calibration::setJointIdentifiers(array<string, 20> jointIdentifiers) {
     });
     this->jointIdentifiers = jointIdentifiers;
 }
+
+// TODO: Quaternion average

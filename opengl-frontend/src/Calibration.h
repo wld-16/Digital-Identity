@@ -19,39 +19,42 @@ public:
     std::array<std::pair<std::string, aiQuaternion>, 20> get_kinect_t_pose_orientation();
     void set_output_t_pose_orientation_offset(std::map<std::string, aiQuaternion> quatMap);
 
-    void calculateOrientationInverse();
+    void init();
+    void performCalibration(map<string, aiQuaternion> skeletonFrame);
     void setJointIdentifiers(array<string, 20> array);
 
 private:
-    aiQuaternion calculateCalibrationRotation(aiQuaternion kinectTPoseaiQuaternion, aiQuaternion openGlPoseaiQuaternion);
+    aiQuaternion calculateCalibrationRotation(aiQuaternion kinectTPoseaiQuaternion, aiQuaternion openGlPoseaiQuaternion,
+                                              Vector3f kinectPosition, Vector3f openGlPosition);
     float quatMagnitude(aiQuaternion quaternion);
-    std::map<std::string, aiQuaternion> t_pose_orientations_map;
+    std::map<std::string, aiQuaternion> avatar_t_pose_orientations_map;
     std::map<std::string, aiQuaternion> joint_orientation_inverse_map;
     std::array<std::string, 20> jointIdentifiers;
 
     std::array<std::pair<std::string, aiQuaternion>, 20> initialKinectTPoseOrientations =
-            {std::make_pair<>("knee-right", aiQuaternion(0.01447065, 0.99907, -0.00456964, -0.03207825)),
-             std::make_pair<>("foot-right", aiQuaternion(-0.3953675, 0.9129865, -0.0739987, -0.03178965)),
-             std::make_pair<>("ankle-right", aiQuaternion(-0.04967315, 0.9969415, -0.0310174, -0.0330079)),
+            {std::make_pair<>("knee-right", aiQuaternion(-0.0229641, 0.993456, 0.0328639, -0.106948)),
+             std::make_pair<>("foot-right", aiQuaternion(-0.40331, 0.912051, 0.0302006, -0.0677563)),
+             std::make_pair<>("ankle-right", aiQuaternion(-0.037433, 0.993338, -0.00393497, -0.108913)),
              std::make_pair<>("hip-right", aiQuaternion(-0.0988443, 0.918139, 0.3840745, 0.00400616)),
-             std::make_pair<>("knee-left", aiQuaternion(0.02700465, 0.9979055, 0.04234005, -0.0328532)),
-             std::make_pair<>("ankle-left", aiQuaternion(-0.0269126, 0.9977545, 0.008798065, -0.03568045)),
-             std::make_pair<>("foot-left", aiQuaternion(0.5228735, -0.763843, -0.144959, -0.0686177)),
-             std::make_pair<>("hip-left", aiQuaternion(-0.0712803, 0.9240805, -0.3693425, -0.06676265)),
-             std::make_pair<>("hip-center", aiQuaternion(-0.03351965, -0.009073065, 0.995034, 0.09072275)),
-             std::make_pair<>("spine", aiQuaternion(-0.0162731, 0.002123155, 0.9287645, 0.3632395)),
-             std::make_pair<>("shoulder-left", aiQuaternion(0.02226875, 0.8485265, -0.522291, -0.02776955)),
-             std::make_pair<>("shoulder-center", aiQuaternion(-0.01697975, -0.005901285, 0.999529, 0.00961009)),
-             std::make_pair<>("head", aiQuaternion(-0.02281365, -0.0497664, 0.9904365, -0.106651)),
-             std::make_pair<>("elbow-left", aiQuaternion(0.05812835, 0.7262695, -0.670384, -0.0641654)),
-             std::make_pair<>("wrist-left", aiQuaternion(0.0351973, 0.727102, -0.663893, -0.04344975)),
-             std::make_pair<>("shoulder-right", aiQuaternion(0.00359886, 0.8487455, 0.5275435, 0.00359769)),
-             std::make_pair<>("elbow-right", aiQuaternion(0.3784455, 0.672105, 0.5041685, -0.3186035)),
-             std::make_pair<>("wrist-right", aiQuaternion(0.306324, 0.6215565, 0.5550885, -0.369236)),
-             std::make_pair<>("hand-right", aiQuaternion(0.5886755, 0.594687, -0.416206, 0.186519)),
-             std::make_pair<>("hand-left", aiQuaternion(-0.03300835, 0.7168985, -0.545081, 0.03694175))};
+             std::make_pair<>("knee-left", aiQuaternion(-0.0618177, 0.992277, 0.0214523, -0.105379)),
+             std::make_pair<>("ankle-left", aiQuaternion(-0.0657286, 0.991804, 0.032258, -0.104709)),
+             std::make_pair<>("foot-left", aiQuaternion(-0.328534, 0.93818, 0.0629229, -0.0890194)),
+             std::make_pair<>("hip-left", aiQuaternion(-0.0586738, 0.912075, -0.381542, -0.138209)),
+             std::make_pair<>("hip-center", aiQuaternion(-0.106705, 0.0171293,0.988515, 0.105633)),
+             std::make_pair<>("spine", aiQuaternion(0.00388853, 0.0455556, 0.916202, 0.398099)),
+             std::make_pair<>("shoulder-left", aiQuaternion(0.0939015, 0.742254, -0.65151, -0.125605)),
+             std::make_pair<>("shoulder-center", aiQuaternion(-0.0382377, 0.0173248, 0.998753, 0.0270311)),
+             std::make_pair<>("head", aiQuaternion(-0.0410843, -0.00342875, 0.99632, -0.0751487)),
+             std::make_pair<>("elbow-left", aiQuaternion(0.513175, -0.515734, 0.258428, 0.635519)),
+             std::make_pair<>("wrist-left", aiQuaternion(0.621686, -0.377938, 0.403008, 0.555207)),
+             std::make_pair<>("shoulder-right", aiQuaternion(0.0477562, 0.82645, 0.559049, 0.0465267)),
+             std::make_pair<>("elbow-right", aiQuaternion(0.0226049, 0.730825, 0.679579, 0.0596378)),
+             std::make_pair<>("wrist-right", aiQuaternion(-0.0166806, 0.714386, 0.699176, 0.022949)),
+             std::make_pair<>("hand-right", aiQuaternion(-0.137704, 0.924193, 0.351174, -0.0598493)),
+             std::make_pair<>("hand-left", aiQuaternion(0.566036, -0.496125, 0.292639, 0.589767))};
 
     aiQuaternion scalarMultiplication(aiQuaternion quaternion, float scalar);
+
 };
 
 
