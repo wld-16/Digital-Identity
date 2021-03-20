@@ -9,10 +9,11 @@
 #include <array>
 #include <GL/glew.h>
 
-void getKinectData();
+void getKinectData(GLuint &vboId, GLuint& cboId);
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition();
 void fillKinectIntoJson();
 bool initKinectSkeletonTracking();
-bool initKinectFaceTracking();
-void getKinectHeadData();
+void run();
 BOOL getHeadColorImage(GLubyte *dest);
+bool getSkeletonFound();
+std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getBonesEulerAngles();

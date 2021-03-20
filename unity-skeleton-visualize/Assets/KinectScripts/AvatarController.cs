@@ -51,6 +51,8 @@ public class AvatarController : MonoBehaviour
 	// private instance of the KinectManager
 	protected KinectManager kinectManager;
 
+	protected float offset;
+
 
 	// transform caching gives performance boost since Unity calls GetComponent<Transform>() each time you call transform 
 	private Transform _transformCache;

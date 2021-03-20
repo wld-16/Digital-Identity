@@ -1,9 +1,10 @@
-#include "glut.h"
 #include "kinect_websocket.h"
 #include "kinect_processor.h"
 #include "json_file_io.h"
 #include <thread>
 #include <fstream>
+#include "GLFW/glfw3.h"
+#include "glut.h"
 
 void runWebserver() {
     kinect_websocket kinectWebsocket;
@@ -20,9 +21,14 @@ void runFileWrite() {
     jsonFileIo.run();
 }
 
+static void error_callback(int error, const char* description)
+{
+    fputs(description, stderr);
+}
+
 
 int main(int argc, char *argv[]) {
-    //if (!initHead(argc, argv)) return 1;
+    /*
     if (!init(argc, argv)) return 1;
 
     bool writeToCSVFile = false;
@@ -37,18 +43,32 @@ int main(int argc, char *argv[]) {
                 << "knee-rightX,Y,Z,W,ankle-rightX,Y,Z,W,foot-rightX,Y,Z,W\n";
         myfile.close();
     }
-
-
-
-    //if (!initKinectFaceTracking()) return 1;
     if (!initKinectSkeletonTracking()) return 1;
 
-    thread websocketThread(runWebserver);
+    //thread websocketThread(runWebserver);
     //thread fileIOThread(runFileWrite);
 
+     */
+
+    GLFWwindow* window = nullptr;
+    GLFWwindow* secondWindow = nullptr;
+
+    glfwSetErrorCallback(error_callback);
+
+    if (!glfwInit())
+        exit(EXIT_FAILURE);
+
+    window = initGLFWWindow(window, "Skeleton");
     initGL();
 
-    // Main loop
-    execute();
-    return 0;
+    secondWindow = initGLFWWindow(secondWindow, "Foot", window);
+    initGL2();
+
+    if (!initKinectSkeletonTracking()) return 1;
+
+    mainLoop(window, secondWindow);
+    glfwDestroyWindow(window);
+
+    glfwTerminate();
+    exit(EXIT_SUCCESS);
 }

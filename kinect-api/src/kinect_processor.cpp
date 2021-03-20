@@ -5,10 +5,8 @@
 
 #include <string>
 #include "kinect_processor.h"
-#include "main.h"
+#include "App.h"
 #include "glut.h"
-#include "faceTracking/FTHelper.h"
-#include <FaceTrackLib.h>
 #include <boost/algorithm/string.hpp>
 
 #include <json/json.h>
@@ -20,9 +18,8 @@
 
 
 INuiSensor *sensor;
-FTHelper m_FTHelper;
 std::string jsonData;
-IFTImage *m_pVideoBuffer;
+bool isSkeletonFound = false;
 
 typedef struct JointData {
     JointData(Vector4 position, Vector4 rotation, Matrix4 rotationMatrix) {
@@ -70,6 +67,7 @@ int frame = 0;
 
 // Stores the coordinates of each joint
 std::array<Vector4, NUI_SKELETON_POSITION_COUNT> skeletonPosition;
+std::array<Vector4, NUI_SKELETON_POSITION_COUNT> bonesEulerAngles;
 std::list<Vector4> headData;
 
 // Kinect variables
@@ -107,49 +105,6 @@ bool initKinectSkeletonTracking() {
     return sensor;
 }
 
-bool initKinectFaceTracking() {
-    IFTFaceTracker *pFT = FTCreateFaceTracker();
-    if (!pFT) {
-        // Handle errors
-    }
-    // Video camera config with width, height, focal length in pixels
-    // NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS focal length is computed for 640x480 resolution
-    // If you use different resolutions, multiply this focal length by the scaling factor
-    FT_CAMERA_CONFIG videoCameraConfig = {640, 480, NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS};
-
-    // Depth camera config with width, height, focal length in pixels
-    // NUI_CAMERA_COLOR_NOMINAL_FOCAL_LENGTH_IN_PIXELS focal length is computed for 320x240 resolution
-    // If you use different resolutions, multiply this focal length by the scaling factor
-    FT_CAMERA_CONFIG depthCameraConfig = {320, 240, NUI_CAMERA_DEPTH_NOMINAL_FOCAL_LENGTH_IN_PIXELS};
-
-    // Initialize the face tracker
-    HRESULT hr = pFT->Initialize(&videoCameraConfig, &depthCameraConfig, NULL, NULL);
-    if (FAILED(hr)) {
-        // Handle errors
-    }
-    IFTResult *pFTResult = NULL;
-    hr = pFT->CreateFTResult(&pFTResult);
-    if (FAILED(hr)) {
-        // Handle errors
-    }
-    // Prepare image interfaces that hold RGB and depth data
-    IFTImage *pColorFrame = FTCreateImage();
-    IFTImage *pDepthFrame = FTCreateImage();
-    if (!pColorFrame || !pDepthFrame) {
-        // Handle errors
-    }
-
-    //
-    m_FTHelper.Init(FTHelperCallingBack, nullptr, NUI_IMAGE_TYPE_DEPTH_AND_PLAYER_INDEX,
-                    NUI_IMAGE_RESOLUTION_320x240,
-                    TRUE,
-                    TRUE, // if near mode doesn't work, fall back to default mode
-                    NUI_IMAGE_TYPE_COLOR,
-                    NUI_IMAGE_RESOLUTION_640x480,
-                    TRUE);
-    return true;
-}
-
 void getSkeletalData() {
     NUI_SKELETON_FRAME skeletonFrame = {0};
     std::ofstream myfile;
@@ -166,7 +121,6 @@ void getSkeletalData() {
             // Check the state of the skeleton
 
             if (skeleton.eTrackingState == NUI_SKELETON_TRACKED) {
-
                 NuiSkeletonCalculateBoneOrientations(&test, bones);
 
 
@@ -174,6 +128,7 @@ void getSkeletalData() {
                 for (int i = 0; i < NUI_SKELETON_POSITION_COUNT; ++i) {
 
                     skeletonPosition[i] = skeleton.SkeletonPositions[i];
+
 
                     if (skeleton.eSkeletonPositionTrackingState[i] == NUI_SKELETON_POSITION_NOT_TRACKED) {
                         skeletonPosition[i].w = 0;
@@ -183,7 +138,13 @@ void getSkeletalData() {
                     skeletonStructure[i].position = skeletonPosition[i];
                     skeletonStructure[i].rotation = bones[i].absoluteRotation.rotationQuaternion;
                     skeletonStructure[i].rotationMatrix = bones[i].absoluteRotation.rotationMatrix;
+
+                    bonesEulerAngles[i].x = atan2(-skeletonStructure[i].rotationMatrix.M23, skeletonStructure[i].rotationMatrix.M33);
+                    bonesEulerAngles[i].y = atan2(skeletonStructure[i].rotationMatrix.M13, sqrt(pow(skeletonStructure[i].rotationMatrix.M23,2)+ pow(skeletonStructure[i].rotationMatrix.M33,2)));
+                    bonesEulerAngles[i].z = atan2(-bones[i].absoluteRotation.rotationMatrix.M12,-bones[i].absoluteRotation.rotationMatrix.M11);
+
                 }
+                isSkeletonFound = true;
             }
         }
     }
@@ -220,37 +181,6 @@ void getDepthData(GLubyte *dest) {
     sensor->NuiImageStreamReleaseFrame(depthStream, &imageFrame);
 }
 
-void getRgbHeadData(GLubyte *dest, IFTImage *colorImage) {
-    float *fdest = (float *) dest;
-    long *depth2rgb = (long *) depthToRgbMap;
-    NUI_IMAGE_FRAME imageFrame;
-    NUI_LOCKED_RECT LockedRect;
-
-
-    INuiFrameTexture *texture = imageFrame.pFrameTexture;
-    texture->LockRect(0, &LockedRect, NULL, 0);
-    if (LockedRect.Pitch != 0) {
-        const BYTE *start = (const BYTE *) LockedRect.pBits;
-        for (int j = 0; j < height; ++j) {
-            for (int i = 0; i < width; ++i) {
-                // Determine rgb color for each depth pixel
-                long x = *depth2rgb++;
-                long y = *depth2rgb++;
-                // If out of bounds, then don't color it at all
-                if (x < 0 || y < 0 || x > width || y > height) {
-                    for (int n = 0; n < 3; ++n) *(fdest++) = 0.0f;
-                } else {
-                    const BYTE *curr = start + (x + width * y) * 4;
-                    for (int n = 0; n < 3; ++n) *(fdest++) = curr[2 - n] / 255.0f;
-                }
-
-            }
-        }
-    }
-    texture->UnlockRect(0);
-    sensor->NuiImageStreamReleaseFrame(rgbStream, &imageFrame);
-}
-
 void getRgbData(GLubyte *dest) {
     float *fdest = (float *) dest;
     long *depth2rgb = (long *) depthToRgbMap;
@@ -259,6 +189,7 @@ void getRgbData(GLubyte *dest) {
     if (sensor->NuiImageStreamGetNextFrame(rgbStream, 0, &imageFrame) < 0) return;
     INuiFrameTexture *texture = imageFrame.pFrameTexture;
     texture->LockRect(0, &LockedRect, NULL, 0);
+
     if (LockedRect.Pitch != 0) {
         const BYTE *start = (const BYTE *) LockedRect.pBits;
         for (int j = 0; j < height; ++j) {
@@ -271,9 +202,10 @@ void getRgbData(GLubyte *dest) {
                     for (int n = 0; n < 3; ++n) *(fdest++) = 0.0f;
                 } else {
                     const BYTE *curr = start + (x + width * y) * 4;
-                    for (int n = 0; n < 3; ++n) *(fdest++) = curr[2 - n] / 255.0f;
+                    for (int n = 0; n < 3; ++n) {
+                        *(fdest++) = curr[2 - n] / 255.0f;
+                    }
                 }
-
             }
         }
     }
@@ -281,22 +213,7 @@ void getRgbData(GLubyte *dest) {
     sensor->NuiImageStreamReleaseFrame(rgbStream, &imageFrame);
 }
 
-void getKinectHeadData() {
-    GLuint &vboIdPtr = getVboId();
-    GLuint &cboIdPtr = getCboId();
-    const int dataSize = width * height * 3 * 4;
-    //GLubyte *ptr;
-    //glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
-    //ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    //getHeadColorImage(ptr);
-    //glUnmapBuffer(GL_ARRAY_BUFFER);
-    //getSkeletalData();
-}
-
-void getKinectData() {
-    GLuint &vboIdPtr = getVboId();
-    GLuint &cboIdPtr = getCboId();
-    const int dataSize = width * height * 3 * 4;
+void getKinectData(GLuint& vboIdPtr, GLuint& cboIdPtr) {
     GLubyte *ptr;
     glBindBuffer(GL_ARRAY_BUFFER, vboIdPtr);
     ptr = (GLubyte *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
@@ -351,7 +268,6 @@ Json::Value fillJoint(Json::Value json, std::string jointIdentifier, JointData i
 }
 
 void fillKinectIntoJson() {
-    getKinectData();
 
     Json::Value json;
 
@@ -410,46 +326,12 @@ std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getSkeletonPosition() {
     return &skeletonPosition;
 }
 
-std::list<Vector4> *getHeadData() {
-    return &headData;
+std::array<Vector4, NUI_SKELETON_POSITION_COUNT> *getBonesEulerAngles(){
+    return &bonesEulerAngles;
 }
 
-BOOL getHeadColorImage(GLubyte *dest) {
-    BOOL ret = TRUE;
-
-    // Now, copy a fraction of the camera image into the screen.
-    IFTImage *colorImage = m_FTHelper.GetColorImage();
-
-    if (colorImage) {
-        int iWidth = colorImage->GetWidth();
-        int iHeight = colorImage->GetHeight();
-
-        GLuint &vboIdPtr = getVboId();
-        GLuint &cboIdPtr = getCboId();
-        const int dataSize = width * height * 3 * 4;
-        if (dest) {
-
-            float *fdest = (float *) dest;
-            long *depth2rgb = (long *) depthToRgbMap;
-
-            const BYTE *start = (const BYTE *) m_FTHelper.GetColorImage()->GetBytesPerPixel();
-            for (int j = 0; j < height; ++j) {
-                for (int i = 0; i < width; ++i) {
-                    // Determine rgb color for each depth pixel
-                    long x = *depth2rgb++;
-                    long y = *depth2rgb++;
-                    // If out of bounds, then don't color it at all
-                    if (x < 0 || y < 0 || x > width || y > height) {
-                        for (int n = 0; n < 3; ++n) *(fdest++) = 0.0f;
-                    } else {
-                        const BYTE *curr = start + (x + width * y) * 4;
-                        for (int n = 0; n < 3; ++n) *(fdest++) = curr[2 - n] / 255.0f;
-                    }
-
-                }
-            }
-            //getDepthHeadData(ptr);
-        }
-    }
-    return ret;
+bool getSkeletonFound() {
+    return isSkeletonFound;
 }
+
+

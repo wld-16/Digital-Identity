@@ -855,8 +855,13 @@ public class KinectManager : MonoBehaviour
 					clippedLegsFilter[i].Reset();
 		}
 	}
-	
-	
+
+
+
+	IEnumerator wait()
+	{
+		yield return new WaitForSeconds(5);
+	}
 	//----------------------------------- end of public functions --------------------------------------//
 
 	void Awake()
@@ -866,6 +871,7 @@ public class KinectManager : MonoBehaviour
 		
 		try
 		{
+			wait();
 			hr = KinectWrapper.NuiInitialize(KinectWrapper.NuiInitializeFlags.UsesSkeleton |
 				KinectWrapper.NuiInitializeFlags.UsesDepthAndPlayerIndex |
 				(ComputeColorMap ? KinectWrapper.NuiInitializeFlags.UsesColor : 0));

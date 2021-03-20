@@ -23,3 +23,5 @@ dist
 *.blend1
 *.csv
 *.xlsx
+*/res/
+*/libs/
