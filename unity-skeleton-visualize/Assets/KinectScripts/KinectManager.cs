@@ -855,13 +855,8 @@ public class KinectManager : MonoBehaviour
 					clippedLegsFilter[i].Reset();
 		}
 	}
-
-
-
-	IEnumerator wait()
-	{
-		yield return new WaitForSeconds(5);
-	}
+	
+	
 	//----------------------------------- end of public functions --------------------------------------//
 
 	void Awake()
@@ -871,7 +866,6 @@ public class KinectManager : MonoBehaviour
 		
 		try
 		{
-			wait();
 			hr = KinectWrapper.NuiInitialize(KinectWrapper.NuiInitializeFlags.UsesSkeleton |
 				KinectWrapper.NuiInitializeFlags.UsesDepthAndPlayerIndex |
 				(ComputeColorMap ? KinectWrapper.NuiInitializeFlags.UsesColor : 0));
@@ -1193,7 +1187,7 @@ public class KinectManager : MonoBehaviour
 								{
 									Vector3 vCursorPos = gestureData.screenPos;
 									
-									if(HandCursor1.GetComponent<Renderer>().material.mainTexture == null)
+									if(HandCursor1 == null)
 									{
 										float zDist = HandCursor1.transform.position.z - Camera.main.transform.position.z;
 										vCursorPos.z = zDist;
@@ -1206,7 +1200,7 @@ public class KinectManager : MonoBehaviour
 								
 								if(ControlMouseCursor)
 								{
-									Vector3 vCursorPos = HandCursor1.GetComponent<Renderer>().material.mainTexture != null ? HandCursor1.transform.position :
+									Vector3 vCursorPos = HandCursor1 != null ? HandCursor1.transform.position :
 										Camera.main.WorldToViewportPoint(HandCursor1.transform.position);
 									MouseControl.MouseMove(vCursorPos, CalibrationText);
 								}
@@ -1278,7 +1272,7 @@ public class KinectManager : MonoBehaviour
 								{
 									Vector3 vCursorPos = gestureData.screenPos;
 									
-									if(HandCursor2.GetComponent<Renderer>().material.mainTexture == null)
+									if(HandCursor2 == null)
 									{
 										float zDist = HandCursor2.transform.position.z - Camera.main.transform.position.z;
 										vCursorPos.z = zDist;
@@ -1291,7 +1285,7 @@ public class KinectManager : MonoBehaviour
 								
 								if(ControlMouseCursor)
 								{
-									Vector3 vCursorPos = HandCursor2.GetComponent<Renderer>().material.mainTexture != null ? HandCursor2.transform.position :
+									Vector3 vCursorPos = HandCursor2 != null ? HandCursor2.transform.position :
 										Camera.main.WorldToViewportPoint(HandCursor2.transform.position);
 									MouseControl.MouseMove(vCursorPos, CalibrationText);
 								}
@@ -1783,7 +1777,7 @@ public class KinectManager : MonoBehaviour
 //								player1JointsTracked[j] ? "T" : "F", player1JointsPos[j]/**, skeletonData.SkeletonPositions[j]*/);
 //							
 //							if(CalibrationText)
-//								CalibrationText.Text.text = debugText;
+//								CalibrationText.guiText.text = debugText;
 //						}
 					}
 					

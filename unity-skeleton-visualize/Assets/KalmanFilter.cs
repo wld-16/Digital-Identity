@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Single;
 
 public class KalmanFilter : MonoBehaviour
 {
@@ -13,7 +15,13 @@ public class KalmanFilter : MonoBehaviour
     public Quaternion gyroOffset;
 
     public Vector3 output;
-    
+
+    public float dt = 0.13f;
+
+    private Matrix<float> F;
+    private Matrix<float> a;
+    private Matrix<float> H;
+
     private Matrix4x4 C;
     private Matrix4x4 P;
     private Matrix4x4 Q;
@@ -24,11 +32,39 @@ public class KalmanFilter : MonoBehaviour
     [SerializeField] private float phi_hat;
     [SerializeField] private float theta_hat;
 
-    private Matrix4x4 A;
-    private Matrix4x4 B;
-
     private void Start()
     {
+        F = DenseMatrix.OfArray(new float[9,9]{
+            {1,0,0,dt,0,0,dt*dt/2,0,0},
+            {0,0,0,1,0,0,dt,0,0},
+            {0,0,0,0,0,0,1,0,0},
+            {0,1,0,0,dt,0,0,dt*dt/2,0},
+            {0,0,0,0,1,0,0,dt,0},
+            {0,0,0,0,0,0,0,1,0},
+            {0,0,1,0,0,dt,0,0,dt*dt/2},
+            {0,0,0,0,0,1,0,0,dt},
+            {0,0,0,0,0,0,0,0,1}
+        });
+
+        a = DenseMatrix.OfArray(new float[9,1]{
+            {-0.05f},{0},{0},{-0.9f},{0},{-100},{0.8f},{0},{0}
+        });
+
+        H = DenseMatrix.OfArray(new float[9, 9]
+        {
+            {1, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 1, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 1, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {0, 1, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 1, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 1, 0}
+        });
+        
+        Q = add.Gaussian.noise(matrix(data = 1,nrow = 9, ncol = 9), mean = 0, stddev = 2.56) ## white noise as process noise
+        
         C = new Matrix4x4(new Vector4(1,0,0,0), new Vector4(0,0,1,0), Vector4.zero, Vector4.zero );
         P = Matrix4x4.identity;
         Q = Matrix4x4.identity;
@@ -61,7 +97,7 @@ public class KalmanFilter : MonoBehaviour
         
         Vector4 measurement = new Vector4(accInput.x, 0,accInput.y,0);
         Vector4 yTilde = measurement - C * stateEstimate;
-        
+
         Matrix4x4 S = matAddition(R, (C * (P * C.transpose)));
         Matrix4x4 K = P * (C.transpose * S.inverse);
 
@@ -104,4 +140,5 @@ public class KalmanFilter : MonoBehaviour
         
         return new Vector3((float) phi, (float) theta, 0); 
     }
+    
 }

@@ -25,7 +25,8 @@ public class AvatarController : MonoBehaviour
 	
 	// Whether the offset node must be repositioned to the user's coordinates, as reported by the sensor or not.
 	public bool offsetRelativeToSensor = false;
-	
+
+	public bool usePosition = false;
 
 	// The body root node
 	protected Transform bodyRoot;
@@ -50,8 +51,6 @@ public class AvatarController : MonoBehaviour
 
 	// private instance of the KinectManager
 	protected KinectManager kinectManager;
-
-	protected float offset;
 
 
 	// transform caching gives performance boost since Unity calls GetComponent<Transform>() each time you call transform 
@@ -110,7 +109,15 @@ public class AvatarController : MonoBehaviour
 			if(boneIndex2JointMap.ContainsKey(boneIndex))
 			{
 				KinectWrapper.NuiSkeletonPositionIndex joint = !mirroredMovement ? boneIndex2JointMap[boneIndex] : boneIndex2MirrorJointMap[boneIndex];
-				TransformBone(UserID, joint, boneIndex, !mirroredMovement);
+				if (usePosition)
+				{
+					TransformBoneByPosition(UserID, joint, boneIndex, !mirroredMovement);
+					
+				}
+				else
+				{
+					TransformBone(UserID, joint, boneIndex, !mirroredMovement);
+				}
 			}
 			else if(specIndex2JointMap.ContainsKey(boneIndex))
 			{
@@ -205,6 +212,30 @@ public class AvatarController : MonoBehaviour
         	boneTransform.rotation = Quaternion.Slerp(boneTransform.rotation, newRotation, smoothFactor * Time.deltaTime);
 		else
 			boneTransform.rotation = newRotation;
+	}
+	
+	protected void TransformBoneByPosition(uint userId, KinectWrapper.NuiSkeletonPositionIndex joint, int boneIndex, bool flip)
+	{
+		Transform boneTransform = bones[boneIndex];
+		if(boneTransform == null || kinectManager == null)
+			return;
+		
+		int iJoint = (int)joint;
+		if(iJoint < 0)
+			return;
+		
+		// Get Kinect joint orientation
+		Vector3 jointPosition = kinectManager.GetJointLocalPosition(userId, iJoint);
+		if(jointPosition == Vector3.one)
+			return;
+		
+		// Smoothly transition to the new rotation
+		Vector3 newPosition = Kinect2AvatarPos(jointPosition, true);
+		
+		if(smoothFactor != 0f)
+			boneTransform.position = Vector3.Slerp(boneTransform.position, newPosition, smoothFactor * Time.deltaTime);
+		else
+			boneTransform.position = newPosition;
 	}
 	
 	// Apply the rotations tracked by kinect to a special joint
