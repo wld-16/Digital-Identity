@@ -9,7 +9,7 @@ public class KinectOverlayer : MonoBehaviour
 //	public Vector3 BottomRight;
 //	public Vector3 BottomLeft;
 
-	public Texture2D backgroundImage;
+	public Image backgroundImage;
 	public KinectWrapper.NuiSkeletonPositionIndex TrackedJoint = KinectWrapper.NuiSkeletonPositionIndex.HandRight;
 	public GameObject OverlayObject;
 	public float smoothFactor = 5f;
@@ -34,9 +34,9 @@ public class KinectOverlayer : MonoBehaviour
 		if(manager && manager.IsInitialized())
 		{
 			//backgroundImage.renderer.material.mainTexture = manager.GetUsersClrTex();
-			if(backgroundImage && (backgroundImage == null))
+			if(backgroundImage && (backgroundImage.mainTexture == null))
 			{
-				backgroundImage = manager.GetUsersClrTex();
+				//backgroundImage.mainTexture = manager.GetUsersClrTex();
 			}
 			
 //			Vector3 vRight = BottomRight - BottomLeft;

@@ -10,6 +10,7 @@ using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 
 /**
  * Sample for reading using polling by yourself, and writing too.
@@ -20,8 +21,8 @@ public class SampleUserPolling_ReadWrite : MonoBehaviour
     public Vector3 ringOrientation = Vector3.zero;
     
     public Orientations orientations;
-    
-    
+
+    [SerializeField] private List<AccelerationMapping> AccelerationMapping = new List<AccelerationMapping>();    
 
     // Initialization
     void Start()
@@ -87,17 +88,19 @@ public class SampleUserPolling_ReadWrite : MonoBehaviour
             Debug.Log("Connection attempt failed or disconnection detected");
         else
         {
-            Debug.Log("Message arrived: " + message);
+            //Debug.Log("Message arrived: " + message);
             try
             {
                 orientations = JsonUtility.FromJson<Orientations>(message);
             }
             catch (ArgumentException aex)
             {
-                Debug.Log("Caugth json parse exception: " + aex.Message);
+                //Debug.LogWarning("Caugth json parse exception: " + aex.Message);
             }
             
         }
         
     }
 }
+
+

@@ -1141,7 +1141,7 @@ public class KinectManager : MonoBehaviour
 						controller.UpdateAvatar(Player1ID);
 					}
 				}
-					
+				
 				// Check for complete gestures
 				foreach(KinectGestures.GestureData gestureData in player1Gestures)
 				{
@@ -1187,7 +1187,7 @@ public class KinectManager : MonoBehaviour
 								{
 									Vector3 vCursorPos = gestureData.screenPos;
 									
-									if(HandCursor1 == null)
+									if(HandCursor1.GetComponent<Renderer>().material.mainTexture == null)
 									{
 										float zDist = HandCursor1.transform.position.z - Camera.main.transform.position.z;
 										vCursorPos.z = zDist;
@@ -1200,7 +1200,7 @@ public class KinectManager : MonoBehaviour
 								
 								if(ControlMouseCursor)
 								{
-									Vector3 vCursorPos = HandCursor1 != null ? HandCursor1.transform.position :
+									Vector3 vCursorPos = HandCursor1.GetComponent<Renderer>().material.mainTexture != null ? HandCursor1.transform.position :
 										Camera.main.WorldToViewportPoint(HandCursor1.transform.position);
 									MouseControl.MouseMove(vCursorPos, CalibrationText);
 								}
@@ -1272,7 +1272,7 @@ public class KinectManager : MonoBehaviour
 								{
 									Vector3 vCursorPos = gestureData.screenPos;
 									
-									if(HandCursor2 == null)
+									if(HandCursor2.GetComponent<Renderer>().material.mainTexture == null)
 									{
 										float zDist = HandCursor2.transform.position.z - Camera.main.transform.position.z;
 										vCursorPos.z = zDist;
@@ -1285,7 +1285,7 @@ public class KinectManager : MonoBehaviour
 								
 								if(ControlMouseCursor)
 								{
-									Vector3 vCursorPos = HandCursor2 != null ? HandCursor2.transform.position :
+									Vector3 vCursorPos = HandCursor2.GetComponent<Renderer>().material.mainTexture != null ? HandCursor2.transform.position :
 										Camera.main.WorldToViewportPoint(HandCursor2.transform.position);
 									MouseControl.MouseMove(vCursorPos, CalibrationText);
 								}
