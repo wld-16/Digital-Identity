@@ -8,7 +8,7 @@ public class ApplyPositionToTransformInspector : Editor
     {
         DrawDefaultInspector();
         ApplyPositionToTransform applier = (ApplyPositionToTransform) target;
-
+        
         switch (applier.source)
         {
             case SOURCE.KINECT:

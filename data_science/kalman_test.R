@@ -154,6 +154,46 @@ getVelocityModel <- function(){
   return(velocityModel)
 }
 
+## Get 6 Degrees model
+get6AxisOfFreedomVelocityModel <- function(){
+  velocityModel = list()
+  velocityModel$F = matrix(data = c(
+    1,0,0,dt,0,0,
+    0,0,0,1,0,0,
+    0,1,0,0,dt,0,
+    0,0,0,0,1,0,
+    0,0,1,0,0,dt,
+    0,0,0,0,0,1
+  )
+  ,nrow = 6, ncol = 6)
+  
+  velocityModel$a = matrix(data = c(0,0,0,0,0,0), nrow = 6, ncol = 1) ## state vector
+  
+  velocityModel$H = matrix(data = c(
+    0,0,0,0,0,0,
+    0,0,0,0,0,0,
+    0,0,0,0,0,0,
+    0,0,0,1,0,0,
+    0,0,0,0,1,0,
+    0,0,0,0,0,1
+  ), nrow = 6, ncol = 6) ## observation/ measurment vector 
+  
+  velocityModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 12, ncol = 12), mean = 0, stddev = 1) ## white noise as process noise
+  velocityModel$P = diag(c(-500,0,500,10,10,10,2,2,2,0.5,0.5,0.5))  
+  
+  x_sigma = 0.05; xy_sigma = 0; xz_sigma = 0 
+  yx_sigma = 0; y_sigma = 0.02; yz_sigma = 0 
+  zx_sigma = 0; zy_sigma = 0; z_sigma = 0.1
+  
+  
+  velocityModel$R = matrix(data = c(x_sigma**2, xy_sigma, xz_sigma, 
+                                    yx_sigma, y_sigma**2, yz_sigma, 
+                                    zx_sigma, zy_sigma, z_sigma**2, 
+  ), nrow = 3, ncol = 3) 
+  
+  return(velocityModel)
+} 
+
 # Setup Acceleration model with xyz-position, xyz-velocity, xyz-acceleration on one sensor (9 dimensionsional)
 # Model for one Sensor and tested with IMU
 getOnlyPositionAccelerationModel <-function(){
@@ -752,7 +792,7 @@ getSlope <- function(x1, x2, dt){
 
 imu_and_kinect <- read.csv2("D:/Projekte/Digital-Identity/data_science/imu_and_kinect.csv")
 
-# Interpolieren der Daten
+# Interpolieren der Kinect Daten
 
 interpolated_kinect_foot_right_x = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.x)
 interpolated_kinect_foot_right_x = c(interpolated_kinect_foot_right_x[1], interpolated_kinect_foot_right_x, last(interpolated_kinect_foot_right_x))

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -57,7 +58,7 @@ public class ApplyPositionToTransform : MonoBehaviour
                     }
                     break;
                 case SOURCE.KALMAN_FILTER:
-                    if (KalmanFilter != null)
+                    if (KalmanFilter != null && (!float.IsNaN(KalmanFilter.output.x) && !float.IsNaN(KalmanFilter.output.y) && !float.IsNaN(KalmanFilter.output.z)))
                     {
                         transform.localPosition = KalmanFilter.output;   
                     }
