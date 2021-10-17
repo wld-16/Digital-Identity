@@ -104,7 +104,7 @@ quaternionToEulerAngles <- function(q){
 
 ## Models
 ## Get 3 Degrees model
-get3AxisOfFreedompositionModel <- function(){
+get3AxisOfFreedompositionModel <- function(initialState, initialBelief){
   positionModel = list()
   positionModel$F = matrix(data = c(
     1,0,0,
@@ -113,7 +113,7 @@ get3AxisOfFreedompositionModel <- function(){
   )
   ,nrow = 3, ncol = 3, byrow=TRUE)
   
-  positionModel$a = matrix(data = c(400,-350,18000), nrow = 3, ncol = 1) ## state vector
+  positionModel$a = matrix(data = initialState, nrow = 3, ncol = 1) ## state vector
   
   positionModel$H = matrix(data = c(
     1,0,0,
@@ -122,11 +122,11 @@ get3AxisOfFreedompositionModel <- function(){
   ), nrow = 3, ncol = 3, byrow=TRUE) ## observation/ measurment vector 
   
   positionModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 3, ncol = 3), mean = 0, stddev = 2) ## white noise as process noise
-  positionModel$P = diag(c(0.7,0.7,0.7))  
+  positionModel$P = initialBelief
   
-  x_sigma = 0.02; xy_sigma = 0; xz_sigma = 0 
-  yx_sigma = 0; y_sigma = 0.02; yz_sigma = 0 
-  zx_sigma = 0; zy_sigma = 0; z_sigma = 0.02
+  x_sigma = 0.2; xy_sigma = 0; xz_sigma = 0 
+  yx_sigma = 0; y_sigma = 0.2; yz_sigma = 0 
+  zx_sigma = 0; zy_sigma = 0; z_sigma = 0.2
   
   
   positionModel$R = matrix(data = c(x_sigma**2, xy_sigma, xz_sigma, 
@@ -247,12 +247,12 @@ interpolated_kinect_hand_right_y = c(interpolated_kinect_hand_right_y[1], interp
 interpolated_kinect_hand_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.z)
 interpolated_kinect_hand_right_z = c(interpolated_kinect_hand_right_z[1], interpolated_kinect_hand_right_z, last(interpolated_kinect_hand_right_z))
 
-# Zeit in Millisekunden übersetzen
+# Zeit in Millisekunden ?bersetzen
 
 imu_and_kinect$t = (imu_and_kinect$t.m * 60 * 1000 + imu_and_kinect$t.s * 1000 + imu_and_kinect$t.ms)
 
-# Erstelle Data Frame für kinect daten
-# Darauf achten das datensätze gleiche Länge aufweisen
+# Erstelle Data Frame f?r kinect daten
+# Darauf achten das datens?tze gleiche L?nge aufweisen
 
 interpolatedKinectValues = data.frame(
   t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
@@ -261,7 +261,7 @@ interpolatedKinectValues = data.frame(
   z = interpolated_kinect_hand_right_z
 )
 
-# Differenziere Geschwindigkeit für Kinect Daten
+# Differenziere Geschwindigkeit f?r Kinect Daten
 
 diff_velocities_x = (interpolated_kinect_foot_right_x[2:(length(interpolated_kinect_foot_right_x))] - interpolated_kinect_foot_right_x[1:(length(interpolated_kinect_foot_right_x)-1)]) / (imu_and_kinect$t[2:(length(interpolated_kinect_foot_right_x))] - imu_and_kinect$t[1:(length(interpolated_kinect_foot_right_x)-1)])
 diff_velocities_x = c(diff_velocities_x[1], diff_velocities_x)
@@ -307,9 +307,10 @@ imu_position_z = cumsum(imu_position_z) * diff(imu_and_kinect$t)
 
 
 data_lower_lim = 0
-data_upper_lim = 2200
+data_upper_lim = 2100
 
-processModel = get3AxisOfFreedompositionModel()
+#processModel = get3AxisOfFreedompositionModel(c(400,-350,18000),diag(c(0.7,0.7,0.7)))
+processModel = get3AxisOfFreedompositionModel(c(0.1,-0.15,0.7),diag(c(1,1,1)))
 processModelUnity = get3AxisOfFreedompositionModelUnity()
 
 kalmanFilter = kalman_init(
@@ -347,10 +348,16 @@ meanAccelerationQuotient = data.frame(
 )
 
 while(i + 1 < length(imu_and_kinect$t[data_lower_lim:data_upper_lim])) {
+  #z = rbind(
+  #  imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
+  #  imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
+  #  imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
+  #)
+  
   z = rbind(
-    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
-    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
-    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim][i]
   )
   
   data = kalman_predict(kalmanFilter)
@@ -378,7 +385,7 @@ resultUnity = rbind(resultUnity, 0)
 resultUnity = rbind(resultUnity, 0)
 resultUnity = rbind(resultUnity, 0)
 
-plot_up_limit = 2200
+plot_up_limit = 2100
 plot_low_limit = 0
 
 
@@ -389,57 +396,140 @@ plotDf = data.frame(t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
                     #z = interpolatedKinectValues$z,
                     acc.x = imu_and_kinect$imu_acceleration.x[1:length(imu_and_kinect$t)-1],
                     acc.y = imu_and_kinect$imu_acceleration.y[1:length(imu_and_kinect$t)-1],
-                    acc.z = imu_and_kinect$imu_acceleration.z[1:length(imu_and_kinect$t)-1]
+                    acc.z = imu_and_kinect$imu_acceleration.z[1:length(imu_and_kinect$t)-1],
+                    kin.x = interpolatedKinectValues$x[1:length(imu_and_kinect$t)-1],
+                    kin.y = interpolatedKinectValues$y[1:length(imu_and_kinect$t)-1],
+                    kin.z = interpolatedKinectValues$z[1:length(imu_and_kinect$t)-1]
 )
 
+isPlottingResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
+)
+isPlottingKinectResults = data.frame(
+  x=TRUE,
+  y=TRUE,
+  z=TRUE
+)
+isPlottingUnityResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
+)
+isPlottingKinectUnityResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
+)
 
-# x acc plot
-accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                    a_x = plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-accxdf$K_x = as.integer(result$x[plot_low_limit:plot_up_limit])
-accxdf_long = melt(accxdf, id = "t")
-ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line()
+if(isPlottingResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_x = plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.integer(result$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
 
+if(isPlottingResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_y = plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.integer(result$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
 
-# y acc plot
-accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                    a_y = plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-accydf$K_y = as.integer(result$y[plot_low_limit:plot_up_limit])
-accydf_long = melt(accydf, id = "t")
-ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+if(isPlottingResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_z = plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.integer(result$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
 
+if(isPlottingUnityResults$x) {
+  # x acc Unity plot
+  accxudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       accelerometer_x = (plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] +100) * 0.0005)
+  accxudf$K_x = as.double(resultUnity$x[plot_low_limit:plot_up_limit])
+  accxudf_long = melt(accxudf, id = "t")
+  ggplot(accxudf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
 
-# z acc plot
-acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                    a_z = plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-acczdf$K_z = as.integer(result$z[plot_low_limit:plot_up_limit])
-acczdf_long = melt(acczdf, id = "t")
-ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+if(isPlottingUnityResults$y) {
+  # y acc Unity plot
+  accyudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       accelerometer_y = (plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] -500) * 0.001)
+  accyudf$K_y = as.double(resultUnity$y[plot_low_limit:plot_up_limit])
+  accyudf_long = melt(accyudf, id = "t")
+  ggplot(accyudf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
 
+if(isPlottingUnityResults$z){
+  # z acc Unity plot
+  acczudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       accelerometer_z = (plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] - 800) * 0.0001)
+  acczudf$K_z = as.double(resultUnity$z[plot_low_limit:plot_up_limit])
+  acczudf_long = melt(acczudf, id = "t")
+  ggplot(acczudf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+  
+}
 
-# x acc Unity plot
-accxudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                     a_x = (plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] +100) * 0.0005)
-accxudf$K_x = as.double(resultUnity$x[plot_low_limit:plot_up_limit])
-accxudf_long = melt(accxudf, id = "t")
-ggplot(accxudf_long, aes(x=t, y=value, color=variable)) + geom_line()
+if(isPlottingKinectResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_right_hand_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.double(result$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
 
+if(isPlottingKinectResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_right_hand_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.double(result$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
 
-# y acc Unity plot
-accyudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                     a_y = (plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] -500) * 0.001)
-accyudf$K_y = as.double(resultUnity$y[plot_low_limit:plot_up_limit])
-accyudf_long = melt(accyudf, id = "t")
-ggplot(accyudf_long, aes(x=t, y=value, color=variable)) + geom_line()
+if(isPlottingKinectResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_right_hand_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(result$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
 
+if(isPlottingKinectUnityResults$x) {
+  # x acc Unity plot
+  accxudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       kinect_right_hand_x = (plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] +100) * 0.0005)
+  accxudf$K_x = as.double(resultUnity$x[plot_low_limit:plot_up_limit])
+  accxudf_long = melt(accxudf, id = "t")
+  ggplot(accxudf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
 
-# z acc Unity plot
-acczudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
-                     a_z = (plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] - 800) * 0.0001)
-acczudf$K_z = as.double(resultUnity$z[plot_low_limit:plot_up_limit])
-acczudf_long = melt(acczudf, id = "t")
-ggplot(acczudf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+if(isPlottingKinectUnityResults$y) {
+  # y acc Unity plot
+  accyudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       kinect_right_hand_y = (plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] -500) * 0.001)
+  accyudf$K_y = as.double(resultUnity$y[plot_low_limit:plot_up_limit])
+  accyudf_long = melt(accyudf, id = "t")
+  ggplot(accyudf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
 
-
+if(isPlottingKinectUnityResults$z){
+  # z acc Unity plot
+  acczudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                       kinect_right_hand_z = (plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] - 800) * 0.0001)
+  acczudf$K_z = as.double(resultUnity$z[plot_low_limit:plot_up_limit])
+  acczudf_long = melt(acczudf, id = "t")
+  ggplot(acczudf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
 
 

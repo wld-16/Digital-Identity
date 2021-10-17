@@ -104,7 +104,7 @@ quaternionToEulerAngles <- function(q){
 
 ## Models
 ## Get 9 Degrees model
-get9degAccelerationModel <-function(){
+get9degAccelerationModel <-function(initialState, initialBelief, isAccelerationSensor=FALSE, isPositionSensor=FALSE){
   accelerationModel = list()
   
   accelerationModel$F = matrix(data = c(
@@ -120,16 +120,25 @@ get9degAccelerationModel <-function(){
   )
   ,nrow = 9, ncol = 9, byrow=TRUE)
   
-  accelerationModel$a = matrix(data = c(0,0,0, 0,0,0, 450,-290,18700), nrow = 9, ncol = 1) ## state vector
-  accelerationModel$H = matrix(data = c(
-    0,0,1, 0,0,0, 0,0,0, 
-    0,0,0, 0,0,1, 0,0,0, 
-    0,0,0, 0,0,0, 0,0,1
-  ), nrow = 3, ncol = 9, byrow=TRUE) ## observation/ measurment vector 
+  accelerationModel$a = matrix(data = initialState, nrow = 9, ncol = 1) ## state vector
+  if(isPositionSensor){
+    accelerationModel$H = matrix(data = c(
+      1,0,0, 0,0,0, 0,0,0, 
+      0,1,0, 0,0,0, 0,0,0, 
+      0,0,1, 0,0,0, 0,0,0
+    ), nrow = 3, ncol = 9, byrow=TRUE) ## observation/ measurment vector 
+  }
+  if(isAccelerationSensor){
+    accelerationModel$H = matrix(data = c(
+      0,0,1, 0,0,0, 0,0,0, 
+      0,0,0, 0,0,1, 0,0,0, 
+      0,0,0, 0,0,0, 0,0,1
+    ), nrow = 3, ncol = 9, byrow=TRUE) ## observation/ measurment vector  
+  }
   
   # Get white noise 
   accelerationModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 9, ncol = 9), mean = 0, stddev = 2.56) ## white noise as process noise
-  accelerationModel$P = diag(c(0,0,0,0,0,0,0.5,0.5,0.5))
+  accelerationModel$P = initialBelief
   
   x_sigma = 0.05; xy_sigma = 0.0; xz_sigma = 0.0;
   yx_sigma = 0.0; y_sigma = 0.02; yz_sigma = 0.0;
@@ -258,12 +267,12 @@ interpolated_kinect_hand_right_y = c(interpolated_kinect_hand_right_y[1], interp
 interpolated_kinect_hand_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.z)
 interpolated_kinect_hand_right_z = c(interpolated_kinect_hand_right_z[1], interpolated_kinect_hand_right_z, last(interpolated_kinect_hand_right_z))
 
-# Zeit in Millisekunden übersetzen
+# Zeit in Millisekunden ?bersetzen
 
 imu_and_kinect$t = (imu_and_kinect$t.m * 60 * 1000 + imu_and_kinect$t.s * 1000 + imu_and_kinect$t.ms)
 
-# Erstelle Data Frame für kinect daten
-# Darauf achten das datensätze gleiche Länge aufweisen
+# Erstelle Data Frame f?r kinect daten
+# Darauf achten das datens?tze gleiche L?nge aufweisen
 
 interpolatedKinectValues = data.frame(
   t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
@@ -272,7 +281,7 @@ interpolatedKinectValues = data.frame(
   z = interpolated_kinect_hand_right_z
 )
 
-# Differenziere Geschwindigkeit für Kinect Daten
+# Differenziere Geschwindigkeit f?r Kinect Daten
 
 diff_velocities_x = (interpolated_kinect_foot_right_x[2:(length(interpolated_kinect_foot_right_x))] - interpolated_kinect_foot_right_x[1:(length(interpolated_kinect_foot_right_x)-1)]) / (imu_and_kinect$t[2:(length(interpolated_kinect_foot_right_x))] - imu_and_kinect$t[1:(length(interpolated_kinect_foot_right_x)-1)])
 diff_velocities_x = c(diff_velocities_x[1], diff_velocities_x)
@@ -320,7 +329,8 @@ imu_position_z = cumsum(imu_velocity_z) * diff(imu_and_kinect$t)
 data_lower_lim = 0
 data_upper_lim = 2200
 
-processModel = get9degAccelerationModel()
+#processModel = get9degAccelerationModel(c(0,0,0, 0,0,0, 450,-290,18700), diag(c(0,0,0,0,0,0,0.5,0.5,0.5)), isAccelerationSensor = TRUE)
+processModel = get9degAccelerationModel(c(0,0,0, 0,0,0, 0,0,0), diag(c(0.5,0.5,0.5,0,0,0,0,0,0)), isPositionSensor = TRUE)
 processModelUnity = get9degAccelerationModelUnity()
 
 kalmanFilter = kalman_init(
@@ -359,9 +369,12 @@ meanAccelerationQuotient = data.frame(
 
 while(i + 1 < length(imu_and_kinect$t[data_lower_lim:data_upper_lim])) {
   z = rbind(
-    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
-    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
-    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
+    interpolated_kinect_hand_right_x[data_lower_lim:data_upper_lim][i],
+    interpolated_kinect_hand_right_y[data_lower_lim:data_upper_lim][i],
+    interpolated_kinect_hand_right_z[data_lower_lim:data_upper_lim][i]
+    #imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
+    #imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
+    #imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
   )
   
   data = kalman_predict(kalmanFilter)
@@ -378,14 +391,24 @@ while(i + 1 < length(imu_and_kinect$t[data_lower_lim:data_upper_lim])) {
 } 
 
 isPlottingResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
+)
+isPlottingUnityResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
+)
+isPlottingKinectResults = data.frame(
   x=TRUE,
   y=TRUE,
   z=TRUE
 )
-isPlottingUnityResults = data.frame(
-  x=TRUE,
-  y=TRUE,
-  z=TRUE
+isPlottingUnityKinectResults = data.frame(
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
 )
 
 colnames(result) = processModel$colNames
@@ -411,7 +434,10 @@ plotDf = data.frame(t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
                     #z = interpolatedKinectValues$z,
                     acc.x = imu_and_kinect$imu_acceleration.x[1:length(imu_and_kinect$t)-1],
                     acc.y = imu_and_kinect$imu_acceleration.y[1:length(imu_and_kinect$t)-1],
-                    acc.z = imu_and_kinect$imu_acceleration.z[1:length(imu_and_kinect$t)-1]
+                    acc.z = imu_and_kinect$imu_acceleration.z[1:length(imu_and_kinect$t)-1],
+                    kin.x = interpolated_kinect_hand_right_x[1:length(imu_and_kinect$t)-1],
+                    kin.y = interpolated_kinect_hand_right_y[1:length(imu_and_kinect$t)-1],
+                    kin.z = interpolated_kinect_hand_right_z[1:length(imu_and_kinect$t)-1]
 )
 
 
@@ -468,6 +494,29 @@ if(isPlottingUnityResults$z) {
   acczudf_long = melt(acczudf, id = "t")
   ggplot(acczudf_long, aes(x=t, y=value, color=variable)) + geom_line()  
 }
+if(isPlottingKinectResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.double(result$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
 
+if(isPlottingKinectResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.double(result$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
 
-
+if(isPlottingKinectResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(result$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
