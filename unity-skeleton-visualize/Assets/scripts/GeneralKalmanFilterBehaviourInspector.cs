@@ -1,16 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using MathNet.Numerics;
-using MathNet.Numerics.Distributions;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Single;
-using static MathNet.Numerics.SpecialFunctions;
-using static System.Math;
-using Vector = MathNet.Numerics.LinearAlgebra.Double.Vector;
 
 [CustomEditor(typeof(GeneralKalmanFilterBehaviour))]
 public class GeneralKalmanFilterBehaviourInspector : Editor

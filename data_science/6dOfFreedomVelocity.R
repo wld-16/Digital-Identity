@@ -1,12 +1,14 @@
 # install packages
-#install.packages("RMThreshold")
-#install.packages("jsonlite")
-#install.packages("ggplot2")
-#install.packages("dplyr")
-#install.packages("patchwork")
-#install.packages("reshape2")
-#install.packages("RSpincalc")
-#install.packages("LaplacesDemon")
+install.packages("RMThreshold")
+install.packages("jsonlite")
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("patchwork")
+install.packages("reshape2")
+install.packages("RSpincalc")
+install.packages("LaplacesDemon")
+install.packages("dlm")
+install.packages("onion")
 
 # laden der Libraries
 
@@ -16,6 +18,9 @@ library(ggplot2)
 library(RSpincalc)
 library(reshape2)
 library(LaplacesDemon)
+library(onion)
+
+
 
 dt = 14 / 1000
 
@@ -105,13 +110,21 @@ quaternionToEulerAngles <- function(q){
 ## Models
 ## Get 6 Degrees model
 get6AxisOfFreedomVelocityModel <- function(initialState, initialBelief, isPositionSensor = FALSE, isAccelerationSensor = FALSE){
+  #Currently used variable names -> variable names from Slides
+  # F -> A: State Transition Matrix
+  # a -> x: State Vector
+  # H -> C: Observation Matrix
+  # Q -> Q: Process Noise Matrix
+  # R -> R: Sensor Noise Matrix
+  # P -> P: Sensor Belief
+  
   velocityModel = list()
   velocityModel$F = matrix(data = c(
     1,0,0,dt,0,0,
-    0,0,0,1,0,0,
     0,1,0,0,dt,0,
-    0,0,0,0,1,0,
     0,0,1,0,0,dt,
+    0,0,0,1,0,0,
+    0,0,0,0,1,0,
     0,0,0,0,0,1
   )
   ,nrow = 6, ncol = 6, byrow=TRUE)
@@ -123,7 +136,7 @@ get6AxisOfFreedomVelocityModel <- function(initialState, initialBelief, isPositi
       0,0,0,1,0,0,
       0,0,0,0,1,0,
       0,0,0,0,0,1
-    ), nrow = 3, ncol = 6, byrow=TRUE) ## observation/ measurment vector 
+    ), nrow = 3, ncol = 6) ## observation/ measurment vector 
   }
   if(isPositionSensor) {
     velocityModel$H = matrix(data = c(
@@ -133,12 +146,30 @@ get6AxisOfFreedomVelocityModel <- function(initialState, initialBelief, isPositi
     ), nrow = 3, ncol = 6, byrow=TRUE) ## observation/ measurment vector  
   }
   
-  velocityModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 6, ncol = 6), mean = 0, stddev = 2) ## white noise as process noise
+  #velocityModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 6, ncol = 6), mean = 0, stddev = 2) ## white noise as process noise
+  
+  Q = matrix(data = c(
+    0.01**2,0,0,
+    0,01**2,0,
+    0,0,0.01**2
+  ), nrow = 3, ncol = 3, byrow=TRUE)
+  
+  velocityModel$Gd = matrix(data =c(
+    dt**2/2, 0, 0, dt**2/2, 0, 0,
+    0, dt**2/2, 0, 0, dt**2/2, 0,
+    0, 0, dt**2/2, 0, 0, dt**2/2,
+    dt, 0, 0, dt, 0, 0,
+    0, dt, 0, 0, dt, 0,
+    0, 0, dt, 0, 0, dt
+  ), nrow=6, ncol=3, byrow = TRUE)
+  
+  velocityModel$Q = velocityModel$Gd %*% Q %*% t(velocityModel$Gd)
+  
   velocityModel$P = initialBelief  
   
-  x_sigma = 0.02; xy_sigma = 0; xz_sigma = 0 
-  yx_sigma = 0; y_sigma = 0.02; yz_sigma = 0 
-  zx_sigma = 0; zy_sigma = 0; z_sigma = 0.02
+  x_sigma = 500; xy_sigma = 0; xz_sigma = 0 
+  yx_sigma = 0; y_sigma = 500; yz_sigma = 0 
+  zx_sigma = 0; zy_sigma = 0; z_sigma = 100
   
   
   velocityModel$R = matrix(data = c(x_sigma**2, xy_sigma, xz_sigma, 
@@ -146,13 +177,13 @@ get6AxisOfFreedomVelocityModel <- function(initialState, initialBelief, isPositi
                                     zx_sigma, zy_sigma, z_sigma**2
   ), nrow = 3, ncol = 3) 
   
-  velocityModel$colNames = c("x","v_x","y","v_y","z","v_z")
+  velocityModel$colNames = c("x","y","z","v_x","v_y","v_z")
   
   return(velocityModel)
 }
 
 ## Get 6 Degrees model
-get6AxisOfFreedomVelocityModelUnity <- function(initialState, initialBelief){
+get6AxisOfFreedomVelocityModelUnity <- function(){
   velocityModel = list()
   velocityModel$F = matrix(data = c(
     1,0,0,dt,0,0,
@@ -164,7 +195,7 @@ get6AxisOfFreedomVelocityModelUnity <- function(initialState, initialBelief){
   )
   ,nrow = 6, ncol = 6, byrow=TRUE)
   
-  velocityModel$a = matrix(data = initialState, nrow = 6, ncol = 1) ## state vector
+  velocityModel$a = matrix(data = c(0.055,-0.0964,0.28,3.9,-3.46,18.78), nrow = 6, ncol = 1) ## state vector
   
   velocityModel$H = matrix(data = c(
     0,0,0,10,0,0,
@@ -173,7 +204,7 @@ get6AxisOfFreedomVelocityModelUnity <- function(initialState, initialBelief){
   ), nrow = 3, ncol = 6, byrow=TRUE) ## observation/ measurement vector 
   
   velocityModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 6, ncol = 6), mean = 0, stddev = 2) ## white noise as process noise
-  velocityModel$P = iniitialBelief  
+  velocityModel$P = diag(c(0,0,0,1,0.7,0.7))
   
   x_sigma = 0.02; xy_sigma = 0; xz_sigma = 0 
   yx_sigma = 0; y_sigma = 0.02; yz_sigma = 0 
@@ -189,6 +220,64 @@ get6AxisOfFreedomVelocityModelUnity <- function(initialState, initialBelief){
   
   return(velocityModel)
 } 
+
+## Get 6 Degrees model
+get6degFusion <- function(initialState, initialBelief){
+  velocityModel = list()
+  velocityModel$F = matrix(data = c(
+    1,0,0,dt,0,0,
+    0,1,0,0,dt,0,
+    0,0,1,0,0,dt,
+    0,0,0,1,0,0,
+    0,0,0,0,1,0,
+    0,0,0,0,0,1
+  )
+  ,nrow = 6, ncol = 6, byrow=TRUE)
+  
+  velocityModel$a = matrix(data = initialState, nrow = 6, ncol = 1) ## state vector
+  
+  velocityModel$H = matrix(data = c(
+    1,0,0,0,0,0,
+    0,1,0,0,0,0,  
+    0,0,1,0,0,0,
+    0,0,0,10,0,0,
+    0,0,0,0,10,0,
+    0,0,0,0,0,1000
+  ), nrow = 6, ncol = 6, byrow=TRUE) ## observation/ measurement vector 
+  
+  #velocityModel$Q = add.Gaussian.noise(matrix(data = 1,nrow = 6, ncol = 6), mean = 0, stddev = 2) ## white noise as process noise
+  velocityModel$P = initialBelief  
+  
+  x_sigma = 0.02; y_sigma = 0.02; z_sigma = 0.02
+  vx_sigma = 0.02; vy_sigma = 0.02; vz_sigma = 0.02
+  
+  Q = matrix(data = c(
+    1,0,0,0,0,0,
+    0,1,0,0,0,0,
+    0,0,1,0,0,0,
+    0,0,0,10**2,0,0,
+    0,0,0,0,10**2,0,
+    0,0,0,0,0,0.5**2
+  ), nrow = 6, ncol = 6, byrow=TRUE)
+  
+  velocityModel$Gd = matrix(data =c(
+    dt**2/2, 0, 0, 0, 0, 0,
+    0, dt**2/2, 0, 0, 0, 0,
+    0, 0, dt**2/2, 0, 0, 0,
+    dt,0,0, dt, 0, 0,
+    0,0,0, 0, dt, 0,
+    0,0,0, 0, 0, dt
+  ), nrow=6, ncol=6, byrow = TRUE)
+  
+  velocityModel$Q = velocityModel$Gd %*% Q %*% t(velocityModel$Gd)
+  
+  
+  velocityModel$R = diag(c(x_sigma**2, y_sigma**2, z_sigma**2, vx_sigma**2, vy_sigma**2, vz_sigma**2))
+  
+  velocityModel$colNames = c("x","v_x","y","v_y","z","v_z")
+  
+  return(velocityModel)
+}
 
 # Will Return Filter Object, from the variables
 kalman_init <- function(x,P,Q,H,F,R){
@@ -207,6 +296,24 @@ kalman_init <- function(x,P,Q,H,F,R){
   return(kalmanFilter)
 }
 
+dlm_init <- function(x,P,Q,H,F,R){
+  kalmanFilter <- list()
+  
+  kalmanFilter$x = x
+  kalmanFilter$P = P
+  kalmanFilter$Q = Q
+  kalmanFilter$H = H
+  kalmanFilter$R = R
+  kalmanFilter$K = P %*% t(H) %*% solve(H %*% P %*% t(H) + R)
+  kalmanFilter$F = F
+  
+  #V, W (covariance matrices of the measurement and state equations, respectively)
+  # FF and GG (measurement equation matrix and transition matrix respectively)
+  # m0, C0 (prior mean and covariance matrix of the state vector)
+  
+  return(dlm(FF = H, V = R, GG = F, W = Q, m0 = x, C0 = P))
+}
+
 # Predict next state base on the filter, that is input
 kalman_predict <- function(kalmanFilter){
   
@@ -218,11 +325,12 @@ kalman_predict <- function(kalmanFilter){
 
 # Updates the filter with the measurement z
 kalman_update <- function(z, kalmanFilter){
+  
   S = kalmanFilter$H %*% kalmanFilter$P %*% t(kalmanFilter$H) + kalmanFilter$R
   K = kalmanFilter$P %*% t(kalmanFilter$H) %*% solve(S)
   
   y = z - kalmanFilter$H %*% kalmanFilter$x
-  x = kalmanFilter$x + K %*% y
+  x = kalmanFilter$x + K %*% (y - kalmanFilter$H %*% kalmanFilter$x)
   P = (diag(dim(kalmanFilter$F)[1]) - K %*% kalmanFilter$H) %*% kalmanFilter$P
   
   #L = dmvn(x = y[,1], mu = (kalmanFilter$H %*% kalmanFilter$x)[,1], Sigma = S, log=TRUE)
@@ -244,23 +352,19 @@ getSlope <- function(x1, x2, dt){
 # Daten import
 
 
-imu_and_kinect <- read.csv2("D:/Projekte/Digital-Identity/data_science/imu_and_kinect.csv")
+imu_and_kinect <- read.csv2("D:/Projekte/Digital-Identity/data_science/imu_and_kinect_with_orientation.csv")
 
 # Interpolieren der Kinect Daten
 
 interpolated_kinect_foot_right_x = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.x)
-interpolated_kinect_foot_right_x = c(interpolated_kinect_foot_right_x[1], interpolated_kinect_foot_right_x, last(interpolated_kinect_foot_right_x))
 interpolated_kinect_foot_right_y = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.y)
-interpolated_kinect_foot_right_y = c(interpolated_kinect_foot_right_y[1], interpolated_kinect_foot_right_y, last(interpolated_kinect_foot_right_y))
 interpolated_kinect_foot_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.z)
-interpolated_kinect_foot_right_z = c(interpolated_kinect_foot_right_z[1], interpolated_kinect_foot_right_z, last(interpolated_kinect_foot_right_z))
 
 interpolated_kinect_hand_right_x = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.x)
-interpolated_kinect_hand_right_x = c(interpolated_kinect_hand_right_x[1], interpolated_kinect_hand_right_x, last(interpolated_kinect_hand_right_x))
 interpolated_kinect_hand_right_y = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.y)
-interpolated_kinect_hand_right_y = c(interpolated_kinect_hand_right_y[1], interpolated_kinect_hand_right_y, last(interpolated_kinect_hand_right_y))
 interpolated_kinect_hand_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.z)
-interpolated_kinect_hand_right_z = c(interpolated_kinect_hand_right_z[1], interpolated_kinect_hand_right_z, last(interpolated_kinect_hand_right_z))
+
+imu_and_kinect = imu_and_kinect[0:length(interpolated_kinect_hand_right_z),]
 
 # Zeit in Millisekunden ?bersetzen
 
@@ -324,31 +428,81 @@ imu_position_z = cumsum(imu_velocity_z) * diff(imu_and_kinect$t)
 data_lower_lim = 0
 data_upper_lim = 2200
 
-#processModel = get6AxisOfFreedomVelocityModel(c(0,0,0,400,-350,18000), diag(c(0,0,0,1,0.7,0.7)), isAccelerationSensor = TRUE)
-processModel = get6AxisOfFreedomVelocityModel(c(0.00,0.0,0,0,0,0), diag(c(0.5,0.4,0.2,0,0,0)), isPositionSensor = TRUE)
-processModelUnity = get6AxisOfFreedomVelocityModelUnity()
 
-kalmanFilter = kalman_init(
-  processModel$a,
-  processModel$P,
-  processModel$Q,
-  processModel$H,
-  processModel$F,
-  processModel$R
+processModelImu = get6AxisOfFreedomVelocityModel(c(0,0,180000, 0, 0, 18000), diag(c(1,1,1,0,0,0)), isAccelerationSensor = TRUE)
+processModelKinect = get6AxisOfFreedomVelocityModel(c(0.00,0.0,0,0,0,0), diag(c(0.5,0.4,0.2,0,0,0)), isPositionSensor = TRUE)
+processModelImuUnity = get6AxisOfFreedomVelocityModelUnity()
+processModelFusion = get6degFusion(c(0,0,0,1,1,5), diag(c(1,1,1,1,0.7,0.7)))
+
+kalmanFilterImu = kalman_init(
+  processModelImu$a,
+  processModelImu$P,
+  processModelImu$Q,
+  processModelImu$H,
+  processModelImu$F,
+  processModelImu$R
 )
 
-kalmanFilterUnity = kalman_init(
-  processModelUnity$a,
-  processModelUnity$P,
-  processModelUnity$Q,
-  processModelUnity$H,
-  processModelUnity$F,
-  processModelUnity$R
+dlmImu = dlm_init(processModelImu$a,
+         processModelImu$P,
+         processModelImu$Q,
+         processModelImu$H,
+         processModelImu$F,
+         processModelImu$R
+)
+
+dlmKinect = dlm_init(processModelKinect$a,
+                     processModelKinect$P,
+                     processModelKinect$Q,
+                     processModelKinect$H,
+                     processModelKinect$F,
+                     processModelKinect$R
+                     )
+
+dlmFusion = dlm_init(
+  processModelFusion$a,
+  processModelFusion$P,
+  processModelFusion$Q,
+  processModelFusion$H,
+  processModelFusion$F,
+  processModelFusion$R
+)
+
+kalmanFilterKinect = kalman_init(
+  processModelKinect$a,
+  processModelKinect$P,
+  processModelKinect$Q,
+  processModelKinect$H,
+  processModelKinect$F,
+  processModelKinect$R
+)
+
+kalmanFilterImuUnity = kalman_init(
+  processModelImuUnity$a,
+  processModelImuUnity$P,
+  processModelImuUnity$Q,
+  processModelImuUnity$H,
+  processModelImuUnity$F,
+  processModelImuUnity$R
+)
+
+kalmanFilterFusion = kalman_init(
+  processModelFusion$a,
+  processModelFusion$P,
+  processModelFusion$Q,
+  processModelFusion$H,
+  processModelFusion$F,
+  processModelFusion$R
 )
 
 i = 2
-result = list()
-resultUnity = list()
+resultImu = list()
+resultKinect = list()
+resultImuUnity = list()
+resultFusion = list()
+resultDlmImu = list()
+resultDlmKinect = list()
+resultDlmFusion = list()
 
 ldata = c(0)
 
@@ -363,57 +517,139 @@ meanAccelerationQuotient = data.frame(
 )
 
 while(i + 1 < length(imu_and_kinect$t[data_lower_lim:data_upper_lim])) {
-  #z = rbind(
-  #  imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
-  #  imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
-  #  imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
-  #)
-  z = rbind(
-    interpolated_kinect_hand_right_x[data_lower_lim:data_upper_lim][i],
-    interpolated_kinect_hand_right_y[data_lower_lim:data_upper_lim][i],
-    interpolated_kinect_hand_right_z[data_lower_lim:data_upper_lim][i]
-    )
+  z_imu = rbind(
+    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
+    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
+    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
+  )
   
-  data = kalman_predict(kalmanFilter)
-  dataUnity = kalman_predict(kalmanFilterUnity)
+  z_kinect = rbind(
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim][i]
+  )
   
-  result = rbind(result, data$x[,1])
-  resultUnity = rbind(resultUnity, dataUnity$x[,1])
+  z_fusion = rbind(
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim][i],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim][i],
+    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim][i],
+    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim][i],
+    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim][i]
+  )
   
   
-  kalmanFilter = kalman_update(z, kalmanFilter)
-  kalmanFilterUnity = kalman_update(z, kalmanFilterUnity)
+  dataImu = kalman_predict(kalmanFilterImu)
+  dataKinect = kalman_predict(kalmanFilterKinect)
+  dataImuUnity = kalman_predict(kalmanFilterImuUnity)
+  dataFusion = kalman_predict(kalmanFilterFusion)
+  
+  resultImu = rbind(resultImu, dataImu$x[,1])
+  resultKinect = rbind(resultKinect, dataKinect$x[,1])
+  resultImuUnity = rbind(resultImuUnity, dataImuUnity$x[,1])
+  resultFusion = rbind(resultFusion, dataFusion$x[,1])
+  
+  kalmanFilterImu = kalman_update(z_imu, kalmanFilterImu)
+  kalmanFilterKinect = kalman_update(z_kinect, kalmanFilterKinect)
+  kalmanFilterImuUnity = kalman_update(z_imu, kalmanFilterImuUnity)
+  kalmanFilterFusion = kalman_update(z_fusion, kalmanFilterFusion)
   
   i = i + 1
-} 
+}
 
-colnames(result) = processModel$colNames
-result = data.frame(result)
-result = rbind(result, 0)
-result = rbind(result, 0)
-result = rbind(result, 0)
+dlmDataKinect = dlmFilter(
+  rbind(
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim]
+  ), dlmKinect, debug = FALSE, simplify = FALSE
+)
 
-colnames(resultUnity) = processModelUnity$colNames
-resultUnity = data.frame(resultUnity)
-resultUnity = rbind(resultUnity, 0)
-resultUnity = rbind(resultUnity, 0)
-resultUnity = rbind(resultUnity, 0)
+dlmDataImu = dlmFilter(
+  rbind(
+    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim]
+    ), dlmImu, debug = FALSE, simplify = FALSE
+  )
 
-plot_up_limit = 2100
+dlmDataFusion = dlmFilter(
+  rbind(
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_acceleration.x[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_acceleration.y[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_acceleration.z[data_lower_lim:data_upper_lim]
+  ), dlmFusion, debug = FALSE, simplify = FALSE
+)
+
+resultDlmImu = data.frame(x=dlmDataImu[["f"]][1,], y=dlmDataImu[["f"]][2,], z=dlmDataImu[["f"]][3,])
+resultDlmKinect = data.frame(x=dlmDataKinect[["f"]][1,], y=dlmDataKinect[["f"]][2,], z=dlmDataKinect[["f"]][3,])
+resultDlmFusion = data.frame(
+  x=dlmDataFusion[["f"]][1,],
+  y=dlmDataFusion[["f"]][2,],
+  z=dlmDataFusion[["f"]][3,],
+  vx=dlmDataFusion[["f"]][4,],
+  vy=dlmDataFusion[["f"]][5,],
+  vz=dlmDataFusion[["f"]][6,]
+  )
+
+colnames(resultDlmImu) = c("v_x","v_y","v_z")
+resultDlmImu = data.frame(resultDlmImu)
+resultDlmImu = rbind(resultDlmImu, 0)
+resultDlmImu = rbind(resultDlmImu, 0)
+resultDlmImu = rbind(resultDlmImu, 0)
+
+colnames(resultDlmKinect) = c("x","y","z")
+resultDlmKinect = data.frame(resultDlmKinect)
+resultDlmKinect = rbind(resultDlmKinect, 0)
+resultDlmKinect = rbind(resultDlmKinect, 0)
+resultDlmKinect = rbind(resultDlmKinect, 0)
+
+colnames(resultDlmFusion) = c("x","y","z","v_x","v_y","v_z")
+resultDlmFusion = data.frame(resultDlmKinect)
+resultDlmFusion = rbind(resultDlmFusion, 0)
+resultDlmFusion = rbind(resultDlmFusion, 0)
+resultDlmFusion = rbind(resultDlmFusion, 0)
+
+
+colnames(resultImu) = processModelImu$colNames
+resultImu = data.frame(resultImu)
+resultImu = rbind(resultImu, 0)
+resultImu = rbind(resultImu, 0)
+resultImu = rbind(resultImu, 0)
+
+colnames(resultImuUnity) = processModelImuUnity$colNames
+resultImuUnity = data.frame(resultImuUnity)
+resultImuUnity = rbind(resultImuUnity, 0)
+resultImuUnity = rbind(resultImuUnity, 0)
+resultImuUnity = rbind(resultImuUnity, 0)
+
+colnames(resultKinect) = processModelKinect$colNames
+resultKinect = data.frame(resultKinect)
+resultKinect = rbind(resultKinect, 0)
+resultKinect = rbind(resultKinect, 0)
+resultKinect = rbind(resultKinect, 0)
+
+colnames(resultFusion) = processModelFusion$colNames
+resultFusion = data.frame(resultFusion)
+resultFusion = rbind(resultFusion, 0)
+resultFusion = rbind(resultFusion, 0)
+resultFusion = rbind(resultFusion, 0)
+
+plot_up_limit = 1600
 plot_low_limit = 0
 
 
 
 plotDf = data.frame(t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
-                    #x = interpolatedKinectValues$x,
-                    #y = interpolatedKinectValues$y,
-                    #z = interpolatedKinectValues$z,
                     acc.x = imu_and_kinect$imu_acceleration.x[1:length(imu_and_kinect$t)-1],
                     acc.y = imu_and_kinect$imu_acceleration.y[1:length(imu_and_kinect$t)-1],
                     acc.z = imu_and_kinect$imu_acceleration.z[1:length(imu_and_kinect$t)-1],
-                    kin.x = interpolated_kinect_hand_right_x[1:length(imu_and_kinect$t)-1],
-                    kin.y = interpolated_kinect_hand_right_y[1:length(imu_and_kinect$t)-1],
-                    kin.z = interpolated_kinect_hand_right_z[1:length(imu_and_kinect$t)-1]
+                    kin.x = interpolatedKinectValues$x[1:length(imu_and_kinect$t)-1],
+                    kin.y = interpolatedKinectValues$y[1:length(imu_and_kinect$t)-1],
+                    kin.z = interpolatedKinectValues$z[1:length(imu_and_kinect$t)-1]
 )
 
 isPlottingResults = data.frame(
@@ -422,44 +658,58 @@ isPlottingResults = data.frame(
   z=FALSE
 )
 isPlottingKinectResults = data.frame(
-  x=TRUE,
-  y=TRUE,
-  z=TRUE
+  x=FALSE,
+  y=FALSE,
+  z=FALSE
 )
 isPlottingUnityResults = data.frame(
   x=FALSE,
   y=FALSE,
   z=FALSE
 )
-isPlottingKinectUnityResults = data.frame(
+isPlottingFusionResults = data.frame( 
+  x=TRUE,
+  y=TRUE,
+  z=TRUE
+)
+isPlottingDlmImuResults = data.frame(
+  x=TRUE,
+  y=TRUE,
+  z=TRUE
+)
+isPlottingDlmKinectResults = data.frame(
   x=FALSE,
   y=FALSE,
   z=FALSE
 )
+isPlottingDlmFusionResults = data.frame(
+  x=TRUE,
+  y=TRUE,
+  z=TRUE
+)
+
 
 if(isPlottingResults$x) {
   # x acc plot
   accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       accelerometer_x = plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  accxdf$K_x = as.integer(result$v_x[plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.integer(resultImu$v_x[plot_low_limit:plot_up_limit])
   accxdf_long = melt(accxdf, id = "t")
   ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
 }
-
 if(isPlottingResults$y) {
   # y acc plot
   accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       accelerometer_y = plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  accydf$K_y = as.integer(result$v_y[plot_low_limit:plot_up_limit])
+  accydf$K_y = as.integer(resultImu$v_y[plot_low_limit:plot_up_limit])
   accydf_long = melt(accydf, id = "t")
   ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
 }
-
 if(isPlottingResults$z) {
   # z acc plot
   acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       accelerometer_z = plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  acczdf$K_z = as.integer(result$v_z[plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.integer(resultImu$v_z[plot_low_limit:plot_up_limit])
   acczdf_long = melt(acczdf, id = "t")
   ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
 }
@@ -468,25 +718,23 @@ if(isPlottingUnityResults$x) {
   # x acc Unity plot
   accxudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                        accelerometer_x = (plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] + 2000) * 0.00005)
-  accxudf$K_x = as.double(resultUnity$x[plot_low_limit:plot_up_limit])
+  accxudf$K_x = as.double(resultImuUnity$x[plot_low_limit:plot_up_limit])
   accxudf_long = melt(accxudf, id = "t")
   ggplot(accxudf_long, aes(x=t, y=value, color=variable)) + geom_line()
 }
-
 if(isPlottingUnityResults$y) {
   # y acc Unity plot
   accyudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                        accelerometer_y = (plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] -1000) * 0.0001)
-  accyudf$K_y = as.double(resultUnity$y[plot_low_limit:plot_up_limit])
+  accyudf$K_y = as.double(resultImuUnity$y[plot_low_limit:plot_up_limit])
   accyudf_long = melt(accyudf, id = "t")
   ggplot(accyudf_long, aes(x=t, y=value, color=variable)) + geom_line()
 }
-
 if(isPlottingUnityResults$z) {
   # z acc Unity plot
   acczudf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       accelerometer_z = (plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] + 524200) * 0.000001)
-  acczudf$K_z = as.double(resultUnity$z[plot_low_limit:plot_up_limit])
+  acczudf$K_z = as.double(resultImuUnity$z[plot_low_limit:plot_up_limit])
   acczudf_long = melt(acczudf, id = "t")
   ggplot(acczudf_long, aes(x=t, y=value, color=variable)) + geom_line()  
 }
@@ -495,25 +743,129 @@ if(isPlottingKinectResults$x) {
   # x acc plot
   accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       kinect_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  accxdf$K_x = as.double(result$x[plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.double(resultKinect$x[plot_low_limit:plot_up_limit])
   accxdf_long = melt(accxdf, id = "t")
   ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
 }
-
 if(isPlottingKinectResults$y) {
   # y acc plot
   accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       kinect_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  accydf$K_y = as.double(result$y[plot_low_limit:plot_up_limit])
+  accydf$K_y = as.double(resultKinect$y[plot_low_limit:plot_up_limit])
   accydf_long = melt(accydf, id = "t")
   ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
 }
-
 if(isPlottingKinectResults$z) {
   # z acc plot
   acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
                       kinect_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
-  acczdf$K_z = as.double(result$z[plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(resultKinect$z[plot_low_limit:plot_up_limit])
   acczdf_long = melt(acczdf, id = "t")
   ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
+
+if(isPlottingFusionResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_x = (plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] *0.0001),
+                      kinect_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 2)
+  accxdf$K_x = as.double(resultFusion$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() + ylim(-2, 2)
+}
+if(isPlottingFusionResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_y = (plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 0.0001),
+                      kinect_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 2)
+  accydf$K_y = as.double(resultFusion$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line() + ylim(-2, 2)
+}
+if(isPlottingFusionResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_z = (plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 0.00005),
+                      kinect_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(resultFusion$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
+
+if(isPlottingDlmImuResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_x = plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.integer(resultDlmImu$v_x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
+if(isPlottingDlmImuResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_y = plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.integer(resultDlmImu$v_y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
+if(isPlottingDlmImuResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_z = plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.integer(resultDlmImu$v_z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
+
+if(isPlottingDlmKinectResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.double(resultDlmKinect$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
+if(isPlottingDlmKinectResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.double(resultDlmKinect$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
+if(isPlottingDlmKinectResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(resultDlmKinect$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
+
+if(isPlottingDlmFusionResults$x) {
+  # x acc plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_x = (plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] *0.0001),
+                      kinect_x = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 2)
+  accxdf$K_x = as.double(resultDlmFusion$x[plot_low_limit:plot_up_limit])
+  accxdf_long = melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() + ylim(-2, 2)
+}
+if(isPlottingDlmFusionResults$y) {
+  # y acc plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_y = (plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 0.0001),
+                      kinect_y = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 2)
+  accydf$K_y = as.double(resultDlmFusion$y[plot_low_limit:plot_up_limit])
+  accydf_long = melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line() + ylim(-2, 2)
+}
+if(isPlottingDlmFusionResults$z) {
+  # z acc plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_z = (plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 0.00005),
+                      kinect_z = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.double(resultDlmFusion$z[plot_low_limit:plot_up_limit])
+  acczdf_long = melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
 }

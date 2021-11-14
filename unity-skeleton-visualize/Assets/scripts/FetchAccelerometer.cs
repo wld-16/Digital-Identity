@@ -4,39 +4,54 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class FetchAccelerometer : MonoBehaviour
+public class FetchAccelerometer : MonoBehaviour, IPushData
 {
+    #region dataSource
+
     [SerializeField] public SampleUserPolling_ReadWrite readWith;
     [SerializeField] public Vector3 fetchedAcceleration;
-    [SerializeField] public Vector3 rawOutput;
+
+    #endregion
+
+    #region transformations
     
-    [SerializeField] private bool applyToTransform;
     [SerializeField] private Vector3 offset;
-    
-    [SerializeField] private Vector3 thresholdVector = new Vector3(1,1,1);
-    
+    [SerializeField] private Vector3 thresholdVector = new Vector3(1, 1, 1);
+
+    #endregion
+
+    #region output 
+
+    [SerializeField] public Vector3 rawOutput;
+    [SerializeField] private List<IPullData> receipients;
+
+    #endregion
+
+    #region derivedOrIntegratedData
+
     [SerializeField] private Vector3 cumulativeVelocity = new Vector3(0, 0, 0);
     [SerializeField] private Vector3 cumulativePosition = new Vector3(0, 0, 0);
     [SerializeField] private Vector3 accelerationScale;
     [SerializeField] private Vector3 velocityScale;
     [SerializeField] private Vector3 positionScale;
-    
+
+    #endregion
+
     [SerializeField] private AccelerationMapping[] accelerometerMapping = new AccelerationMapping[3]
     {
         new AccelerationMapping(InputAccelerationAxis.X, OutputAccelerationAxis.X),
         new AccelerationMapping(InputAccelerationAxis.Y, OutputAccelerationAxis.Y),
         new AccelerationMapping(InputAccelerationAxis.Z, OutputAccelerationAxis.Z)
     };
-    
+
     private Vector3 calibrationSum;
     private int calibrationCount = 0;
     private bool isCalibrating;
-    
-    
+
+
     // Start is called before the first frame update
     void Start()
     {
-        
     }
 
     // Update is called once per frame
@@ -45,31 +60,45 @@ public class FetchAccelerometer : MonoBehaviour
         rawOutput = accelerometerMapping.Select(entry =>
                 entry.applyMapping(readWith.orientations.ring.accelerometer.ToVector3Int()))
             .Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3);
-        
+
         if (Math.Abs(rawOutput.magnitude) > 0.001f)
         {
-            Vector3 tempFetch = rawOutput ;
+            Vector3 tempFetch = rawOutput;
             tempFetch += offset;
             tempFetch.Scale(accelerationScale);
 
-                if (Math.Abs(tempFetch.x) > thresholdVector.x || Math.Abs(tempFetch.y) > thresholdVector.y ||
-                    Math.Abs(tempFetch.z) > thresholdVector.z)
-                {
-                    Vector3 currentVelocity = tempFetch;
-                    currentVelocity.Scale(velocityScale);
-                    cumulativeVelocity = cumulativeVelocity + currentVelocity;
+            if (Math.Abs(tempFetch.x) > thresholdVector.x || Math.Abs(tempFetch.y) > thresholdVector.y ||
+                Math.Abs(tempFetch.z) > thresholdVector.z)
+            {
+                Vector3 currentVelocity = tempFetch;
+                currentVelocity.Scale(velocityScale);
+                cumulativeVelocity = cumulativeVelocity + currentVelocity;
 
-                    Vector3 currentPosition = currentVelocity;
-                    cumulativePosition.Scale(positionScale);
+                Vector3 currentPosition = currentVelocity;
+                cumulativePosition.Scale(positionScale);
 
-                    cumulativePosition = currentPosition;
-                
-                    transform.localPosition = cumulativePosition ;
-                    fetchedAcceleration = cumulativePosition ;
-                }
-            
+                cumulativePosition = currentPosition;
+
+                transform.localPosition = cumulativePosition;
+                fetchedAcceleration = cumulativePosition;
+            }
         }
+    }
 
+    public List<IPullData> getDataRecipients()
+    {
+        return receipients;
+    }
+
+    public void PushData()
+    {
+        getDataRecipients().ForEach(recipient =>
+            recipient.Receive(new List<float>() {rawOutput.x, rawOutput.y, rawOutput.z}));
+    }
+
+    public List<float> getData()
+    {
+        return new List<float>() {rawOutput.x, rawOutput.y, rawOutput.z};
     }
 }
 
@@ -122,9 +151,10 @@ class AccelerationMapping
                         outputVector3 += new Vector3(0, -vector3.x, 0);
                         break;
                     case OutputAccelerationAxis.Z_NEGATIVE:
-                        outputVector3 += new Vector3(0, 0,-vector3.x);
+                        outputVector3 += new Vector3(0, 0, -vector3.x);
                         break;
                 }
+
                 break;
             case InputAccelerationAxis.Y:
                 switch (oaa)
@@ -145,9 +175,10 @@ class AccelerationMapping
                         outputVector3 += new Vector3(0, -vector3.y, 0);
                         break;
                     case OutputAccelerationAxis.Z_NEGATIVE:
-                        outputVector3 += new Vector3(0, 0,-vector3.y);
+                        outputVector3 += new Vector3(0, 0, -vector3.y);
                         break;
                 }
+
                 break;
             case InputAccelerationAxis.Z:
                 switch (oaa)
@@ -168,9 +199,10 @@ class AccelerationMapping
                         outputVector3 += new Vector3(0, -vector3.z, 0);
                         break;
                     case OutputAccelerationAxis.Z_NEGATIVE:
-                        outputVector3 += new Vector3(0, 0,- vector3.z);
+                        outputVector3 += new Vector3(0, 0, -vector3.z);
                         break;
                 }
+
                 break;
         }
 

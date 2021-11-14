@@ -37,8 +37,6 @@ public class MatrixPropertyDrawer : PropertyDrawer
         
         dimensionProperty.intValue = EditorGUI.IntField(new Rect(position.position.x,position.position.y, position.size.x,basePropertyHeight),"Dimension", dimensionProperty.intValue);
         EditorGUIUtility.labelWidth = 20;
-        
-        showPosition = EditorGUI.Foldout(new Rect(3, 3, position.width - 6, 15), showPosition,"test");
 
         if (showPosition)
         {

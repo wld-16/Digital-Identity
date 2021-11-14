@@ -1,0 +1,18 @@
+TY  - JOUR
+AU  - Benini, Alessandro
+AU  - Mancini, Adriano
+AU  - Longhi, Sauro
+PY  - 2013
+DA  - 2013/04/01
+TI  - An IMU/UWB/Vision-based Extended Kalman Filter for Mini-UAV Localization in Indoor Environment using 802.15.4a Wireless Sensor Network
+JO  - Journal of Intelligent & Robotic Systems
+SP  - 461
+EP  - 476
+VL  - 70
+IS  - 1
+AB  - Indoor localization of mobile agents using wireless technologies is becoming very important in military and civil applications. This paper introduces an approach for the indoor localization of a mini UAV based on Ultra-WideBand technology, low cost IMU and vision based sensors. In this work an Extended Kalman Filter (EKF) is introduced as a possible technique to improve the localization. The proposed approach allows to use a low-cost Inertial Measurement Unit (IMU) in the prediction step and the integration of vision-odometry for the detection of markers nearness the touchdown area. The ranging measurements allow to reduce the errors of inertial sensors due to the limited performance of accelerometers and gyros. The obtained results show that an accuracy of 10 cm can be achieved.
+SN  - 1573-0409
+UR  - https://doi.org/10.1007/s10846-012-9742-1
+DO  - 10.1007/s10846-012-9742-1
+ID  - Benini2013
+ER  - 

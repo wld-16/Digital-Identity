@@ -25,3 +25,4 @@ dist
 *.xlsx
 */res/
 */libs/
+.Rproj.user

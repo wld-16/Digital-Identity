@@ -274,7 +274,7 @@ GameObject:
   m_Component:
   - component: {fileID: 538068369}
   m_Layer: 0
-  m_Name: accelerometer_with_kinect
+  m_Name: accelerometer_with_kalman
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -523,10 +523,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   readWith: {fileID: 748090406}
   fetchedAcceleration: {x: 0, y: 0, z: 0}
-  rawOutput: {x: 0, y: 0, z: 0}
-  applyToTransform: 0
   offset: {x: 100, y: 500, z: -15000}
   thresholdVector: {x: 0, y: 0, z: 0}
+  rawOutput: {x: 0, y: 0, z: 0}
   cumulativeVelocity: {x: 0, y: 0, z: 0}
   cumulativePosition: {x: 0, y: 0, z: 0}
   accelerationScale: {x: 0.0005, y: 0.0001, z: 0.000001}
@@ -560,6 +559,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65d046711f57172458ff4ed50f1bdd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputDataComponent: {fileID: 0}
   source: 1
   applyToLocalPosition: 1
 --- !u!1001 &642118325
@@ -738,6 +738,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba320cad61dcac3468d66bd07bdf879b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputComponent: {fileID: 665303849}
+  outputComponents:
+  - {fileID: 665303850}
+  inputData: []
+  dataOffset: {x: 0, y: 0, z: 0}
+  observationOutputMapping: 000000000100000002000000
+  kalmanResultX: []
+  outputData: []
+  sigmaValues:
+    values:
+    - name: x
+      value: 0.5
+    - name: y
+      value: 0.5
+    - name: z
+      value: 0.5
+    - name: vx
+      value: 0.005
+    - name: vy
+      value: 0.005
+    - name: vz
+      value: 0.005
+    - name: ax
+      value: 0.01
+    - name: ay
+      value: 0.01
+    - name: az
+      value: 0.01
+  x: []
+  P:
+    dimension: 0
+    data: []
+  F:
+    dimension: 0
+    data: []
+  H:
+    dimension: 0
+    data: []
+  dt: 0.014
+  mean: 0
+  stdDev: 5.12
   fetchAccelerometer: {fileID: 665303851}
   fetchKinectPosition: {fileID: 0}
   willProcessKinectData: 0
@@ -755,39 +796,12 @@ MonoBehaviour:
   disableX: 0
   disableY: 0
   disableZ: 0
-  dataOffset: {x: 0, y: 0, z: 0}
   dataScaleFactors: {x: 1, y: 1, z: 1}
   afterScaleVector: {x: 1, y: 1, z: 1}
-  observationOutputMapping: 000000000100000002000000
   output: {x: 0, y: 0, z: 0}
-  kalmanResultX: []
   kalmanResultX2: []
   normalizeOutput: 0
   measurementCoeffizient: {x: 1, y: 1, z: 1}
-  sigmaValues:
-    values:
-    - name: x
-      value: 0.5
-    - name: y
-      value: 0.5
-    - name: z
-      value: 0.1
-    - name: vx
-      value: 0.005
-    - name: vy
-      value: 0.005
-    - name: vz
-      value: 0.005
-    - name: ax
-      value: 0.01
-    - name: ay
-      value: 0.01
-    - name: az
-      value: 0.01
-  dt: 0.014
-  N: 10000
-  mean: 0
-  stdDev: 5.12
   kinectFactor: 0
   imuFactor: 1
   kinectDebug: {x: 0, y: 0, z: 0}
@@ -878,7 +892,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 665303843}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a7f97eefc3fe88046aaf345a8a5bac51, type: 3}
   m_Name: 
@@ -909,6 +923,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65d046711f57172458ff4ed50f1bdd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputDataComponent: {fileID: 665303844}
   source: 2
   applyToLocalPosition: 1
 --- !u!114 &665303851
@@ -925,10 +940,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   readWith: {fileID: 748090406}
   fetchedAcceleration: {x: 0, y: 0, z: 0}
-  rawOutput: {x: 0, y: 0, z: 0}
-  applyToTransform: 0
   offset: {x: 0, y: 0, z: 0}
   thresholdVector: {x: 1, y: 1, z: 1}
+  rawOutput: {x: 0, y: 0, z: 0}
   cumulativeVelocity: {x: 0, y: 0, z: 0}
   cumulativePosition: {x: 0, y: 0, z: 0}
   accelerationScale: {x: 0, y: 0, z: 0}
@@ -1084,32 +1098,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba320cad61dcac3468d66bd07bdf879b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fetchAccelerometer: {fileID: 675960888}
-  fetchKinectPosition: {fileID: 675960887}
-  willProcessKinectData: 1
-  kinectPosition: {x: 0, y: 0, z: 0}
-  measureVelocityOnKinect: 0
-  measureAccelerationOnKinect: 0
-  formerDiffVelocity: {x: 1, y: 1, z: 1}
-  accelerometerData: {x: 0, y: 0, z: 0}
-  willProcessAccelerometerData: 1
-  accumulatedVelocity: {x: 0, y: 0, z: 0}
-  accumulatePositionOnImu: 0
-  accumulateVelocityOnImu: 0
-  accumulatedImuVelocity: {x: 0, y: 0, z: 0}
-  accumulatedImuPosition: {x: 0, y: 0, z: 0}
-  disableX: 0
-  disableY: 0
-  disableZ: 1
+  inputComponent: {fileID: 0}
+  outputComponents:
+  - {fileID: 675960886}
+  inputData: []
   dataOffset: {x: 0, y: 0, z: 0}
-  dataScaleFactors: {x: 1, y: 1, z: 1}
-  afterScaleVector: {x: 1, y: 1, z: 1}
   observationOutputMapping: 000000000100000002000000
-  output: {x: 0, y: 0, z: 0}
   kalmanResultX: []
-  kalmanResultX2: []
-  normalizeOutput: 0
-  measurementCoeffizient: {x: 1, y: 1, z: 1}
+  outputData: []
   sigmaValues:
     values:
     - name: x
@@ -1130,12 +1126,44 @@ MonoBehaviour:
       value: 0.01
     - name: az
       value: 0.01
+  x: []
+  P:
+    dimension: 0
+    data: []
+  F:
+    dimension: 0
+    data: []
+  H:
+    dimension: 0
+    data: []
   dt: 0.014
-  N: 10000
   mean: 0
   stdDev: 5.12
-  kinectFactor: 0
-  imuFactor: 1
+  fetchAccelerometer: {fileID: 675960888}
+  fetchKinectPosition: {fileID: 675960887}
+  willProcessKinectData: 1
+  kinectPosition: {x: 0, y: 0, z: 0}
+  measureVelocityOnKinect: 0
+  measureAccelerationOnKinect: 0
+  formerDiffVelocity: {x: 1, y: 1, z: 1}
+  accelerometerData: {x: 0, y: 0, z: 0}
+  willProcessAccelerometerData: 1
+  accumulatedVelocity: {x: 0, y: 0, z: 0}
+  accumulatePositionOnImu: 0
+  accumulateVelocityOnImu: 0
+  accumulatedImuVelocity: {x: 0, y: 0, z: 0}
+  accumulatedImuPosition: {x: 0, y: 0, z: 0}
+  disableX: 0
+  disableY: 0
+  disableZ: 1
+  dataScaleFactors: {x: 1, y: 1, z: 1}
+  afterScaleVector: {x: 1, y: 1, z: 1}
+  output: {x: 0, y: 0, z: 0}
+  kalmanResultX2: []
+  normalizeOutput: 0
+  measurementCoeffizient: {x: 1, y: 1, z: 1}
+  kinectFactor: 0.1
+  imuFactor: 0.9
   kinectDebug: {x: 0, y: 0, z: 0}
   imuDebug: {x: 0, y: 0, z: 0}
   kalmanPDiagonal: []
@@ -1215,6 +1243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65d046711f57172458ff4ed50f1bdd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputDataComponent: {fileID: 675960882}
   source: 2
   applyToLocalPosition: 1
 --- !u!114 &675960887
@@ -1229,9 +1258,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b24793ed060965a4aa67ad22174fbd0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _kinectManager: {fileID: 0}
+  receivingComponents: []
+  _kinectManager: {fileID: 665574438}
   _skeletonPositionIndex: 11
   outputPosition: {x: 0, y: 0, z: 0}
+  outputData: []
   applyToLocalPosition: 0
 --- !u!114 &675960888
 MonoBehaviour:
@@ -1247,10 +1278,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   readWith: {fileID: 748090406}
   fetchedAcceleration: {x: 0, y: 0, z: 0}
-  rawOutput: {x: 0, y: 0, z: 0}
-  applyToTransform: 0
   offset: {x: 0, y: 0, z: 0}
   thresholdVector: {x: 1, y: 1, z: 1}
+  rawOutput: {x: 0, y: 0, z: 0}
   cumulativeVelocity: {x: 0, y: 0, z: 0}
   cumulativePosition: {x: 0, y: 0, z: 0}
   accelerationScale: {x: 0, y: 0, z: 0}
@@ -1996,6 +2026,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65d046711f57172458ff4ed50f1bdd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputDataComponent: {fileID: 1208214208}
   source: 2
   applyToLocalPosition: 1
 --- !u!114 &1208214208
@@ -2010,32 +2041,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba320cad61dcac3468d66bd07bdf879b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fetchAccelerometer: {fileID: 0}
-  fetchKinectPosition: {fileID: 1208214212}
-  willProcessKinectData: 1
-  kinectPosition: {x: 0, y: 0, z: 0}
-  measureVelocityOnKinect: 0
-  measureAccelerationOnKinect: 0
-  formerDiffVelocity: {x: 1, y: 1, z: 1}
-  accelerometerData: {x: 0, y: 0, z: 0}
-  willProcessAccelerometerData: 0
-  accumulatedVelocity: {x: 0, y: 0, z: 0}
-  accumulatePositionOnImu: 0
-  accumulateVelocityOnImu: 0
-  accumulatedImuVelocity: {x: 0, y: 0, z: 0}
-  accumulatedImuPosition: {x: 0, y: 0, z: 0}
-  disableX: 0
-  disableY: 0
-  disableZ: 1
+  inputComponent: {fileID: 1208214212}
+  outputComponents:
+  - {fileID: 1208214207}
+  inputData: []
   dataOffset: {x: 0, y: 0, z: 0}
-  dataScaleFactors: {x: 1, y: 1, z: 1}
-  afterScaleVector: {x: 1, y: 1, z: 1}
   observationOutputMapping: 000000000100000002000000
-  output: {x: 0, y: 0, z: 0}
   kalmanResultX: []
-  kalmanResultX2: []
-  normalizeOutput: 0
-  measurementCoeffizient: {x: 1, y: 1, z: 1}
+  outputData:
+  - 0
+  - 0
+  - 0
   sigmaValues:
     values:
     - name: x
@@ -2056,12 +2072,44 @@ MonoBehaviour:
       value: 0.01
     - name: az
       value: 0.01
-  dt: 0.01
-  N: 10000
+  x: []
+  P:
+    dimension: 0
+    data: []
+  F:
+    dimension: 0
+    data: []
+  H:
+    dimension: 0
+    data: []
+  dt: 0.014
   mean: 0
   stdDev: 1
-  kinectFactor: 0.9
-  imuFactor: 0.1
+  fetchAccelerometer: {fileID: 0}
+  fetchKinectPosition: {fileID: 1208214212}
+  willProcessKinectData: 1
+  kinectPosition: {x: 0, y: 0, z: 0}
+  measureVelocityOnKinect: 0
+  measureAccelerationOnKinect: 0
+  formerDiffVelocity: {x: 1, y: 1, z: 1}
+  accelerometerData: {x: 0, y: 0, z: 0}
+  willProcessAccelerometerData: 0
+  accumulatedVelocity: {x: 0, y: 0, z: 0}
+  accumulatePositionOnImu: 0
+  accumulateVelocityOnImu: 0
+  accumulatedImuVelocity: {x: 0, y: 0, z: 0}
+  accumulatedImuPosition: {x: 0, y: 0, z: 0}
+  disableX: 0
+  disableY: 0
+  disableZ: 1
+  dataScaleFactors: {x: 1, y: 1, z: 1}
+  afterScaleVector: {x: 1, y: 1, z: 1}
+  output: {x: 0, y: 0, z: 0}
+  kalmanResultX2: []
+  normalizeOutput: 0
+  measurementCoeffizient: {x: 1, y: 1, z: 1}
+  kinectFactor: 1
+  imuFactor: 0
   kinectDebug: {x: 0, y: 0, z: 0}
   imuDebug: {x: 0, y: 0, z: 0}
   kalmanPDiagonal: []
@@ -2141,9 +2189,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b24793ed060965a4aa67ad22174fbd0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  receivingComponents: []
   _kinectManager: {fileID: 665574438}
   _skeletonPositionIndex: 11
   outputPosition: {x: 0, y: 0, z: 0}
+  outputData: []
   applyToLocalPosition: 0
 --- !u!1 &1323384507
 GameObject:
@@ -2810,9 +2860,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b24793ed060965a4aa67ad22174fbd0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  receivingComponents:
+  - {fileID: 1790596712}
   _kinectManager: {fileID: 665574438}
   _skeletonPositionIndex: 11
   outputPosition: {x: 0, y: 0, z: 0}
+  outputData: []
   applyToLocalPosition: 0
 --- !u!65 &1790596709
 BoxCollider:
@@ -2886,6 +2939,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65d046711f57172458ff4ed50f1bdd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputDataComponent: {fileID: 1790596708}
   source: 0
   applyToLocalPosition: 1
 --- !u!1 &1850891966

@@ -1,21 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
-using UnityEditor;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
-using TMPro.EditorUtilities;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine.UIElements;
-using static MathNet.Numerics.SpecialFunctions;
 using static System.Math;
-using Vector = MathNet.Numerics.LinearAlgebra.Double.Vector;
 
-public class KalmanFilterBehaviour : MonoBehaviour
+public class KalmanFilterBehaviour : GeneralKalmanFilterBehaviour
 {
     #region inputData
     
@@ -53,12 +45,9 @@ public class KalmanFilterBehaviour : MonoBehaviour
     [SerializeField] private bool disableX = false;
     [SerializeField] private bool disableY = false;
     [SerializeField] private bool disableZ = false;
-    [SerializeField] private Vector3 dataOffset = new Vector3(0, 0, 0);
     [SerializeField] private Vector3 dataScaleFactors = new Vector3(1, 1, 1);
     [SerializeField] private Vector3 afterScaleVector = Vector3.one;
-    [SerializeField] private int[] observationOutputMapping = new int[3];
     public Vector3 output;
-    [SerializeField] private List<float> kalmanResultX;
     [SerializeField] private List<float> kalmanResultX2;
     [SerializeField] private bool normalizeOutput;
 
@@ -71,13 +60,8 @@ public class KalmanFilterBehaviour : MonoBehaviour
     
     public Vector3 measurementCoeffizient = Vector3.one;
     
-    public FloatDictionary sigmaValues;
-    public float dt = 14.0f / 1000.0f;
-    public int N = 100;
     private KalmanFilter kalmanFilter;
     public KalmanFilter KalmanFilter => kalmanFilter;
-    [SerializeField] private double mean = 0;
-    [SerializeField] private double stdDev = 2.56;
 
     // Used for sensor fusion
     [SerializeField] [Range(0, 1)] private float kinectFactor = 0.5f;
@@ -233,8 +217,7 @@ public class KalmanFilterBehaviour : MonoBehaviour
             useFirstKalman = true;
             kalmanFilter2 = initKalman(kalmanFilter2);
         }
-
-        output = new Vector3(kalmanFilter.x[0,0],kalmanFilter.x[1,0],kalmanFilter.x[2,0]);
+        
     }
 
     private Vector3 approximateDifferential(Vector3 currentVector, Vector3 vectorBefore)
@@ -482,6 +465,7 @@ public class KalmanFilterBehaviour : MonoBehaviour
 
             prediction.Scale(afterScaleVector);
             
+            outputData = new List<float>(){prediction.x,prediction.y,prediction.z};
             output = prediction;
         }
     }
@@ -581,6 +565,16 @@ public class KalmanFilterBehaviour : MonoBehaviour
     public void ResetFilter(KalmanFilter kalmanFilter)
     {
         initKalman(kalmanFilter);
+    }
+    
+    private void OnValidate()
+    {
+       
+    }
+    
+    public new List<float> getData()
+    {
+        return outputData;
     }
 }
 

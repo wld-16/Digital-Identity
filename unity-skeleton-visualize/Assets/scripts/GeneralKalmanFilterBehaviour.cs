@@ -1,81 +1,65 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
-using UnityEditor;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
-using TMPro.EditorUtilities;
-using static MathNet.Numerics.SpecialFunctions;
+using UnityEditor;
 using static System.Math;
-using Vector = MathNet.Numerics.LinearAlgebra.Double.Vector;
 
-public class GeneralKalmanFilterBehaviour : MonoBehaviour
+public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
 {
+    #region api
+    [SerializeField] private Component inputComponent;
+    [SerializeField] private List<Component> outputComponents;
+    
+    #endregion
+    
     #region inputData
 
-    [Header("Input data")] [SerializeField]
-    private FetchAccelerometer fetchAccelerometer;
-
-    [SerializeField] private FetchKinectPosition fetchKinectPosition;
-
+    [Header("Input data")] 
+    [SerializeField] private List<float> inputData;
     #endregion
 
     #region outData
 
-    [Header("Output data")] [SerializeField]
-    private Vector3 dataOffset = new Vector3(0, 0, 0);
-
-    [SerializeField] private Vector3 dataScaleFactors = new Vector3(1, 1, 1);
-    [SerializeField] private Vector3 afterScaleVector = Vector3.one;
-    [SerializeField] private int[] observationOutputMapping = new int[3];
-    [SerializeField] private List<float> kalmanResultX;
-    [SerializeField] private List<float> kalmanResultX2;
-    [SerializeField] private bool normalizeOutput;
-    public Vector3 output;
+    [Header("Output data")] 
+    [SerializeField] protected Vector3 dataOffset = new Vector3(0, 0, 0);
+    [SerializeField] protected int[] observationOutputMapping = new int[3];
+    [SerializeField] protected List<float> kalmanResultX;
+    public List<float> outputData;
 
     #endregion
 
     #region generalKalmanData
 
-    [Header("Kalman params")] public FloatDictionary sigmaValues;
-    public List<float> x;
-    public FloatMatrix P;
-    public FloatMatrix F;
-    public FloatMatrix H;
-    public float dt = 14.0f / 1000.0f;
-    public int N = 100;
-    [SerializeField] private double mean = 0;
-    [SerializeField] private double stdDev = 2.56;
+    [Header("Kalman params")] 
+    [SerializeField] protected FloatDictionary sigmaValues;
+    [SerializeField] protected  List<float> x;
+    [SerializeField] protected  FloatMatrix P;
+    [SerializeField] protected  FloatMatrix F;
+    [SerializeField] protected  FloatMatrix H;
+    [SerializeField] protected  float dt = 14.0f / 1000.0f;
+    [SerializeField] protected  double mean = 0;
+    [SerializeField] protected  double stdDev = 2.56;
     private KalmanFilter kalmanFilter;
     public KalmanFilter KalmanFilter => kalmanFilter;
 
-    // Used for sensor fusion
-    [SerializeField] [Range(0, 1)] private float kinectFactor = 0.5f;
-    private float formerKinectFactor;
-    [SerializeField] [Range(0, 1)] private float imuFactor = 0.5f;
-    private float formerImuFactor;
-
-    // Used for blending on reset
-    private KalmanFilter kalmanFilter2;
-
     #endregion
 
-    #region blendVariables
-
-    [Header("Blending")] [SerializeField] private bool useBlendByLikelyHood = false;
-    float blendIncrement = 0.01f;
-    float blendA = 1.0f;
-    float blendB = 0.0f;
-    bool blendBetweenFilters = false;
-    bool useFirstKalman = true;
-    [SerializeField] private float resetThreshold = -500000000;
-
-    #endregion blendVariables
-
+    public void Awake()
+    {
+        if (typeof(IPullData) != inputComponent.GetType().GetInterface("IPullData"))
+        {
+            Debug.LogWarning("InputComponent on " + name + " needs to implement the IPullData Interface!!" );
+        }
+        
+        if (!outputComponents.Select(component => typeof(IPushData) == component.GetType().GetInterface("IPushData")).Aggregate((b, b1) => b && b1))
+        {
+            Debug.LogWarning("Every Component of OutputComponents on " + name + " needs to implement the IPullData Interface!!" );
+        }
+    }
 
     public void ResetOffset()
     {
@@ -101,8 +85,8 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
             {0, 0, 0, 0, 0, 1, 0, 0, dt},
             {0, 0, 0, 0, 0, 0, 0, 0, 1}
         });
-        
-        
+
+
         float[][] nestedArrayF = new float[F.dimension][];
         for (int i = 0; i < F.dimension; i++)
         {
@@ -121,16 +105,16 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
         {
             nestedP[row] = P.data.ToList().GetRange(row * P.dimension, P.dimension).ToArray();
         }
-        
+
         kalmanFilter.P = DenseMatrix.CreateDiagonal(9, 9, (i) => new float[9] {1f, 1, 1, 1f, 1, 1, 1, 1, 1}[i]);
-        
+
 
         float[][] nestedArrayH = new float[H.dimension][];
         for (int i = 0; i < H.dimension; i++)
         {
             nestedArrayH[i] = H.data.ToList().GetRange(i * H.dimension, H.dimension).ToArray();
         }
-        
+
         kalmanFilter.H = DenseMatrix.OfRowArrays(nestedArrayH);
 
         mean = 0;
@@ -148,16 +132,6 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
     private void Start()
     {
         kalmanFilter = initKalman(kalmanFilter);
-
-        if (useBlendByLikelyHood)
-        {
-            blendIncrement = 0.01f;
-            blendA = 1.0f;
-            blendB = 0.0f;
-            blendBetweenFilters = false;
-            useFirstKalman = true;
-            kalmanFilter2 = initKalman(kalmanFilter2);
-        }
     }
 
     private Vector3 approximateDifferential(Vector3 currentVector, Vector3 vectorBefore)
@@ -172,7 +146,6 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
 
     private void Update()
     {
-
         float x = 0;
         float y = 0;
         float z = 0;
@@ -198,96 +171,13 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
         });
 
 
-        if (useBlendByLikelyHood)
-        {
-            Dictionary<string, Matrix<float>> kalmanPredict = KalmanPredict(kalmanFilter);
-            Dictionary<string, Matrix<float>> kalmanPredict2 = KalmanPredict(kalmanFilter2);
+        kalmanFilter = KalmanUpdate(Z, kalmanFilter);
 
-            //transform.position = new Vector3(kalmanPredict["x"].At(0,0) * N,kalmanPredict["x"].At(1,0) * N,kalmanPredict["x"].At(2,0) * N);
-            kalmanResultX = kalmanPredict["x"].ToRowMajorArray().ToList();
-            kalmanResultX2 = kalmanPredict["x"].ToRowMajorArray().ToList();
+        Dictionary<string, Matrix<float>> kalmanPredict = KalmanPredict(kalmanFilter);
+        
+        kalmanResultX = kalmanPredict["x"].ToRowMajorArray().ToList();
 
-
-            kalmanFilter = KalmanUpdate(Z, kalmanFilter);
-            kalmanFilter2 = KalmanUpdate(Z, kalmanFilter2);
-
-
-            if (blendBetweenFilters)
-            {
-                if (useFirstKalman)
-                {
-                    blendA = blendA + blendIncrement;
-                    blendB = blendB - blendIncrement;
-                    if (blendA == 1)
-                    {
-                        blendBetweenFilters = false;
-                    }
-                }
-                else
-                {
-                    blendA = blendA - blendIncrement;
-                    blendB = blendB + blendIncrement;
-                    if (blendB == 1)
-                    {
-                        blendBetweenFilters = false;
-                    }
-                }
-            }
-
-            if (kalmanFilter.L < resetThreshold && useFirstKalman)
-            {
-                Debug.Log("Likelyhood: " + kalmanFilter.L);
-                Debug.Log("Crossed Reset Threshold");
-                kalmanFilter2 = initKalman(kalmanFilter2);
-                kalmanFilter2.x = kalmanFilter.x;
-                useFirstKalman = false;
-                blendBetweenFilters = true;
-            }
-            else if (kalmanFilter2.L < resetThreshold && !useFirstKalman)
-            {
-                Debug.Log("Likelyhood_2: " + kalmanFilter2.L);
-                Debug.Log("Crossed Reset Threshold");
-                kalmanFilter = initKalman(kalmanFilter);
-                useFirstKalman = true;
-                blendBetweenFilters = true;
-            }
-
-
-            Vector3 transformPosition = ((new Vector3(
-                (kalmanResultX2[observationOutputMapping[0]] * blendA +
-                 kalmanResultX2[observationOutputMapping[0]] * blendB) * dataScaleFactors.x,
-                (kalmanResultX2[observationOutputMapping[1]] * blendA +
-                 kalmanResultX2[observationOutputMapping[1]] * blendB) * dataScaleFactors.y,
-                (kalmanResultX2[observationOutputMapping[2]] * blendA +
-                 kalmanResultX2[observationOutputMapping[2]] * blendB) * dataScaleFactors.z)));
-
-            Debug.Log("Likelyhood: " + kalmanFilter.L);
-            Debug.Log("Likelyhood_2: " + kalmanFilter2.L);
-
-            transformPosition.Scale(afterScaleVector);
-            output = transformPosition - dataOffset;
-        }
-        else
-        {
-            kalmanFilter = KalmanUpdate(Z, kalmanFilter);
-
-            Dictionary<string, Matrix<float>> kalmanPredict = KalmanPredict(kalmanFilter);
-
-            //transform.position = new Vector3(kalmanPredict["x"].At(0,0) * N,kalmanPredict["x"].At(1,0) * N,kalmanPredict["x"].At(2,0) * N);
-            kalmanResultX = kalmanPredict["x"].ToRowMajorArray().ToList();
-
-            Vector3 transformPosition = ((new Vector3(kalmanResultX[observationOutputMapping[0]] * dataScaleFactors.x,
-                kalmanResultX[observationOutputMapping[1]] * dataScaleFactors.y,
-                kalmanResultX[observationOutputMapping[2]] * dataScaleFactors.z)));
-
-            if (useBlendByLikelyHood)
-            {
-                Debug.Log("Likelyhood: " + kalmanFilter.L);
-            }
-
-            transformPosition.Scale(afterScaleVector);
-            output = transformPosition - dataOffset;
-        }
+        outputData = observationOutputMapping.Select(index => kalmanResultX[index]).ToList();
     }
 
 
@@ -345,27 +235,47 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour
             float[] newFloat = new float[F.dimension * F.dimension];
             F.data = newFloat;
         }
+
         if (H.dimension * H.dimension != H.data.Length)
         {
             float[] newFloat = new float[H.dimension * H.dimension];
             H.data = newFloat;
         }
+
         if (P.dimension * P.dimension != P.data.Length)
         {
             float[] newFloat = new float[P.dimension * P.dimension];
             P.data = newFloat;
         }
-        if (Abs(formerImuFactor - imuFactor) > 0.0001)
-        {
-            kinectFactor = 1 - imuFactor;
-        }
+    }
 
-        if (Abs(formerKinectFactor - kinectFactor) > 0.0001)
-        {
-            imuFactor = 1 - kinectFactor;
-        }
+    public List<IPullData> getDataRecipients()
+    {
+        return outputComponents.Select(component => (IPullData) component).ToList();
+    }
 
-        formerImuFactor = imuFactor;
-        formerKinectFactor = kinectFactor;
+    public void PushData()
+    {
+        getDataRecipients().ForEach(recipient => recipient.Receive(outputData));
+    }
+
+    public List<float> getData()
+    {
+        return outputData;
+    }
+
+    public IPushData getDataDeliverer()
+    {
+        return (IPushData) inputComponent;
+    }
+
+    void IPullData.PullData()
+    {
+        inputData = getDataDeliverer().getData();
+    }
+
+    public void Receive(List<float> receivedData)
+    {
+        inputData = receivedData;
     }
 }

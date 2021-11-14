@@ -29,7 +29,11 @@ public class PrintData : MonoBehaviour
             "t.m;t.s;t.ms;kinect_foot_right.x;kinect_foot_right.y;kinect_foot_right.z;kinect_foot_left.x;kinect_foot_left.y;" +
             "kinect_foot_left.z;kinect_hand_right.x;kinect_hand_right.y;kinect_hand_right.z;kinect_hand_left.x;" +
             "kinect_hand_left.y;kinect_hand_left.z;imu_acceleration.x;imu_acceleration.y;imu_acceleration.z;" +
-            "imu_orientation.x;imu_orientation.y;imu_orientation.z;imu_orientation.w");
+            "imu_orientation.x;imu_orientation.y;imu_orientation.z;imu_orientation.w;" +
+            "kinect_foot_right_orientation.x;kinect_foot_right_orientation.y;kinect_foot_right_orientation.z;kinect_foot_right_orientation.w;" +
+            "kinect_foot_left_orientation.x;kinect_foot_left_orientation.y;kinect_foot_left_orientation.z;kinect_foot_left_orientation.w;" +
+            "kinect_hand_right_orientation.x;kinect_hand_right_orientation.y;kinect_hand_right_orientation.z;kinect_hand_right_orientation.w;" +
+            "kinect_hand_left_orientation.x;kinect_hand_left_orientation.y;kinect_hand_left_orientation.z;kinect_hand_left_orientation.w");
         startTime = DateTime.Now;
     }
 
@@ -44,12 +48,20 @@ public class PrintData : MonoBehaviour
                 int milliseconds = DateTime.Now.Subtract(startTime).Milliseconds;
                 int seconds = DateTime.Now.Subtract(startTime).Seconds;
                 int minutes = DateTime.Now.Subtract(startTime).Minutes;
+                Quaternion rightFootOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.FootRight, false);
                 Vector3 rightFootPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.FootRight);
+                Quaternion leftFootOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.FootLeft, false);
                 Vector3 leftFootPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.FootLeft);
+                Quaternion handRightOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.HandRight, false);
                 Vector3 handRightPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.HandRight);
+                Quaternion handLeftOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.HandLeft, false);
                 Vector3 handLeftPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.HandLeft);
 
@@ -63,7 +75,11 @@ public class PrintData : MonoBehaviour
                     $"{handRightPosition.x};{handRightPosition.y};{handRightPosition.z};" +
                     $"{handLeftPosition.x};{handLeftPosition.y};{handLeftPosition.z};" +
                     $"{imuAcceleration.x};{imuAcceleration.y};{imuAcceleration.z};" +
-                    $"{imuOrientation.x};{imuOrientation.y};{imuOrientation.z};{imuOrientation.w}"
+                    $"{imuOrientation.x};{imuOrientation.y};{imuOrientation.z};{imuOrientation.w};" +
+                    $"{rightFootOrientation.x};{rightFootOrientation.y};{rightFootOrientation.z};{rightFootOrientation.w};" +
+                    $"{leftFootOrientation.x};{leftFootOrientation.y};{leftFootOrientation.z};{leftFootOrientation.w};" +
+                    $"{handRightOrientation.x};{handRightOrientation.y};{handRightOrientation.z};{handRightOrientation.w};" +
+                    $"{handLeftOrientation.x};{handLeftOrientation.y};{handLeftOrientation.z};{handLeftOrientation.w}"
                 );
             }
         }
