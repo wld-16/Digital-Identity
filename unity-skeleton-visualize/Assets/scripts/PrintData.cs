@@ -26,10 +26,15 @@ public class PrintData : MonoBehaviour
     void Start()
     {
         printText.AppendLine(
-            "t.m;t.s;t.ms;kinect_foot_right.x;kinect_foot_right.y;kinect_foot_right.z;kinect_foot_left.x;kinect_foot_left.y;" +
-            "kinect_foot_left.z;kinect_hand_right.x;kinect_hand_right.y;kinect_hand_right.z;kinect_hand_left.x;" +
-            "kinect_hand_left.y;kinect_hand_left.z;imu_acceleration.x;imu_acceleration.y;imu_acceleration.z;" +
+            "t.m;t.s;t.ms;" +
+            "kinect_foot_right.x;kinect_foot_right.y;kinect_foot_right.z;" +
+            "kinect_foot_left.x;kinect_foot_left.y;kinect_foot_left.z;" +
+            "kinect_hand_right.x;kinect_hand_right.y;kinect_hand_right.z;" +
+            "kinect_hand_left.x;kinect_hand_left.y;kinect_hand_left.z;" +
+            "imu_acceleration.x;imu_acceleration.y;imu_acceleration.z;" +
+            "imu_gravity.x;imu_gravity.y;imu_gravity.z;" +
             "imu_orientation.x;imu_orientation.y;imu_orientation.z;imu_orientation.w;" +
+            "imu_yaw;imu_pitch;imu_roll;" +
             "kinect_foot_right_orientation.x;kinect_foot_right_orientation.y;kinect_foot_right_orientation.z;kinect_foot_right_orientation.w;" +
             "kinect_foot_left_orientation.x;kinect_foot_left_orientation.y;kinect_foot_left_orientation.z;kinect_foot_left_orientation.w;" +
             "kinect_hand_right_orientation.x;kinect_hand_right_orientation.y;kinect_hand_right_orientation.z;kinect_hand_right_orientation.w;" +
@@ -67,7 +72,10 @@ public class PrintData : MonoBehaviour
 
                 Vector3 imuAcceleration = _readWrite.orientations.ring.accelerometer.ToVector3Int();
                 Quaternion imuOrientation = _readWrite.orientations.ring.gyroscope.ToQuat();
+                Vector3 imuGravity = _readWrite.orientations.ring.gravity.ToVector3();
+                Vector3 imuEulerAngles = _readWrite.orientations.ring.gyroscope.ToYawPitchRollVector();
 
+                Debug.Log($"{imuEulerAngles.x};{imuEulerAngles.y};{imuEulerAngles.z};");
                 printText.AppendLine( 
                     $"{minutes};" + $"{seconds};" + $"{milliseconds};" +
                     $"{rightFootPosition.x};{rightFootPosition.y};{rightFootPosition.z};" +
@@ -75,7 +83,9 @@ public class PrintData : MonoBehaviour
                     $"{handRightPosition.x};{handRightPosition.y};{handRightPosition.z};" +
                     $"{handLeftPosition.x};{handLeftPosition.y};{handLeftPosition.z};" +
                     $"{imuAcceleration.x};{imuAcceleration.y};{imuAcceleration.z};" +
+                    $"{imuGravity.x};{imuGravity.y};{imuGravity.z};" +
                     $"{imuOrientation.x};{imuOrientation.y};{imuOrientation.z};{imuOrientation.w};" +
+                    $"{imuEulerAngles.x};{imuEulerAngles.y};{imuEulerAngles.z};" +
                     $"{rightFootOrientation.x};{rightFootOrientation.y};{rightFootOrientation.z};{rightFootOrientation.w};" +
                     $"{leftFootOrientation.x};{leftFootOrientation.y};{leftFootOrientation.z};{leftFootOrientation.w};" +
                     $"{handRightOrientation.x};{handRightOrientation.y};{handRightOrientation.z};{handRightOrientation.w};" +

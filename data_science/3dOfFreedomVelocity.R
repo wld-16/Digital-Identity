@@ -19,6 +19,18 @@ library(LaplacesDemon)
 
 dt = 14 / 1000
 
+fkfGuanglongOrientationModel = fkf(
+  a0 = processOrientationModel$x[,1],
+  P0 = processOrientationModel$P,
+  dt = matrix(data = 0, nrow = 7, ncol = 1),
+  ct = matrix(data = 0, nrow = 3, ncol = 1),
+  GGt = array(diag(nrow = 3, ncol = 3), dim=c(3,3,1)),
+  Zt = array(processOrientationModel$H, dim=c(3,7,1)),
+  Tt = array(as.numeric(unlist(lapply(1:1,orientation_transition_at_index))), dim=c(7, 7, 10)),
+  HHt = array(processOrientationModel$Q, dim=c(7,7,1)),
+  yt = matrix(data = 0, nrow = 3, ncol = 1)
+)
+
 # Definition von funktionen
 
 interpolateDataChunk <- function(index, chunk){

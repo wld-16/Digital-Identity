@@ -17,6 +17,35 @@ library(RSpincalc)
 library(reshape2)
 library(LaplacesDemon)
 
+dlmGuanglongAccelerationModel = dlm::dlm(
+  FF = processAccelerationModel$H,
+  V = diag(nrow = 6, ncol = 6),
+  GG = processAccelerationModel$Ad, 
+  W = processAccelerationModel$Q, 
+  m0 = processAccelerationModel$x,
+  C0 = processAccelerationModel$P
+)
+
+
+
+processModel = get12DimensionsAccelerationModel(
+  c(params$x_initial_sx,params$x_initial_vx,params$x_initial_ax,params$x_initial_gx,
+    params$x_initial_sy,params$x_initial_vy,params$x_initial_ay,params$x_initial_gy,
+    params$x_initial_sz,params$x_initial_vz,params$x_initial_az,params$x_initial_gz),
+  diag(c(
+    params$initial_belief_11,
+    params$initial_belief_22,
+    params$initial_belief_33,
+    params$initial_belief_44,
+    params$initial_belief_55,
+    params$initial_belief_66,
+    params$initial_belief_77,
+    params$initial_belief_88,
+    params$initial_belief_99,
+    params$initial_belief_00,
+    params$initial_belief_AA,
+    params$initial_belief_BB)))
+
 dt = 14 / 1000
 
 # Definition von funktionen

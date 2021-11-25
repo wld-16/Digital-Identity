@@ -12,7 +12,6 @@ public class FetchOrientation : MonoBehaviour
     [SerializeField] private OrientationSource _orientationSource;
 
     public SampleUserPolling_ReadWrite readWith;
-    public Vector3 fetchedOrienatationAxis;
     public Quaternion fetchedQuaternion = Quaternion.identity;
     public Vector3 fetchedAcceleration;
     public bool applyToTransform;
@@ -45,7 +44,6 @@ public class FetchOrientation : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        fetchedOrienatationAxis = readWith.orientations.ringAxis.ToYawPitchRollVector();
         if (readWith.orientations.ring.accelerometer != null)
         {
             fetchedAcceleration = readWith.orientations.ring.accelerometer.ToVector3Int();
@@ -68,11 +66,6 @@ public class FetchOrientation : MonoBehaviour
                     break;
                 case OrientationSource.GYROSCOPE:
                     outputRotation = fetchedQuaternion;
-                    break;
-                case OrientationSource.IMUAXIS:
-                    Vector3 axis = mapping.Select(entry => entry.applyMapping(fetchedOrienatationAxis))
-                        .Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3);
-                    outputRotation = Quaternion.Euler(axis);
                     break;
                 case OrientationSource.KALMAN:
                     //output = Quaternion.Euler(mapping.Select(entry => entry.applyMapping(_kalmanFilter.output)).Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3));
@@ -97,7 +90,6 @@ enum OrientationSource
 {
     ACCELEROMETER,
     GYROSCOPE,
-    IMUAXIS,
     KALMAN
 }
 

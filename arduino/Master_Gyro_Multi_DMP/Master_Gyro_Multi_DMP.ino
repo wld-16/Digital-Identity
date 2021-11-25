@@ -1,10 +1,10 @@
 // I2Cdev and MPU6050 müssen als Libraries installiert sein
-#include "src/I2Cdev.h"
-#include "src/PixelRingDisplay.h"
-#include "src/MPU6050_Wrapper.h"
-#include "src/TogglePin.h"
-#include "src/DeathTimer.h"
-#include "src/ImuUnit.h"
+#include "I2Cdev.h"
+#include "PixelRingDisplay.h"
+#include "MPU6050_Wrapper.h"
+#include "TogglePin.h"
+#include "DeathTimer.h"
+#include "ImuUnit.h"
 #include "Wire.h"
 
 
@@ -18,7 +18,7 @@ MPU6050_Array mpus(2);
 TogglePin activityLed(LED_PIN, 100);
 DeathTimer deathTimer(5000L);
 PixelRingDisplay pixelRingDisplay;
-ImuUnit imuUnits[2];
+ImuUnit imuUnit;
 
 /*
 struct StringFloatPair{
@@ -30,9 +30,11 @@ struct StringFloatPair *ringData;
 struct StringFloatPair *fingerData;
 */
 
-bool isMeasuringWithTwoSensors = false;
 bool isPrintingJson = true;
-bool isOutputingRawSensorData = true;
+bool isOutputtingGyroQuaternionData = true;
+bool isOutputtingGyroEulerAnglesData = true;
+bool isOutputtingAccelerometerData = true;
+bool isOutputtingGravityData = true;
 
 // --- SETUP --- //
 
@@ -63,32 +65,43 @@ void setup() {
   }
 
   // wait for ready
-  Serial.println(F("\nPress [f] to record finger movement"));
-  Serial.println(F("Press [j] for json output"));
-  Serial.println(F("Press [r] to receive acceleration and gyro output"));
+  Serial.println(F("Press [j] to toggle json output"));
+  Serial.println(F("Press [g] to toggle gravity data"));
+  Serial.println(F("Press [e] to toggle gyroscope euler data"));
+  Serial.println(F("Press [q] to toggle gyroscope quaternion data"));
+  Serial.println(F("Press [a] to toggle accelerometer data"));
   Serial.println(F("Press [s] to begin DMP programming and demo: "));
   while (true){
     pixelRingDisplay.displayLoading();
     
     if(Serial.available()){
       int input = Serial.read();
-      if(input == 102){                               // 102 is 'f' as char
-        isMeasuringWithTwoSensors = !isMeasuringWithTwoSensors;
-        Serial.print(F("Does measure Finger sensor: "));
-        Serial.println(isMeasuringWithTwoSensors);
-      } else if(input == 106){                        // 106 is 'j' as char
+      if(input == 106){                        // 106 is 'j' as char
         isPrintingJson = !isPrintingJson;
         Serial.print(F("Is printing Json Data: "));
         Serial.println(isPrintingJson);
       } 
+      else if(input == 97){                          // 97 is 'a' as char
+        isOutputtingAccelerometerData = !isOutputtingAccelerometerData;
+        Serial.print("Will output accelerometer: ");
+        Serial.println(isOutputtingAccelerometerData);
+      }
       else if(input == 115){                          // 13 is '\n' as char
         Serial.println("Pressed s");
         break;
-      } else if(input == 114){
-        isOutputingRawSensorData= !isOutputingRawSensorData;
-        Serial.print("Will Output Raw Sensor Data: ");
-        Serial.println(isOutputingRawSensorData);
-      } 
+      } else if(input == 101){ // 101 is 'e' in ascii
+        isOutputtingGyroEulerAnglesData = !isOutputtingGyroEulerAnglesData;
+        Serial.print("Will output gyro euler angles data: ");
+        Serial.println(isOutputtingGyroEulerAnglesData);
+      } else if(input == 103) { // 103 is 'g' in ascii
+        isOutputtingGravityData = !isOutputtingGravityData;
+        Serial.print("Will output gravity: ");
+        Serial.println(isOutputtingGravityData);
+      } else if(input == 119 ) { // 119 is 'w' in ascii
+        isOutputtingGyroQuaternionData = !isOutputtingGyroQuaternionData;
+        Serial.print("Will output gyro quaternion data: ");
+        Serial.println(isOutputtingGyroQuaternionData);
+      }
       else {
         Serial.println(input);
       }
@@ -99,14 +112,8 @@ void setup() {
   Serial.println(F("Initializing I2C devices..."));
   mpus.add(AD0_PIN_1);
 
-  imuUnits[0].setMpuId(0);
-  imuUnits[0].setIsPrintingJson(isPrintingJson);
-  
-  if(isMeasuringWithTwoSensors){
-    imuUnits[1].setMpuId(1); 
-    imuUnits[1].setIsPrintingJson(isPrintingJson);
-    mpus.add(AD0_PIN_0);
-  }
+  imuUnit.setMpuId(0);
+  imuUnit.setIsPrintingJson(isPrintingJson);
   
   activityLed.setPeriod(500); // slow down led to 2Hz
 
@@ -115,29 +122,12 @@ void setup() {
   mpus.dmpInitialize();
 
   // supply your own gyro offsets here, scaled for min sensitivity
-  imuUnits[0].setOffset(mpus.select(imuUnits[0].getMpuId()),124,79,-10,-5470,-826,1016);
-  if(isMeasuringWithTwoSensors){
-    imuUnits[1].setOffset(mpus.select(imuUnits[1].getMpuId()),55,3,12,-3045,-1644,752); 
-  }
+  imuUnit.setOffset(mpus.select(imuUnit.getMpuId()),124,79,-10,-5470,-826,1016);
   mpus.programDmp(0);
-  if(isMeasuringWithTwoSensors){
-    mpus.programDmp(1); 
-  }
   Serial.println(F("done"));
   if(!isPrintingJson){
-    if(!isOutputingRawSensorData){
-        Serial.print("ring.yaw,\tring.pitch,\tring.roll,"); 
-      if(isMeasuringWithTwoSensors){
-        Serial.print("hand.yaw,\thand.pitch,\thand.roll,"); 
-      }
-      Serial.println("");
-    } else {
-      Serial.print("ringAcc.x,\tringAcc.y,\tringAcc.z,\tringGyro.x,\tringGyro.y,\tringGyro.z,\tringGyro.w,");
-      if(isMeasuringWithTwoSensors){
-        Serial.print("handAcc.x,\thandAcc.y,\thandAcc.z,\thandGyro.x,\thandGyro.y,\thandGyro.z,\thandGyro.w,");  
-      }
-      Serial.println("");
-    }
+        Serial.print("ringAcc.x,\tringAcc.y,\tringAcc.z,\tringGyro.x,\tringGyro.y,\tringGyro.z,\tringGyro.w,\tring.yaw,\tring.pitch,\tring.roll,");
+        Serial.println("");
   }
 }
 
@@ -149,79 +139,74 @@ void loop() {
   static MPU6050_Wrapper* currentMPU = NULL;
 
   
-  for (int i=0; i<  (isMeasuringWithTwoSensors   ? 2  : 1) ; i++) {
+  for (int i=0; i<  1 ; i++) {
     mpu=(mpu+1)%2; // failed attempt at round robin
     currentMPU = mpus.select(mpu);
     if (currentMPU->isDue()) {
-       imuUnits[mpu].handleMPUevent(mpus.select(mpu), mpu, isOutputingRawSensorData);
+       imuUnit.handleMPUevent(mpus.select(mpu), mpu);
     }
   }
 
   if(isPrintingJson){
     StaticJsonDocument<200> doc;
-    if(!isOutputingRawSensorData){
-      doc["ringAxis"]["yaw"] = imuUnits[0].getYaw();
-      doc["ringAxis"]["pitch"] = imuUnits[0].getPitch();
-      doc["ringAxis"]["roll"] = imuUnits[0].getRoll();
-      if(isMeasuringWithTwoSensors){
-        doc["handAxis"]["yaw"] = imuUnits[1].getYaw();
-        doc["handAxis"]["pitch"] = imuUnits[1].getPitch();
-        doc["handAxis"]["roll"] = imuUnits[1].getRoll();
-        }  
-    } else {
-      Quaternion quat = imuUnits[0].getQuaternion();
-      VectorInt16 acc = imuUnits[0].getAcceleration();
-      doc["ring"]["gyroscope"]["x"] = quat.x;
-      doc["ring"]["gyroscope"]["y"] = quat.y;
-      doc["ring"]["gyroscope"]["z"] = quat.z;
-      doc["ring"]["gyroscope"]["w"] = quat.w;
-      doc["ring"]["accelerometer"]["x"] = acc.x;
-      doc["ring"]["accelerometer"]["y"] = acc.y;
-      doc["ring"]["accelerometer"]["z"] = acc.z;
-      if(isMeasuringWithTwoSensors){
-        quat = imuUnits[1].getQuaternion();
-        acc = imuUnits[1].getAcceleration();
-        doc["hand"]["gyroscope"]["x"] = quat.x;
-        doc["hand"]["gyroscope"]["y"] = quat.y;
-        doc["hand"]["gyroscope"]["z"] = quat.z;
-        doc["hand"]["gyroscope"]["w"] = quat.w;
-        doc["hand"]["accelerometer"]["x"] = acc.x;
-        doc["hand"]["accelerometer"]["y"] = acc.y;
-        doc["hand"]["accelerometer"]["z"] = acc.z;
-        }  
-    }
-    
-    serializeJson(doc, Serial);
+      Quaternion quat = imuUnit.getQuaternion();
+      VectorInt16 acc = imuUnit.getAcceleration();
+      VectorFloat gravity = imuUnit.getGravity();
+      
+      if(isOutputtingGyroQuaternionData){
+        doc["ring"]["gyroscope"]["x"] = quat.x;
+        doc["ring"]["gyroscope"]["y"] = quat.y;
+        doc["ring"]["gyroscope"]["z"] = quat.z;
+        doc["ring"]["gyroscope"]["w"] = quat.w;  
+      }
+      if(isOutputtingGyroEulerAnglesData){
+        doc["ring"]["gyroscope"]["yaw"] = imuUnit.getYaw();
+        doc["ring"]["gyroscope"]["pitch"] = imuUnit.getPitch();
+        doc["ring"]["gyroscope"]["roll"] = imuUnit.getRoll();
+      }
+      if(isOutputtingAccelerometerData){
+        doc["ring"]["accelerometer"]["x"] = acc.x;
+        doc["ring"]["accelerometer"]["y"] = acc.y;
+        doc["ring"]["accelerometer"]["z"] = acc.z;
+      }
+      if(isOutputtingGravityData){
+        doc["ring"]["gravity"]["x"] = gravity.x;
+        doc["ring"]["gravity"]["y"] = gravity.y;
+        doc["ring"]["gravity"]["z"] = gravity.z; 
+      }
+      serializeJson(doc, Serial);
   } else {
-    if(!isOutputingRawSensorData){
-        Serial.print("" + String(imuUnits[0].getPitch()) + ",\t" + String(imuUnits[0].getPitch())+ ",\t" + String(imuUnits[0].getRoll()) + ",\t"); 
-        if(isMeasuringWithTwoSensors){
-          Serial.print("" + String(imuUnits[1].getYaw()) + ",\t"+ String(imuUnits[1].getPitch()) + ",\t" + String(imuUnits[1].getRoll()) + ","); 
-        }
-    } else {
-      Quaternion quat = imuUnits[0].getQuaternion();
-      VectorInt16 acc = imuUnits[0].getAcceleration();
+      Quaternion quat = imuUnit.getQuaternion();
+      VectorInt16 acc = imuUnit.getAcceleration();
      
       char cstr[60];
       char floatStrX[8]; // 
       char floatStrY[8];
       char floatStrZ[8];
       char floatStrW[8];
-      dtostrf(quat.x, 6, 4, floatStrX);
-      dtostrf(quat.y, 6, 4, floatStrY);
-      dtostrf(quat.z, 6, 4, floatStrZ);
-      dtostrf(quat.w, 6, 4, floatStrW);
-      sprintf(cstr, "%d,%d,%d,%s,%s,%s,%s,", acc.x, acc.y, acc.z, floatStrX, floatStrY, floatStrZ, floatStrW);
-      Serial.print(cstr);
-      if(isMeasuringWithTwoSensors){
-        quat = imuUnits[1].getQuaternion();
-        acc = imuUnits[1].getAcceleration();
-        Serial.print("" + String(acc.x) + "," + String(acc.y) + "," + String(acc.z) + "," + String(quat.x) + "," + String(quat.y) + "," + String(quat.z) + "," + String(quat.w) + ",");
-      }
-    }
-  }
 
-  pixelRingDisplay.update(imuUnits[1].getPitch(), imuUnits[0].getPitch(), imuUnits[1].getRoll(), imuUnits[0].getRoll(), imuUnits[1].getYaw());
+      if(isOutputtingAccelerometerData) {
+        Serial.print(acc.x + ", ");
+        Serial.print(acc.y + ", ");
+        Serial.print(acc.z + ", ");
+      }
+
+      if(isOutputtingGyroQuaternionData){
+        dtostrf(quat.x, 6, 4, floatStrX);
+        dtostrf(quat.y, 6, 4, floatStrY);
+        dtostrf(quat.z, 6, 4, floatStrZ);
+        dtostrf(quat.w, 6, 4, floatStrW);  
+        
+        Serial.print(floatStrX);
+        Serial.print(", ");
+        Serial.print(floatStrY);
+        Serial.print(", ");
+        Serial.print(floatStrZ);
+        Serial.print(", ");
+        Serial.print(floatStrW);
+        Serial.print(", ");
+      }
+  }
 
   
   Serial.println("");
