@@ -13,8 +13,9 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
     private FetchKinectPosition fetchKinectPosition;
     private FetchAccelerometer fetchAccelerometer; 
     private GeneralKalmanFilterBehaviour kalmanFilterBehaviour;
-    
 
+
+    public Vector3 offset;
     public bool applyToLocalPosition = true;
     
 
@@ -51,7 +52,7 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
                 case SOURCE.KINECT:
                     if (KinectPosition != null)
                     {
-                        PullData();
+                        PullData(inputDataComponent.GetType());
                     }
                     break;
                 case SOURCE.ACCELEROMETER:
@@ -61,24 +62,27 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
                     }
                     break;
                 case SOURCE.KALMAN_FILTER:
-                    PullData();
+                    PullData(inputDataComponent.GetType());
+                    break;
+                case SOURCE.GENERATED_DATA:
+                    PullData(inputDataComponent.GetType());
                     break;
             }
         }
     }
 
-    public IPushData getDataDeliverer()
+    public IPushData getDataDeliverer(Type type)
     {
         return (IPushData) inputDataComponent;
     }
 
-    public void PullData()
+    public void PullData(Type type)
     {
-        List<float> receivedData = getDataDeliverer().getData();
+        List<float> receivedData = getDataDeliverer(type).getData();
         Debug.Log(receivedData[0]);
         if (receivedData.Count >= 3 && (!float.IsNaN(receivedData[0]) && !float.IsNaN(receivedData[1]) && !float.IsNaN(receivedData[2])))
         {
-            transform.localPosition = new Vector3(receivedData[0], receivedData[1], receivedData[2]);
+            transform.localPosition = new Vector3(receivedData[0], receivedData[1], receivedData[2]) + offset;
         }
     }
 
@@ -86,7 +90,7 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
     {
         if (receivedData.Count >= 3)
         {
-            transform.localPosition = new Vector3(receivedData[0], receivedData[1], receivedData[2]);
+            transform.localPosition = new Vector3(receivedData[0], receivedData[1], receivedData[2]) + offset;
         }
     }
 }
@@ -94,5 +98,6 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
 public enum SOURCE {
     KINECT,
     ACCELEROMETER,
-    KALMAN_FILTER
+    KALMAN_FILTER,
+    GENERATED_DATA
 } 

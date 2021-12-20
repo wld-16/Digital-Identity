@@ -70,7 +70,7 @@ public class PrintData : MonoBehaviour
                 Vector3 handLeftPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.HandLeft);
 
-                Vector3 imuAcceleration = _readWrite.orientations.ring.accelerometer.ToVector3Int();
+                Vector3 imuAcceleration = _readWrite.orientations.ring.accelerometer.ToVector3();
                 Quaternion imuOrientation = _readWrite.orientations.ring.gyroscope.ToQuat();
                 Vector3 imuGravity = _readWrite.orientations.ring.gravity.ToVector3();
                 Vector3 imuEulerAngles = _readWrite.orientations.ring.gyroscope.ToYawPitchRollVector();

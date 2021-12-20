@@ -33,7 +33,7 @@ public class SampleUserPolling_ReadWrite : MonoBehaviour
     }
 
     // Executed each frame
-    void Update()
+    void FixedUpdate()
     {
         //---------------------------------------------------------------------
         // Send data
@@ -92,6 +92,7 @@ public class SampleUserPolling_ReadWrite : MonoBehaviour
             try
             {
                 orientations = JsonUtility.FromJson<Orientations>(message);
+                Debug.Log(orientations);
             }
             catch (ArgumentException aex)
             {

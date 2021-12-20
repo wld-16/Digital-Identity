@@ -7,25 +7,30 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
 using UnityEditor;
 using static System.Math;
+using Matrix4x4 = System.Numerics.Matrix4x4;
+using Object = System.Object;
 
 public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
 {
     #region api
-    [SerializeField] private Component inputComponent;
+
+    [SerializeField] private List<Component> inputComponent;
     [SerializeField] private List<Component> outputComponents;
-    
+
     #endregion
-    
+
     #region inputData
 
-    [Header("Input data")] 
-    [SerializeField] private List<float> inputData;
+    [Header("Input data")] [SerializeField]
+    private List<float> inputData;
+
     #endregion
 
     #region outData
 
-    [Header("Output data")] 
-    [SerializeField] protected Vector3 dataOffset = new Vector3(0, 0, 0);
+    [Header("Output data")] [SerializeField]
+    protected Vector3 dataOffset = new Vector3(0, 0, 0);
+
     [SerializeField] protected int[] observationOutputMapping = new int[3];
     [SerializeField] protected List<float> kalmanResultX;
     public List<float> outputData;
@@ -34,17 +39,25 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
 
     #region generalKalmanData
 
-    [Header("Kalman params")] 
-    [SerializeField] protected FloatDictionary sigmaValues;
-    [SerializeField] protected  List<float> x;
-    [SerializeField] protected  FloatMatrix P;
-    [SerializeField] protected  FloatMatrix F;
-    [SerializeField] protected  FloatMatrix H;
-    [SerializeField] protected  float dt = 14.0f / 1000.0f;
-    [SerializeField] protected  double mean = 0;
-    [SerializeField] protected  double stdDev = 2.56;
+    [Header("Kalman params")] [SerializeField]
+    protected FloatDictionary sigmaValues;
+
+    [SerializeField] protected List<float> x;
+    [SerializeField] protected FloatMatrix P;
+    [SerializeField] protected FloatMatrix F;
+    [SerializeField] protected FloatMatrix H;
+    [SerializeField] protected float dt = 14.0f / 1000.0f;
+    [SerializeField] protected double mean = 0;
+    [SerializeField] protected double stdDev = 2.56;
     private KalmanFilter kalmanFilter;
     public KalmanFilter KalmanFilter => kalmanFilter;
+
+    #endregion
+
+    #region options
+
+    [SerializeField] private bool useDynamicOrientationTransition;
+    [SerializeField] private bool useDynamicAccelerationTransition;
 
     #endregion
 
@@ -52,12 +65,14 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
     {
         if (typeof(IPullData) != inputComponent.GetType().GetInterface("IPullData"))
         {
-            Debug.LogWarning("InputComponent on " + name + " needs to implement the IPullData Interface!!" );
+            Debug.LogWarning("InputComponent on " + name + " needs to implement the IPullData Interface!!");
         }
-        
-        if (!outputComponents.Select(component => typeof(IPushData) == component.GetType().GetInterface("IPushData")).Aggregate((b, b1) => b && b1))
+
+        if (!outputComponents.Select(component => typeof(IPushData) == component.GetType().GetInterface("IPushData"))
+            .Aggregate((b, b1) => b && b1))
         {
-            Debug.LogWarning("Every Component of OutputComponents on " + name + " needs to implement the IPullData Interface!!" );
+            Debug.LogWarning("Every Component of OutputComponents on " + name +
+                             " needs to implement the IPullData Interface!!");
         }
     }
 
@@ -171,10 +186,29 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         });
 
 
+        if (useDynamicAccelerationTransition)
+        {
+            List<float> data = getDataDeliverer(typeof(FetchTransformationMatrixOfKinect)).getData();
+            Matrix<float> dataMatrix = DenseMatrix.OfArray(new float[3, 3]
+            {
+                {data[0], data[3], data[6]},
+                {data[1], data[4], data[7]},
+                {data[2], data[5], data[8]}
+            });
+            kalmanFilter.H = UpdateDynamicFWithTransformation(dataMatrix);
+        }
+
+        if (useDynamicOrientationTransition)
+        {
+            List<float> data = getDataDeliverer(typeof(FetchOrientationOfKinect)).getData();
+            kalmanFilter.H = UpdateDynamicFWithQuaternion(new Quaternion(data[1], data[2], data[3], data[0]));
+        }
+
+
         kalmanFilter = KalmanUpdate(Z, kalmanFilter);
 
         Dictionary<string, Matrix<float>> kalmanPredict = KalmanPredict(kalmanFilter);
-        
+
         kalmanResultX = kalmanPredict["x"].ToRowMajorArray().ToList();
 
         outputData = observationOutputMapping.Select(index => kalmanResultX[index]).ToList();
@@ -249,6 +283,45 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         }
     }
 
+    Matrix<float> UpdateDynamicFWithQuaternion(Quaternion quat)
+    {
+        return DenseMatrix.OfArray(new float[7, 7]
+        {
+            {1f, 0f, 0f, 0f, -quat.x * dt / 2, -quat.y, -quat.z * dt / 2},
+            {0, 1f, 0, 0, quat.w * dt / 2, quat.z, quat.y * dt / 2},
+            {0, 0, 1, 0, quat.z * dt / 2, quat.w * dt / 2, -quat.x * dt / 2},
+            {0, 0, 0, 1, -quat.y * dt / 2, quat.x * dt / 2, quat.w * dt / 2},
+            {0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 0, 0, 0, 1, 0},
+            {0, 0, 0, 0, 0, 0, 1}
+        });
+    }
+
+    Matrix<float> UpdateDynamicFWithTransformation(Matrix<float> handToLocal)
+    {
+        return DenseMatrix.OfArray(new float[9, 9]
+        {
+            {
+                1f, dt, (float) (handToLocal[0, 0] * Pow(dt, 2) / 2), 0, 0,
+                (float) (handToLocal[1, 0] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[2, 0] * Pow(dt, 2) / 2)
+            },
+            {0, 1, handToLocal[0, 0] * dt, 0, 0, handToLocal[1, 0] * dt, 0, 0, handToLocal[2, 0] * dt},
+            {0, 0, 1, 0, 0, 0, 0, 0, 0},
+            {
+                0, dt, (float) (handToLocal[0, 1] * Pow(dt, 2) / 2), 1, dt,
+                (float) (handToLocal[1, 1] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[2, 2] * Pow(dt, 2) / 2)
+            },
+            {0, 0, handToLocal[0, 1] * dt, 0, 1, handToLocal[1, 1] * dt, 0, 0, handToLocal[2, 1] * dt},
+            {0, 0, 0, 0, 0, 1, 0, 0, 0},
+            {
+                0, dt, (float) (handToLocal[0, 2] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[1, 2] * Pow(dt, 2) / 2),
+                1, dt, (float) (handToLocal[2, 2] * Pow(dt, 2) / 2)
+            },
+            {0, 0, handToLocal[0, 2] * dt, 0, 0, handToLocal[1, 2] * dt, 0, 1, handToLocal[2, 2] * dt},
+            {0, 0, 0, 0, 0, 0, 0, 0, 1}
+        });
+    }
+
     public List<IPullData> getDataRecipients()
     {
         return outputComponents.Select(component => (IPullData) component).ToList();
@@ -264,14 +337,14 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         return outputData;
     }
 
-    public IPushData getDataDeliverer()
+    public IPushData getDataDeliverer(Type type)
     {
-        return (IPushData) inputComponent;
+        return (IPushData) inputComponent.Find(component => component.GetType() == type);
     }
 
-    void IPullData.PullData()
+    void IPullData.PullData(Type type)
     {
-        inputData = getDataDeliverer().getData();
+        inputData = getDataDeliverer(type).getData();
     }
 
     public void Receive(List<float> receivedData)

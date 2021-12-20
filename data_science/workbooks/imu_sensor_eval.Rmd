@@ -1,0 +1,342 @@
+---
+title: "Evaluation IMU Sensor"
+output: html_notebook
+---
+
+Install all packages first
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+EnAccelerometer <- read_delim("~/Workspace/Data_Science/madgwick_with_kalman/Accelerometer.csv", 
+                        ",", escape_double = FALSE, trim_ws = TRUE)ter*. 
+
+Install Packages
+
+```{r}
+  if(!require(tidyverse)){
+    install.packages("xml2")
+    install.packages("curl")
+    install.packages("tidyverse")
+    library(tidyverse)
+  }
+library(readr)
+```
+
+Import IMU Data
+
+```{r}
+
+Magnetometer <- read_delim("~/Workspace/Data_Science/madgwick_with_kalman/Magnetometer.csv", 
+                           ",", escape_double = FALSE, trim_ws = TRUE)
+
+Gyroscope <- read_delim("~/Workspace/Data_Science/madgwick_with_kalman/Gyroscope.csv", 
+                        ",", escape_double = FALSE, trim_ws = TRUE)
+gyro = Gyroscope
+names(gyro) = c("t", "x", "y", "z")
+
+Accelerometer <- read_delim("~/Workspace/Data_Science/madgwick_with_kalman/Accelerometer.csv", 
+                        ",", escape_double = FALSE, trim_ws = TRUE)
+acc = Accelerometer
+names(acc) = c("t", "x", "y", "z")
+
+# Get same amout of values acc
+acc = acc[match(gyro$t,acc$t),]
+
+# Data is null here
+acc[4148,] = acc[4147,]
+
+
+```
+Get Angles unfiltered
+
+
+```{r}
+
+gyro_integrate <- function(angles, gyr){
+  gyro_phi = gyr[1] + sin(angles[[1]]) * tan(angles[[2]]) * gyr[2] + cos(angles[[1]]) * tan(angles[[2]]) * gyr[3]
+  gyro_theta = cos(angles[[1]]) * gyr[2] - sin(angles[[1]]) * gyr[3]
+  return(list(gyro_phi, gyro_theta * 180 / pi))
+}
+
+get_acc_angles <- function(ax, ay, az) {
+  phi = atan2(ay, sqrt(ax ** 2 + az ** 2))
+  theta = atan2(-ax, sqrt(ay ** 2 + az ** 2))
+  return(c(phi * 180 / pi, theta * 180 / pi)) 
+}
+
+# For Gyroscope
+
+gyro_temp = data.frame(t(data.frame(gyro$x, gyro$y, gyro$z)))
+init = list(0,0)
+result = Reduce('gyro_integrate',gyro_temp,init = init,accumulate = TRUE)
+gyro_angles = unlist(result)
+gyro_phys = gyro_angles[seq(1, length(gyro_angles), 2)]
+gyro_thetas = gyro_angles[seq(2, length(gyro_angles), 2)]
+gyro_angles = data.frame(gyro$t, gyro_phys[-1], gyro_thetas[-1])
+names(gyro_angles) = c("time","phi","theta")
+
+# For Accelerometer
+
+acc_angles = get_acc_angles(acc$x, acc$y, acc$z)
+
+acc_phi = acc_angles[seq(1, length(acc_angles), 2)]
+acc_thetas = acc_angles[seq(2, length(acc_angles), 2)]
+
+acc_angles = data.frame(acc$t, acc_phi, acc_thetas)
+names(acc_angles) = c("time","phi","theta")
+
+
+```
+
+```{r}
+
+ggplot(data=acc_angles) + geom_point(mapping = aes(x = time, y = phi),size = 0.5)
+ggplot(data=acc_angles) + geom_point(mapping = aes(x = `time`, y = `theta`), size = 0.5)
+
+ggplot(data=gyro_angles) + geom_point(mapping = aes(x = `time`, y = `phi`), size = 0.5)
+ggplot(data=gyro_angles) + geom_point(mapping = aes(x = `time`, y = `theta`), size = 0.5)
+
+
+gyro_angles_reduced = gyro_angles[seq(1, nrow(gyro_angles), 5),]
+acc_angles_reduced = acc_angles[seq(1, nrow(acc_angles), 5),]
+
+
+ggplot(acc_angles_reduced, aes(x = time, y = theta))+ geom_line(size = 0.5) + geom_line(data = gyro_angles_reduced, color = 'red', size = 0.5)    
+
+ggplot(acc_angles_reduced, aes(x = time, y = phi))+ geom_line(size = 0.5) + geom_line(data = gyro_angles_reduced, color = 'red', size = 0.5) + ylim(-250,250) 
+
+
+
+```
+
+
+
+
+```{r}
+
+ggplot(data=Accelerometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Acceleration x (m/s^2)`))
+ggplot(data=Accelerometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Acceleration y (m/s^2)`))
+ggplot(data=Accelerometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Acceleration z (m/s^2)`))
+
+ggplot(data=Gyroscope) + geom_point(mapping = aes(x = `Time (s)`, y = `Gyroscope x (rad/s)`))
+ggplot(data=Gyroscope) + geom_point(mapping = aes(x = `Time (s)`, y = `Gyroscope y (rad/s)`))
+ggplot(data=Gyroscope) + geom_point(mapping = aes(x = `Time (s)`, y = `Gyroscope z (rad/s)`))
+
+ggplot(data=Magnetometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Magnetic field x (µT)`))
+ggplot(data=Magnetometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Magnetic field y (µT)`))
+ggplot(data=Magnetometer) + geom_point(mapping = aes(x = `Time (s)`, y = `Magnetic field z (µT)`))
+
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+Next up the Madgwick filter will be defined
+
+```{r}
+
+sampleFreq <- 10
+q_origin <- list(1.0, 0.0, 0.0, 0.0)
+beta <- 0.1
+
+MadgwickAHRSupdate <- function(gx, gy, gz, ax, ay, az, q){
+  qDot = 0.5 * c(-q[2] * gx- q[3] * gy- q[4] * gz,
+                  q[1] * gx+ q[3] * gz- q[4] * gy,
+                  q[1] * gy- q[3] * gz+ q[4] * gx,
+                  q[1] * gz+ q[2] * gy- q[3] * gx
+                )
+  
+  if(!((ax == 0.0) && (ay == 0.0) && (az == 0.0))){
+    recipNorm = sqrt(ax * ax + ay * ay + az * az)
+    ax = ax * recipNorm
+    ay = ay * recipNorm
+    az = az * recipNorm
+    
+    two_q = 2.0 * q
+    four_q = 4.0 * q
+    ate_q = 8 * q
+    q_squared = q * q
+    
+    # Gradient decent
+    s0 = four_q[1] * q_squared[3] + two_q[3] * ax + four_q[1] * q_squared[2] - two_q[2] * ay
+    s1 = four_q[2] * q_squared[4] - two_q[4] * ax + 4.0 * q_squared[1] * q[2] - two_q[1] * ay - four_q[2] + ate_q[2] * q[2] + ate_q[2] * q[3] + four_q[2] * az
+    s2 = 4.0 * q_squared[1] * q[3] + two_q[1] * ax + four_q[3] * q_squared[4] - two_q[4] * ay - four_q[3] + ate_q[3] * q[2] + ate_q[3] * q[3] + four_q[3] * az
+    s3 = 4.0 * q_squared[2] * q[4] - two_q[2] * ax + 4.0 * q_squared[3] * q[4] - two_q[3] * ay
+    
+    recipNorm = sqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3)
+    s0 = s0 * recipNorm
+    s1 = s1 * recipNorm
+    s2 = s2 * recipNorm
+    s3 = s3 * recipNorm
+    
+    qDot = qDot - (beta * c(s0, s1, s2, s3))
+    
+  }
+  
+  q = q + (qDot * (1 / sampleFreq))
+  recipNorm = sqrt(q*q)
+  
+  q = q * recipNorm
+  return(q)
+}
+
+```
+
+Here the madgwick filter will be applied on the data
+
+```{r}
+
+
+acc_t = t(c(acc))
+names(acc_t) = c("time", "X", "Y", "Z")
+
+gyro_t = t(c(gyro))
+names(gyro_t) = c("time", "X", "Y", "Z")
+
+orientation = vector(mode = "list", length(gyro_t$time))
+
+i = 1
+orientation[[i]] = q_origin
+
+while(i <= length(gyro_t$time) && i <= length(acc_t$time)){
+  i = i + 1
+  result <- MadgwickAHRSupdate(gyro_t$X[i], gyro_t$Y[i], gyro_t$Z[i], acc_t$X[i], acc_t$Y[i], acc_t$Z[i], orientation[[i-1]])
+  orientation[[i]] = result
+}
+```
+
+Here Kalman
+
+init the Kalman filter state
+
+```{r}
+  C = matrix(c(1,0,0,0, 0,0,1,0), nrow = 2, ncol = 4)
+  P = diag(4)
+  Q = diag(4)
+  R = diag(2)
+  
+  state_estimate = c(0,0,0,0)
+  
+  phi_hat_init = 0
+  theta_hat_init = 0
+  
+  N = 100
+  phi_offset = 0
+  theta_offset = 0
+  
+  df = data.frame(acc, gyro)
+  names(df) <- c("timeAcc", "accX", "accY", "accZ", "timeGyro", "gyroX", "gyroY", "gyroZ")
+  
+```
+
+Calculate offset here
+
+```{r}
+
+# Get first x data from data and then calculate
+
+acc_calibration_frames = t(mapply(get_acc_angles, acc$x, acc$y, acc$z))
+
+gyro_calibration_frames = head(gyro, 100)
+acc_calibration_frames = head(acc, 100)
+
+phi_offset_sum = sum(acc_calibration_frames[,1])
+theta_offset_sum = sum(acc_calibration_frames[,2])
+
+phi_offset = phi_offset_sum / 100
+theta_offset = theta_offset_sum / 100
+
+
+```
+
+
+run filter on data
+
+```{r}
+
+  kalman_frame <- function(t1, t1_1, ax, ay, az, gx, gy, gz, phi_hat, theta_hat){
+  
+  
+  # Sample Time
+  dt = t1 - t1_1
+  
+  # Get Accelerometer measurements
+  
+  acc_angles = get_acc_angles(ax, ay, az)
+  phi_acc = acc_angles[1] - phi_offset
+  theta_acc = acc_angles[2] - theta_offset
+  
+  
+  # Get Gyro measurements
+  #gx = gx * pi / 180
+  #gy = gy * pi / 180
+  #gz = gz * pi / 180
+  
+  phi_dot = gx + sin(phi_hat) * tan(theta_hat) * gy + cos(phi_hat) * tan(theta_hat) * gz
+  theta_dot = cos(phi_hat) * gy - sin(phi_hat) * gz
+  
+  # Kalman filter
+  A = matrix(data = c(1,-dt,0,0, 0,1,0,0, 0,0,1,-dt, 0,0,0,1), nrow = 4, ncol = 4)
+  B = matrix(data = c(dt,0, 0,0, 0,dt, 0,0), nrow = 4, ncol = 2)
+  
+  gyro_input = c(phi_dot, theta_dot)
+  
+  
+  state_estimate = A %*% state_estimate + B %*% gyro_input
+  P = (A %*% (P %*% t(A))) + Q
+  
+  # Predict
+  measurement = c(phi_acc, theta_acc)
+  y_tilde = measurement - C %*% state_estimate
+  S = R + (C %*% (P %*% t(C)))
+  K = P %*% (t(C) %*% solve(S))
+  
+  # Update
+  state_estimate = state_estimate + K %*% y_tilde
+  P = (diag(4) - K %*% C) %*% P
+  
+  phi_hat = state_estimate[1]
+  theta_hat = state_estimate[3]
+  
+  return(c(phi_hat, theta_hat))
+}
+
+```
+
+```{r}
+
+  i = 1
+  phi_hat = 0
+  theta_hat = 0
+  kal_data = data.frame(0,0,0)
+   while(i < length(df$accX)-1) {
+    kal_data_frame = rbind(kalman_frame(df$timeAcc[i+1],df$timeAcc[i],df$accX[i],df$accY[i],df$accZ[i],df$gyroX[i],df$gyroY[i],df$gyroZ[i],phi_hat, theta_hat))
+    phi_hat = kal_data_frame[1]
+    theta_hat = kal_data_frame[2]
+    kal_data = rbind(kal_data, c(df$timeAcc[i],kal_data_frame[1],kal_data_frame[2]))
+    i = i + 1
+  }
+
+```
+
+```{r}
+
+names(kal_data) = c("time","phi","theta")
+  
+ggplot(data=kal_data) + geom_point(mapping = aes(x = `time`, y = `phi`), size = 0.5)
+ggplot(data=kal_data) + geom_point(mapping = aes(x = `time`, y = `theta`), size = 0.5)
+
+kalman_angles_reduced = kal_data[seq(1, nrow(kal_data), 5),]
+kalman_angles_reduced$theta = kalman_angles_reduced$theta * pi / 180
+
+ggplot(acc_angles_reduced, aes(x = time, y = theta))+ geom_line(size = 0.5) + geom_line(data = gyro_angles_reduced, color = 'red', size = 0.5) + geom_line(data = kalman_angles_reduced, color = 'blue', size = 0.5)
+
+ggplot(acc_angles_reduced, aes(x = time, y = phi))+ geom_line(size = 0.5) + geom_line(data = gyro_angles_reduced, color = 'red', size = 0.5) + ylim(-100,100) + geom_line(data = kalman_angles_reduced, color = 'blue', size = 0.5)
+
+```
+
+

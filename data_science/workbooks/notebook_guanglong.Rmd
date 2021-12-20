@@ -1,0 +1,831 @@
+---
+title: "Improving inertial Measurement data with visual sensor data from Kinect Camera"
+params: 
+  data_import_path: "D:/Projekte/Digital-Identity/data_science/res/imu_and_kinect_with_eule7r.csv"
+  T_s: 0.014
+  
+  x_initial_state_q0: 1.0
+  x_initial_state_q1: 0.0
+  x_initial_state_q2: 0.0
+  x_initial_state_q3: 0.0
+  
+  x_initial_state_euler_vx: 1.0
+  x_initial_state_euler_vy: 1.0
+  x_initial_state_euler_vz: 1.0
+  
+  initial_belief_00_q0: 0.5
+  initial_belief_11_q1: 0.5
+  initial_belief_22_q2: 0.5
+  initial_belief_33_q3: 0.5
+  initial_belief_44_euler_vx: 0.5
+  initial_belief_55_euler_vy: 0.5
+  initial_belief_66_euler_vz: 0.5
+  
+  x_initial_state_px: 0.0
+  x_initial_state_vx: 1.0
+  x_initial_state_ax: 1.0
+  x_initial_state_py: 0.0
+  x_initial_state_vy: 1.0
+  x_initial_state_ay: 1.0
+  x_initial_state_pz: 0.0
+  x_initial_state_vz: 1.0
+  x_initial_state_az: 1.0
+  
+  initial_belief_px_00: 0.05
+  initial_belief_vx_11: 0.5
+  initial_belief_ax_22: 0.5
+  initial_belief_py_33: 0.05
+  initial_belief_vy_44: 0.5
+  initial_belief_ay_55: 0.5
+  initial_belief_pz_66: 0.05
+  initial_belief_vz_77: 0.5
+  initial_belief_az_88: 0.5
+  
+  process_noise_orientation_angular_velocity_sigma_x: 0.05
+  process_noise_orientation_angular_velocity_sigma_y: 0.05
+  process_noise_orientation_angular_velocity_sigma_z: 0.05
+  
+  process_noise_acceleration_noise_omega_x: 0.05
+  process_noise_acceleration_noise_omega_y: 0.05
+  process_noise_acceleration_noise_omega_z: 0.05
+  
+  sensor_noise_imu_euler_velocity_x:  0.5
+  sensor_noise_imu_euler_velocity_y:  0.5
+  sensor_noise_imu_euler_velocity_z:  0.5
+  
+  sensor_noise_imu_sigma_x: 0.009810001
+  sensor_noise_imu_sigma_y: 0.009810001
+  sensor_noise_imu_sigma_z: 0.009810001
+  
+  sensor_noise_kinect_sigma_x: 0.05
+  sensor_noise_kinect_sigma_y: 0.05
+  sensor_noise_kinect_sigma_z: 0.05
+output:
+  html_document:
+    df_print: paged
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Execute this chunk to load install the required libraries
+
+```{r}
+#install.packages("RMThreshold")
+#install.packages("jsonlite")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("patchwork")
+#install.packages("reshape2")
+#install.packages("RSpincalc")
+#install.packages("LaplacesDemon")
+#install.packages('Rcpp')
+#install.packages('KFK')
+```
+
+
+Execute this chunk of code to load all the libraries
+
+```{r}
+library(dplyr)
+library(RMThreshold)
+library(ggplot2)
+library(RSpincalc)
+library(reshape2)
+library(LaplacesDemon)
+library(Rcpp)
+library(FKF)
+```
+
+Execute this line of code to load all the functions
+
+
+
+```{r}
+Ts = params$T_s
+orientation_transition_at_index <- function(i){
+  return(processOrientationModel$Ad + matrix(
+    data = c(
+      0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
+      -imkDf$kinect_hand_right_orientation.z[i],-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
+      0,0,0,0,imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
+      imkDf$kinect_hand_right_orientation.w[i],
+      imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
+      0,0,0,0,imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
+      imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,
+      -imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
+      0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
+      imkDf$kinect_hand_right_orientation.y[i]*Ts/2 ,
+      imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
+      0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0
+), nrow=7, ncol=7, byrow = TRUE))
+}
+
+quaternion_rotation_matrix <- function(q0, q1, q2, q3){
+     
+    # First row of the rotation matrix
+    r00 = 2 * (q0 * q0 + q1 * q1) - 1
+    r01 = 2 * (q1 * q2 - q0 * q3)
+    r02 = 2 * (q1 * q3 + q0 * q2)
+     
+    # Second row of the rotation matrix
+    r10 = 2 * (q1 * q2 + q0 * q3)
+    r11 = 2 * (q0 * q0 + q2 * q2) - 1
+    r12 = 2 * (q2 * q3 - q0 * q1)
+     
+    # Third row of the rotation matrix
+    r20 = 2 * (q1 * q3 - q0 * q2)
+    r21 = 2 * (q2 * q3 + q0 * q1)
+    r22 = 2 * (q0 * q0 + q3 * q3) - 1
+     
+    # 3x3 rotation matrix
+    rot_matrix = matrix(data = c(r00, r01, r02, r10, r11, r12, r20, r21, r22), nrow = 3, ncol = 3)
+                            
+    return(rot_matrix)
+}
+
+rotated_X_component <- function(i){
+    rotation_matrix = quaternion_rotation_matrix(
+      imkDf$kinect_hand_right_orientation.w[i],
+      imkDf$kinect_hand_right_orientation.x[i],
+      imkDf$kinect_hand_right_orientation.y[i],
+      imkDf$kinect_hand_right_orientation.z[i]
+      )
+
+    return (rotation_matrix[1,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[1,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[1,3] * imkDf$imu_acceleration.z[i])
+}
+
+rotated_y_component <- function(i){
+    rotation_matrix = quaternion_rotation_matrix(
+      imkDf$kinect_hand_right_orientation.w[i],
+      imkDf$kinect_hand_right_orientation.x[i],
+      imkDf$kinect_hand_right_orientation.y[i],
+      imkDf$kinect_hand_right_orientation.z[i]
+      )
+    
+    return (rotation_matrix[2,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[2,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[2,3] * imkDf$imu_acceleration.z[i])
+}
+
+rotated_z_component <- function(i){
+    rotation_matrix = quaternion_rotation_matrix(
+      imkDf$kinect_hand_right_orientation.w[i],
+      imkDf$kinect_hand_right_orientation.x[i],
+      imkDf$kinect_hand_right_orientation.y[i],
+      imkDf$kinect_hand_right_orientation.z[i]
+      )
+    
+    return (rotation_matrix[3,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[3,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[3,3] * imkDf$imu_acceleration.z[i])
+}
+
+acceleration_transition_at_index <- function(i){
+
+rotation_matrix = quaternion_rotation_matrix(
+  imkDf$kinect_hand_right_orientation.w[i],
+  imkDf$kinect_hand_right_orientation.x[i],
+  imkDf$kinect_hand_right_orientation.y[i],
+  imkDf$kinect_hand_right_orientation.z[i])
+
+  return(matrix(data = c(
+    1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
+    0,1,rotation_matrix[1,1] * Ts,         0,0,rotation_matrix[2,1] * Ts,       0,0,rotation_matrix[3,1] * Ts,
+    0,0,1,                                 0,0,0,                               0,0,0,
+    0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
+    0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
+    0,0,0,                                 0,0,1,                               0,0,0,
+    0,0,rotation_matrix[1,3] * Ts**2/2,    0,Ts,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
+    0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
+    0,0,0,                                 0,0,0,                               0,0,1
+  )
+  ,nrow = 9, ncol = 9, byrow=TRUE))
+}
+
+interpolateDataChunk <- function(index, chunk){
+  if(index == 1){
+    index_of_first_non_zero = subset(data.frame(i = 1:length(chunk), x = chunk), x != 0)[1,1]
+    chunk[0:(index_of_first_non_zero-1)] = chunk[index_of_first_non_zero]
+    return(chunk[1:index_of_first_non_zero])
+  }
+  else{
+    if(length(chunk) == 2)
+      return(chunk[1])
+    else if(length(chunk) > 2)
+      numberOfIncrements = length(chunk[2:(length(chunk))])
+    interpolationIncrement = (chunk[length(chunk)] - chunk[1]) / numberOfIncrements
+    return(c(chunk[1], chunk[1] + 1:(numberOfIncrements-1) * interpolationIncrement))
+  }
+}
+
+accumulateChunks <- function(vals){
+  if(vals[1] == 0) {
+  } else {
+    index_of_first_non_zero = subset(data.frame(i = 1:length(vals), x = vals), x != 0)[1,1]
+    index_of_second_non_zero = subset(data.frame(i = 1:(length(vals)-1), x = vals[(index_of_first_non_zero+1):length(vals)]), x != 0)[1,1]
+    if(is.na(index_of_second_non_zero)){
+      vals[length(vals)] = vals[index_of_first_non_zero]
+      return(list(vals))
+    } else {
+      return(list(vals[index_of_first_non_zero:(index_of_second_non_zero+1)]))
+    }
+  }
+}
+
+# Function to interpolate values inbetween
+interpolateZeroesInbetween <- function(measurements){
+  chunks = list()
+  measurements_temp=measurements
+  for(v in 1:length(measurements)){
+    if(length(measurements_temp) > 1){
+      chunks[v] = accumulateChunks(measurements_temp)
+      measurements_temp = measurements_temp[2:length(measurements_temp)]
+    }
+  }
+  names(chunks) <- seq_along(chunks)
+  chunks[sapply(chunks, is.null)] <- NULL
+  return(unlist(mapply(interpolateDataChunk, 1:length(chunks), chunks)))
+}
+
+crossProduct <- function(a1,a2,a3,b1,b2,b3){
+  return(
+    data.frame(
+      x=a2*b3-a3*b2, 
+      y=a3*b1-a1*b3,
+      z=a1*b2-a2*b1
+      )
+    )
+}
+
+scalarProduct <- function(a1,a2,a3,b1,b2,b3){
+  return(a1*b1+a2*b2+a3*b3)
+}
+
+vectorLength <- function(vector3){
+  return(sqrt(vector3$x**2 + vector3$y**2 + vector3$z**2))
+}
+
+justReturn <- function(index,frame){
+  return(frame)
+}
+
+```
+
+Here is the definition of the kalman filter
+
+```{r}
+# Will need euler angle velocity sensor
+# TODO: Quaternions need to be normalized
+getGuanglongOrientationModel <- function(initialState, initialBelief) {
+  #Currently used variable names -> variable names from Slides
+  # F -> A: State Transition Matrix
+  # a -> x: State Vector
+  # H -> C: Observation Matrix
+  # Q -> Q: Process Noise Matrix
+  # R -> R: Sensor Noise Matrix
+  # P -> P: Sensor Belief
+  
+  processModel = list()
+  # Vielleicht sind die Quaternion states hier dynamisch zu sehen
+  processModel$Ad = matrix(data = c(
+    1,0,0,0,        -initialState[2] * Ts/2  ,-initialState[3]     ,-initialState[4] * Ts/2,
+    0,1,0,0,        initialState[1] * Ts/2   ,initialState[4]      ,initialState[3] * Ts/2,
+    0,0,1,0,        initialState[4] * Ts/2   ,initialState[1]*Ts/2 ,-initialState[2] * Ts/2,
+    0,0,0,1,        -initialState[3] * Ts/2  ,initialState[2]*Ts/2 ,initialState * Ts/2,
+    0,0,0,0,        1,0,0,
+    0,0,0,0,        0,1,0,
+    0,0,0,0,        0,0,1
+  )
+  ,nrow = 7, ncol = 7, byrow=TRUE)
+  
+  processModel$x = matrix(data = initialState, nrow = 7, ncol = 1) ## state vector
+  
+  processModel$H = matrix(data = c(
+    0,0,0,0,1,0,0,
+    0,0,0,0,0,1,0,
+    0,0,0,0,0,0,1
+  ), nrow = 3, ncol = 7, byrow=TRUE) ## observation/ measurment vector 
+  
+  omega = c(
+    1,
+    1,
+    1,
+    1,
+    params$process_noise_orientation_angular_velocity_sigma_x,
+    params$process_noise_orientation_angular_velocity_sigma_y,
+    params$process_noise_orientation_angular_velocity_sigma_z
+  )
+  
+  
+  processModel$Q = diag(omega)
+  processModel$R = matrix(data = c(
+    params$sensor_noise_imu_euler_velocity_x, 
+    params$sensor_noise_imu_euler_velocity_y,
+    params$sensor_noise_imu_euler_velocity_z
+  ),ncol= 1, nrow = 3)
+  
+  processModel$P = initialBelief
+  
+  processModel$colNames = c("q_0","q_1","q_2","q_3","v_x","v_y","v_z")
+  
+  return(processModel)
+}
+
+# TODO: Transformationsmatrix berechnen 
+getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHandToLocal, gravityVector) {
+  #Currently used variable names -> variable names from Slides
+  # F -> A: State Transition Matrix
+  # a -> x: State Vector
+  # H -> C: Observation Matrix
+  # Q -> Q: Process Noise Matrix
+  # R -> R: Sensor Noise Matrix
+  # P -> P: Sensor Belief
+  processModel = list()
+  Ts = 0.014
+  processModel$Ad = matrix(data = c(
+    1,Ts,matrixHandToLocal$mx_x * Ts**2/2,  0,0,matrixHandToLocal$my_x * Ts**2/2,  0,0,matrixHandToLocal$mz_x * Ts**2/2,
+    0,1,matrixHandToLocal$mx_x * Ts,        0,0,matrixHandToLocal$my_x * Ts,       0,0,matrixHandToLocal$mz_x * Ts,
+    0,0,1,                                  0,0,0,                                 0,0,0,
+    0,0,matrixHandToLocal$mx_y * Ts**2/2,   1,Ts,matrixHandToLocal$my_y * Ts**2/2,  0,0,matrixHandToLocal$mz_y * Ts**2/2,
+    0,0,matrixHandToLocal$mx_y * Ts,        0,1,matrixHandToLocal$my_y * Ts,       0,0,matrixHandToLocal$mz_y * Ts,
+    0,0,0,                                  0,0,1,                                 0,0,0,
+    0,0,matrixHandToLocal$mx_z * Ts**2/2,   0,0,matrixHandToLocal$my_z * Ts**2/2,  1,Ts,matrixHandToLocal$mz_z * Ts**2/2,
+    0,0,matrixHandToLocal$mx_z * Ts,        0,0,matrixHandToLocal$my_z * Ts,       0,1,matrixHandToLocal$mz_z * Ts,
+    0,0,0,                                  0,0,0,                                 0,0,1
+  )
+  ,nrow = 9, ncol = 9, byrow=TRUE)
+  
+  processModel$x = matrix(data = initialState, nrow = 9, ncol = 1) ## state vector
+  processModel$B = matrix(data = c(0,0,0,0,0,0, -vectorLength(gravityVector) * Ts**2/2, -vectorLength(gravityVector) * Ts, 0), nrow = 9, ncol = 1)
+  
+  processModel$H = matrix(data = c(
+    1,0,0,0,0,0,0,0,0,
+    0,0,1,0,0,0,0,0,0,
+    0,0,0,1,0,0,0,0,0,
+    0,0,0,0,0,1,0,0,0,
+    0,0,0,0,0,0,1,0,0,
+    0,0,0,0,0,0,0,0,1
+  ), nrow = 6, ncol = 9, byrow=TRUE) ## observation/ measurment vector 
+  
+  processModel$Gd = matrix(data = c(
+    Ts**2/2,0,0,
+    Ts,     0,0,
+    1,      0,0,
+    0,Ts**2/2,0,
+    0,Ts,     0,
+    0,1,      0,
+    0,0,Ts**2/2,
+    0,0,Ts     ,
+    0,0,1      
+  ), nrow=9, ncol=3, byrow = TRUE)
+  
+  omega = diag(x=c(
+    params$process_noise_acceleration_noise_omega_x,
+    params$process_noise_acceleration_noise_omega_y,
+    params$process_noise_acceleration_noise_omega_z)
+  )
+  
+  processModel$Q = processModel$Gd %*% omega %*% t(processModel$Gd)
+  
+  processModel$P = initialBelief
+  processModel$R = matrix(nrow = 6, ncol = 1, data = c(
+    params$sensor_noise_kinect_sigma_x,
+    params$sensor_noise_kinect_sigma_y,
+    params$sensor_noise_kinect_sigma_z,
+    params$sensor_noise_imu_sigma_x,
+    params$sensor_noise_imu_sigma_y,
+    params$sensor_noise_imu_sigma_z
+  ))
+  
+  processModel$colNames = c("x","v_x","a_x","y","v_y","a_y","z","v_z","a_z")
+  
+  return(processModel)
+}
+```
+
+
+
+To load the data from the sensors execute this snippet of code 
+
+```{r}
+imkDfRaw <- read.csv2(params$data_import_path)
+```
+
+
+Here are some operations on the raw kinect data, to interpolate values
+```{r}
+
+# Zeit in Millisekunden ?bersetzen
+
+imkDfRaw$t = (imkDfRaw$t.m * 60 * 1000 + imkDfRaw$t.s * 1000 + imkDfRaw$t.ms)
+
+# Erstelle Data Frame f?r kinect daten
+# Darauf achten das datens?tze gleiche L?nge aufweisen
+
+imkDf = imkDfRaw[abs(imkDfRaw$kinect_foot_right.x) > 0,]
+
+uXP = crossProduct(imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.x, imkDf$imu_acceleration.x, imkDf$imu_acceleration.y, imkDf$imu_acceleration.z)
+
+
+rightSide_qp = imkDf$kinect_hand_left_orientation.w * c(imkDf$imu_acceleration.x, imkDf$imu_acceleration.y, imkDf$imu_acceleration.z) + uXP
+
+qp = data.frame(w = scalarProduct(
+  -imkDf$kinect_hand_right_orientation.x,
+  -imkDf$kinect_hand_right_orientation.y, 
+  -imkDf$kinect_hand_right_orientation.z,
+  imkDf$imu_acceleration.x,
+  imkDf$imu_acceleration.y,
+  imkDf$imu_acceleration.z
+  ),x = rightSide_qp$x,y = rightSide_qp$y,z = rightSide_qp$z)
+
+uXP = crossProduct(qp$x,qp$y,qp$z,
+                   imkDf$kinect_hand_right_orientation.x,
+                   imkDf$kinect_hand_right_orientation.y,
+                   imkDf$kinect_hand_right_orientation.z)
+
+rightSide_qp_q = qp$w * c( 
+  -imkDf$kinect_hand_right_orientation.x,
+  -imkDf$kinect_hand_right_orientation.y, 
+  -imkDf$kinect_hand_right_orientation.z) + uXP
+
+# Ist das Skalarprodukt hier überhaupt notwendig??
+qp_q = data.frame(w = scalarProduct(
+  -qp$x,
+  -qp$y,
+  -qp$z,
+  -imkDf$kinect_hand_right_orientation.x,
+  -imkDf$kinect_hand_right_orientation.y, 
+  -imkDf$kinect_hand_right_orientation.z
+), x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
+
+rotatedValues = data.frame(x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
+
+#imkDf$rotated_x_acceleration = rightSide_qp_q$x
+#imkDf$rotated_y_acceleration = rightSide_qp_q$y
+#imkDf$rotated_z_acceleration = rightSide_qp_q$z
+
+imkDf$rotated_x_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_X_component)))
+imkDf$rotated_y_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_y_component)))
+imkDf$rotated_z_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_z_component)))
+
+
+```
+
+Init the state space models
+
+```{r}
+
+initial_orientation_state = c(
+  params$x_initial_state_q0, 
+  params$x_initial_state_q1,
+  params$x_initial_state_q2,
+  params$x_initial_state_q3,
+  imkDfRaw$imu_yaw[1],
+  imkDfRaw$imu_pitch[1],
+  imkDfRaw$imu_roll[1]
+)
+initial_orientation_belief = diag(
+  c(
+    params$initial_belief_00_q0,  
+    params$initial_belief_11_q1,
+    params$initial_belief_22_q2,
+    params$initial_belief_33_q3,
+    params$initial_belief_44_euler_vx,
+    params$initial_belief_55_euler_vy,
+    params$initial_belief_66_euler_vz
+    )
+)
+#
+
+processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief)
+
+rotationMatrix = quaternion_rotation_matrix(imkDf$kinect_hand_right_orientation.w, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.y, imkDf$kinect_hand_right_orientation.z)
+
+initial_matrixHandToLocal = data.frame(
+  mx_x = rotationMatrix[1,1], my_x = rotationMatrix[1,2], mz_x = rotationMatrix[1,3],
+  mx_y = rotationMatrix[2,1], my_y = rotationMatrix[2,2], mz_y = rotationMatrix[2,3],
+  mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
+)
+
+initial_gravity = data.frame(
+  x = imkDf$imu_gravity.x[1],
+  y = imkDf$imu_gravity.y[1],
+  z = imkDf$imu_gravity.z[1]
+  )
+
+initial_acceleration_state = c(
+  params$x_initial_state_px,  
+  params$x_initial_state_vx,
+  params$x_initial_state_ax,
+  params$x_initial_state_py,  
+  params$x_initial_state_vy,
+  params$x_initial_state_ay,
+  params$x_initial_state_pz,  
+  params$x_initial_state_vz,
+  params$x_initial_state_az
+)
+
+initial_acceleration_belief = diag(c(
+  params$initial_belief_px_00,
+  params$initial_belief_vx_11,
+  params$initial_belief_ax_22,
+  params$initial_belief_py_33,
+  params$initial_belief_vy_44,
+  params$initial_belief_ay_55,
+  params$initial_belief_pz_66,
+  params$initial_belief_vz_77,
+  params$initial_belief_az_88
+))
+
+processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity)
+
+oMTMax = 1000 # orientationModelTimeMaximum
+
+fkfGuanglongOrientationModel = fkf(
+  a0 = processOrientationModel$x[,1],
+  P0 = processOrientationModel$P,
+  dt = matrix(data = 0, nrow = 7, ncol = 1),
+  ct = matrix(data = 0, nrow = 3, ncol = 1),
+  GGt = array(diag(nrow = 3, ncol = 3), dim=c(3,3,1)),
+  Zt = array(processOrientationModel$H, dim=c(3,7,1)),
+  Tt = array(as.numeric(unlist(lapply(1:1,orientation_transition_at_index))), dim=c(7, 7, oMTMax)),
+  HHt = array(processOrientationModel$Q, dim=c(7,7,1)),
+  yt = matrix(data = c(imkDfRaw$imu_yaw[oMTMax],imkDfRaw$imu_pitch[oMTMax],imkDfRaw$imu_pitch[oMTMax]), ncol = oMTMax, nrow = 3)
+  )
+
+aMTMax = 500 # accelerationModelTimeMaximum
+
+fkfGuanglongAccelerationModel = fkf(
+  a0 = processAccelerationModel$x[,1],
+  P0  = processAccelerationModel$P,
+  dt = matrix(data = 0, nrow = 9, ncol = 1),
+  ct = matrix(data = 0, nrow = 6, ncol = 1),
+  GGt = diag(nrow = 6, ncol = 6),
+  Zt = processAccelerationModel$H,
+  Tt = array(as.numeric(unlist(lapply(1:aMTMax,acceleration_transition_at_index))), dim=c(9, 9, aMTMax)),
+  HHt = processAccelerationModel$Q,
+  yt = matrix(data = c(
+    imkDf$kinect_hand_right.x[1:aMTMax],
+    imkDf$kinect_hand_right.y[1:aMTMax],
+    imkDf$kinect_hand_right.z[1:aMTMax],
+    imkDf$imu_acceleration.x[1:aMTMax],
+    imkDf$imu_acceleration.y[1:aMTMax],
+    imkDf$imu_acceleration.z[1:aMTMax]
+  ), nrow = 6, ncol = aMTMax)
+  )
+
+
+```
+
+The following chunk generates data from an simulator for orientation
+
+```{r}
+# Simulation of orientation
+
+generateNextOrientationFrame <- function(x_k, x_ki){
+  A_k = processOrientationModel$Ad
+  B = diag(x = 0,nrow=7)
+  uk = matrix(nrow=7, ncol=1, data = 0)
+  wk = matrix(nrow=7, ncol=1, data = c(
+    0,
+    0,
+    0,
+    0,
+    params$process_noise_orientation_angular_velocity_sigma_x,
+    params$process_noise_orientation_angular_velocity_sigma_y,
+    params$process_noise_orientation_angular_velocity_sigma_z))
+  
+  x_ki = A_k %*% x_k + B %*% uk + wk
+  return(x_ki)
+}
+
+x_k = as.double(initial_orientation_state)
+simulationOrientationData = Reduce(x = lapply(1:10, justReturn,x_k), f=generateNextOrientationFrame, accumulate = TRUE)
+
+
+# Simulation of Acceleration
+
+simulatedMax = 10
+
+generateNextAccelerationFrame <- function(x_k, x_ki){
+  A_k = processAccelerationModel$Ad
+  B = diag(x = 0,nrow=9)
+  uk = matrix(nrow=9, ncol=1, data = 0)
+  wk = matrix(nrow=9, ncol=1, data = c(
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    params$process_noise_acceleration_noise_omega_x,
+    params$process_noise_acceleration_noise_omega_y,
+    params$process_noise_acceleration_noise_omega_z))
+  
+  x_ki = A_k %*% x_k + B %*% uk + wk
+  return(x_ki)
+}
+
+generateNextAccelerationMeasurement <- function(x_k){
+  H = processAccelerationModel$H
+  v_k = processAccelerationModel$R
+  
+  z_k = H %*% x_k + v_k
+  return(z_k)
+}
+
+x_k = matrix(initial_acceleration_state)
+
+simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
+
+simuationAccelerationMeasurements = lapply(simulationAccelerationData, generateNextAccelerationMeasurement)
+
+simulatedDataAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
+
+simulatedDataAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
+simuationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simuationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
+
+
+simulatedfkfGuanglongAccelerationModel = fkf(
+  a0 = processAccelerationModel$x[,1],
+  P0  = processAccelerationModel$P,
+  dt = matrix(data = 0, nrow = 9, ncol = 1),
+  ct = matrix(data = 0, nrow = 6, ncol = 1),
+  GGt = diag(nrow = 6, ncol = 6),
+  Zt = processAccelerationModel$H,
+  Tt = acceleration_transition_at_index(1),
+  HHt = processAccelerationModel$Q,
+  yt = matrix(data = c(
+    simuationAccelerationMeasurementsAsMatrix[1,],
+    simuationAccelerationMeasurementsAsMatrix[2,],
+    simuationAccelerationMeasurementsAsMatrix[3,],
+    simuationAccelerationMeasurementsAsMatrix[4,],
+    simuationAccelerationMeasurementsAsMatrix[5,],
+    simuationAccelerationMeasurementsAsMatrix[6,]
+  ), nrow = 6, ncol = aMTMax)
+  )
+
+plot(simulatedDataAsMatrix[1,] ~ c(1:simulatedMax), pch  = 20, main = "p_x in simulation", ylab = "p_x", xlab="time", type='l', ylim = c(-0.5, 0.5))
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[1,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("p_x state", "simulated px"), lwd = 3, col = c("blue", "black"))
+
+
+
+plot(simulatedDataAsMatrix[8,] ~ c(1:simulatedMax), pch  = 20, main = "p_y in simulation", ylab = "p_y",xlab="time", type='l',  ylim = c(-2, 2))
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[2,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("p_z state", "simulated py"), lwd = 3, col = c("blue", "black"))
+
+
+
+plot(simulatedDataAsMatrix[3,] ~ c(1:simulatedMax), pch  = 20, main = "p_z in simulation", ylab = "a_z",xlab="time", type='l', ylim = c(-2, 2))
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[3,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("p_z state", "simulated pz"), lwd = 3, col = c("blue", "black"))
+
+
+plot(simulatedDataAsMatrix[7,] ~ c(1:simulatedMax), pch  = 20, main = "a_x in simulation", ylab = "a_x", xlab="time", type='l')
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[7,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("a_x state", "simulated ax"), lwd = 3, col = c("blue", "black"))
+
+
+
+plot(simulatedDataAsMatrix[8,] ~ c(1:simulatedMax), pch  = 20, main = "a_y in simulation", ylab = "a_y",xlab="time", type='l',  ylim = c(-2, 2))
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[8,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("a_y state", "simulated ay"), lwd = 3, col = c("blue", "black"))
+
+
+
+plot(simulatedDataAsMatrix[9,] ~ c(1:simulatedMax), pch  = 20, main = "a_z in simulation", ylab = "a_z",xlab="time", type='l', ylim = c(-2, 2))
+polygon(
+  x = c(1:simulatedMax, rev(1:simulatedMax)),
+  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] ~ c(1:simulatedMax), col = "blue")
+lines(simulatedDataAsMatrix[9,] ~ c(1:simulatedMax))
+legend("bottomright", legend = c("a_z state", "simulated az"), lwd = 3, col = c("blue", "black"))
+
+
+```
+
+Plot the data
+
+```{r}
+
+plot(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "x", ylab = "x",xlab="time", type='l', ylim = c(-1, 1))
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] + fkfGuanglongAccelerationModel$att[1,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[1,1:aMTMax ] - fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[1, 1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("p_x state", "kinect x"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_x", ylab = "a_x",xlab="time", type='l')
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] + fkfGuanglongAccelerationModel$att[1,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[1,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[7,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("a_x state", "imu x"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 4, main = "y", ylab = "y",xlab="time", type='l')
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[2,2,1:aMTMax] + fkfGuanglongAccelerationModel$att[2,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[2,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[2,2,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[2,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("p_y state", "kinect y"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_y", ylab = "a_y",xlab="time", type='l')
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[8,8,1:aMTMax] + fkfGuanglongAccelerationModel$att[8,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[8,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[8,8,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[8,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("a_y state", "imu y"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 4, main = "z", ylab = "z",xlab="time", type='l')
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[3,3,1:aMTMax] + fkfGuanglongAccelerationModel$att[3,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[3,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[3,3,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[3,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("p_z state", "z"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_z", ylab = "a_z",xlab="time", type='l')
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[9,9,1:aMTMax] + fkfGuanglongAccelerationModel$att[9,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[9,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[9,9,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[9,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("a_z state", "imu z"), lwd = 3, col = c("blue", "black"))
+
+
+plot(imkDfRaw$imu_yaw[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "yaw", ylab = "yaw",xlab="time", type='l')
+lines(fkfGuanglongOrientationModel$att[5,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+
+plot(imkDfRaw$imu_pitch[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "pitch", ylab = "pitch",xlab="time", type='l')
+lines(fkfGuanglongOrientationModel$att[6,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+
+plot(imkDfRaw$imu_roll[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "roll", ylab = "roll",xlab="time", type='l',  ylim = c(-70, 50))
+lines(fkfGuanglongOrientationModel$att[7,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+
+```
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+
+

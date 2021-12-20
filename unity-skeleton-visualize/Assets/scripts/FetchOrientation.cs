@@ -6,9 +6,8 @@ using JetBrains.Annotations;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnityEngine;
 
-public class FetchOrientation : MonoBehaviour
+public class FetchOrientation : MonoBehaviour, IPushData
 {
-    [SerializeField] private KalmanFilter _kalmanFilter;
     [SerializeField] private OrientationSource _orientationSource;
 
     public SampleUserPolling_ReadWrite readWith;
@@ -17,6 +16,8 @@ public class FetchOrientation : MonoBehaviour
     public bool applyToTransform;
     public Quaternion orientationOffset;
 
+    public List<float> outputData;
+    public List<IPullData> dataRecipients;
 
 
     [SerializeField] private AxisMappingEntry[] mapping = new AxisMappingEntry[3]
@@ -29,7 +30,6 @@ public class FetchOrientation : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
     }
 
     Vector3 accelerometerToAxis(Vector3 accData)
@@ -46,7 +46,7 @@ public class FetchOrientation : MonoBehaviour
     {
         if (readWith.orientations.ring.accelerometer != null)
         {
-            fetchedAcceleration = readWith.orientations.ring.accelerometer.ToVector3Int();
+            fetchedAcceleration = readWith.orientations.ring.accelerometer.ToVector3();
         }
 
         if (readWith.orientations.ring.gyroscope != null)
@@ -64,8 +64,23 @@ public class FetchOrientation : MonoBehaviour
                     outputRotation = Quaternion.Euler(mapping.Select(entry => entry.applyMapping(toAxis))
                         .Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3));
                     break;
-                case OrientationSource.GYROSCOPE:
+                case OrientationSource.QUATERNION:
                     outputRotation = fetchedQuaternion;
+                    outputData = new List<float>
+                    {
+                        fetchedQuaternion.w,
+                        fetchedQuaternion.x,
+                        fetchedQuaternion.y,
+                        fetchedQuaternion.z
+                    };
+                    break;
+                case OrientationSource.YPR:
+                    outputData = new List<float>
+                    {
+                        readWith.orientations.ring.gyroscope.yaw,
+                        readWith.orientations.ring.gyroscope.pitch,
+                        readWith.orientations.ring.gyroscope.roll
+                    };
                     break;
                 case OrientationSource.KALMAN:
                     //output = Quaternion.Euler(mapping.Select(entry => entry.applyMapping(_kalmanFilter.output)).Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3));
@@ -74,6 +89,22 @@ public class FetchOrientation : MonoBehaviour
 
             transform.rotation = outputRotation * orientationOffset;
         }
+    }
+
+    public List<IPullData> getDataRecipients()
+    {
+        return dataRecipients;
+    }
+
+    public void PushData()
+    {
+        getDataRecipients()
+            .ForEach(recipient => recipient.Receive(outputData));
+    }
+
+    public List<float> getData()
+    {
+        return outputData;
     }
 }
 
@@ -89,7 +120,8 @@ enum IncomingOrientationAxis
 enum OrientationSource
 {
     ACCELEROMETER,
-    GYROSCOPE,
+    QUATERNION,
+    YPR,
     KALMAN
 }
 

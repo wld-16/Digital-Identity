@@ -66,9 +66,10 @@ void setup() {
 
   // wait for ready
   Serial.println(F("Press [j] to toggle json output"));
+  Serial.println(F("Press [r] to distplay range mode"));
   Serial.println(F("Press [g] to toggle gravity data"));
   Serial.println(F("Press [e] to toggle gyroscope euler data"));
-  Serial.println(F("Press [q] to toggle gyroscope quaternion data"));
+  Serial.println(F("Press [w] to toggle gyroscope quaternion data"));
   Serial.println(F("Press [a] to toggle accelerometer data"));
   Serial.println(F("Press [s] to begin DMP programming and demo: "));
   while (true){
@@ -85,6 +86,12 @@ void setup() {
         isOutputtingAccelerometerData = !isOutputtingAccelerometerData;
         Serial.print("Will output accelerometer: ");
         Serial.println(isOutputtingAccelerometerData);
+      }
+      else if(input == 114){                          // 114 is 'r' as char
+        Serial.print("Range Mode Accelerometer: ");
+        Serial.println(mpus.select(0)->_mpu.getFullScaleAccelRange());
+        Serial.print("Range Mode Gyroscope: ");
+        Serial.println(mpus.select(0)->_mpu.getFullScaleGyroRange());
       }
       else if(input == 115){                          // 13 is '\n' as char
         Serial.println("Pressed s");
@@ -165,9 +172,9 @@ void loop() {
         doc["ring"]["gyroscope"]["roll"] = imuUnit.getRoll();
       }
       if(isOutputtingAccelerometerData){
-        doc["ring"]["accelerometer"]["x"] = acc.x;
-        doc["ring"]["accelerometer"]["y"] = acc.y;
-        doc["ring"]["accelerometer"]["z"] = acc.z;
+        doc["ring"]["accelerometer"]["x"] = ((float) acc.x) / 8092 * 9.81;
+        doc["ring"]["accelerometer"]["y"] = ((float) acc.y) / 8092 * 9.81;
+        doc["ring"]["accelerometer"]["z"] = ((float) acc.z) / 8092 * 9.81;
       }
       if(isOutputtingGravityData){
         doc["ring"]["gravity"]["x"] = gravity.x;
@@ -208,7 +215,7 @@ void loop() {
       }
   }
 
-  
+  pixelRingDisplay.update(imuUnit.getPitch(), imuUnit.getPitch(), imuUnit.getRoll(), imuUnit.getRoll(), imuUnit.getYaw());
   Serial.println("");
   activityLed.update();
   deathTimer.update();

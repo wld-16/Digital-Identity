@@ -716,7 +716,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _readWrite: {fileID: 149273537}
   path: D:\Projekte\Digital-Identity\data_science\
-  fileName: imu_and_kinect_with_euler.csv
+  fileName: imu_and_kinect_with_eule7r.csv
 --- !u!4 &1094087833
 Transform:
   m_ObjectHideFlags: 0

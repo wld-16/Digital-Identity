@@ -10,11 +10,12 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
 
     [SerializeField] public SampleUserPolling_ReadWrite readWith;
     [SerializeField] public Vector3 fetchedAcceleration;
+    [SerializeField] private Vector3 fetchedGravityVector;
 
     #endregion
 
     #region transformations
-    
+
     [SerializeField] private Vector3 offset;
     [SerializeField] private Vector3 thresholdVector = new Vector3(1, 1, 1);
 
@@ -22,7 +23,9 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
 
     #region output 
 
+    [SerializeField] private bool removeGravity = true;
     [SerializeField] public Vector3 rawOutput;
+    [SerializeField] public List<float> outputData;
     [SerializeField] private List<IPullData> receipients;
 
     #endregion
@@ -52,14 +55,20 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
     // Start is called before the first frame update
     void Start()
     {
+        outputData = new List<float> {0, 0, 0};
     }
 
     // Update is called once per frame
     void Update()
     {
         rawOutput = accelerometerMapping.Select(entry =>
-                entry.applyMapping(readWith.orientations.ring.accelerometer.ToVector3Int()))
+                entry.applyMapping(readWith.orientations.ring.accelerometer.ToVector3()))
             .Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3);
+        fetchedGravityVector = readWith.orientations.ring.gravity.ToVector3();
+
+        outputData[0] = rawOutput.x - (removeGravity ? fetchedGravityVector.x * 9.81f : 0);
+        outputData[1] = rawOutput.y - (removeGravity ? fetchedGravityVector.y * 9.81f : 0);
+        outputData[2] = rawOutput.z - (removeGravity ? fetchedGravityVector.z * 9.81f : 0);
 
         if (Math.Abs(rawOutput.magnitude) > 0.001f)
         {
@@ -93,7 +102,7 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
     public void PushData()
     {
         getDataRecipients().ForEach(recipient =>
-            recipient.Receive(new List<float>() {rawOutput.x, rawOutput.y, rawOutput.z}));
+            recipient.Receive(outputData));
     }
 
     public List<float> getData()
