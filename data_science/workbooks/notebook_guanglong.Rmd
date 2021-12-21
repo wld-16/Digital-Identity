@@ -271,7 +271,7 @@ justReturn <- function(index,frame){
 
 ```
 
-Here is the definition of the kalman filter
+Here is the definition of the state space models
 
 ```{r}
 # Will need euler angle velocity sensor
