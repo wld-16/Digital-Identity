@@ -30,12 +30,14 @@ getGuanglongOrientationModel <- function(initialState, initialBelief) {
   # P -> P: Sensor Belief
   
   processModel = list()
+  processModel$Ts = 0.014
   # Vielleicht sind die Quaternion states hier dynamisch zu sehen
+  # Arrays in R starten mit 1
   processModel$Ad = matrix(data = c(
-    1,0,0,0,        -initialState[2] * Ts/2  ,-initialState[3]     ,-initialState[4] * Ts/2,
-    0,1,0,0,        initialState[1] * Ts/2   ,initialState[4]      ,initialState[3] * Ts/2,
-    0,0,1,0,        initialState[4] * Ts/2   ,initialState[1]*Ts/2 ,-initialState[2] * Ts/2,
-    0,0,0,1,        -initialState[3] * Ts/2  ,initialState[2]*Ts/2 ,initialState * Ts/2,
+    1,0,0,0,        -initialState[2] * Ts/2  ,-initialState[3]*Ts/2     ,-initialState[4] * Ts/2,
+    0,1,0,0,        initialState[1] * Ts/2   ,initialState[4]*Ts/2      ,initialState[3] * Ts/2,
+    0,0,1,0,        initialState[4] * Ts/2   ,initialState[1]*Ts/2      ,-initialState[2] * Ts/2,
+    0,0,0,1,        -initialState[3] * Ts/2  ,initialState[2]*Ts/2      ,initialState[1] * Ts/2,
     0,0,0,0,        1,0,0,
     0,0,0,0,        0,1,0,
     0,0,0,0,        0,0,1
@@ -86,6 +88,7 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
   # P -> P: Sensor Belief
   processModel = list()
   Ts = 0.014
+  processModel$Ts = Ts
   processModel$Ad = matrix(data = c(
     1,Ts,matrixHandToLocal$mx_x * Ts**2/2,  0,0,matrixHandToLocal$my_x * Ts**2/2,  0,0,matrixHandToLocal$mz_x * Ts**2/2,
     0,1,matrixHandToLocal$mx_x * Ts,        0,0,matrixHandToLocal$my_x * Ts,       0,0,matrixHandToLocal$mz_x * Ts,
