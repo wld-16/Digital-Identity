@@ -2,9 +2,9 @@
 library(testthat)
 library(usethis)
 
-source("~/Workspace/Digital-Identity/data_science/scripts/functions.R")
-source("~/Workspace/Digital-Identity/data_science/scripts/models.R")
-source("~/Workspace/Digital-Identity/data_science/scripts/initial_data.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\functions.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\models.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\initial_data.R")
 
 test_that("model remains 0 when input 0", {
   initial_orientation_state = c(1,0,0,0,0,0,0)

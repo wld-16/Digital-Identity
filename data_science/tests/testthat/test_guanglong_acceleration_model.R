@@ -9,9 +9,9 @@
 library(testthat)
 library(usethis)
 
-source("~/Workspace/Digital-Identity/data_science/scripts/functions.R")
-source("~/Workspace/Digital-Identity/data_science/scripts/models.R")
-source("~/Workspace/Digital-Identity/data_science/scripts/initial_data.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\functions.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\models.R")
+source("D:\\Projekte\\Digital-Identity\\data_science\\scripts\\initial_data.R")
 
 test_that("model remains 0 when input 0", {
   initialIdleState = c(0,0,0,0,0,0,0,0,0)
@@ -195,3 +195,4 @@ test_that("model test a_x = 1 with z rotation 90 deg", {
   
   expect_equal(result[,1], c(0,0,1,0,0,0,model$Ts**2/2,model$Ts,0))
 })
+

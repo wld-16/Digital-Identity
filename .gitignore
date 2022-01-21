@@ -21,8 +21,6 @@ dist
 *.dae
 *.blend
 *.blend1
-*.csv
 *.xlsx
-*/res/
 */libs/
 .Rproj.user
