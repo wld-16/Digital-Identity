@@ -1,65 +1,153 @@
 ---
 title: "Improving inertial Measurement data with visual sensor data from Kinect Camera"
 params: 
-  data_import_path: "D:/Projekte/Digital-Identity/data_science/res/imu_and_kinect_with_eule7r.csv"
-  T_s: 0.014
-  
-  x_initial_state_q0: 1.0
-  x_initial_state_q1: 0.0
-  x_initial_state_q2: 0.0
-  x_initial_state_q3: 0.0
-  
-  x_initial_state_euler_vx: 1.0
-  x_initial_state_euler_vy: 1.0
-  x_initial_state_euler_vz: 1.0
-  
-  initial_belief_00_q0: 0.5
-  initial_belief_11_q1: 0.5
-  initial_belief_22_q2: 0.5
-  initial_belief_33_q3: 0.5
-  initial_belief_44_euler_vx: 0.05
-  initial_belief_55_euler_vy: 0.05
-  initial_belief_66_euler_vz: 0.05
-  
-  x_initial_state_px: 0.0
-  x_initial_state_vx: 1.0
-  x_initial_state_ax: 1.0
-  x_initial_state_py: 0.0
-  x_initial_state_vy: 1.0
-  x_initial_state_ay: 1.0
-  x_initial_state_pz: 0.0
-  x_initial_state_vz: 1.0
-  x_initial_state_az: 1.0
-  
-  initial_belief_px_00: 0.05
-  initial_belief_vx_11: 0.5
-  initial_belief_ax_22: 0.5
-  initial_belief_py_33: 0.05
-  initial_belief_vy_44: 0.5
-  initial_belief_ay_55: 0.5
-  initial_belief_pz_66: 0.05
-  initial_belief_vz_77: 0.5
-  initial_belief_az_88: 0.5
-  
-  process_noise_orientation_angular_velocity_sigma_x: 0.05
-  process_noise_orientation_angular_velocity_sigma_y: 0.05
-  process_noise_orientation_angular_velocity_sigma_z: 0.05
-  
-  process_noise_acceleration_noise_omega_x: 0.05
-  process_noise_acceleration_noise_omega_y: 0.05
-  process_noise_acceleration_noise_omega_z: 0.05
-  
-  sensor_noise_imu_euler_velocity_x:  0.5
-  sensor_noise_imu_euler_velocity_y:  0.5
-  sensor_noise_imu_euler_velocity_z:  0.5
-  
-  sensor_noise_imu_sigma_x: 0.009810001
-  sensor_noise_imu_sigma_y: 0.009810001
-  sensor_noise_imu_sigma_z: 0.009810001
-  
-  sensor_noise_kinect_sigma_x: 0.05
-  sensor_noise_kinect_sigma_y: 0.05
-  sensor_noise_kinect_sigma_z: 0.05
+  data_import_path:
+    value: "~/Workspace/Digital-Identity/data_science/res/imu_and_kinect_with_eule7r.csv"
+    input: file
+  T_s:
+    value: 0.014
+    input: numeric
+  x_initial_state_q0:
+    value: 1.0
+    input: numeric
+  x_initial_state_q1:
+    value: 0.0
+    input: numeric
+  x_initial_state_q2:
+    value: 0.0
+    input: numeric
+  x_initial_state_q3:
+    value: 0.0
+    input: numeric
+  x_initial_state_euler_vx:
+    value: 1.0
+    input: numeric
+  x_initial_state_euler_vy:
+    value: 1.0
+    input: numeric
+  x_initial_state_euler_vz:
+    value: 1.0
+    input: numeric
+  initial_belief_00_q0:
+    value: 0.5
+    input: numeric
+  initial_belief_11_q1:
+    value: 0.5
+    input: numeric
+  initial_belief_22_q2:
+    value: 0.5
+    input: numeric
+  initial_belief_33_q3:
+    value: 0.5
+    input: numeric
+  initial_belief_44_euler_vx:
+    value: 0.05
+    input: numeric
+  initial_belief_55_euler_vy:
+    value: 0.05
+    input: numeric
+  initial_belief_66_euler_vz:
+    value: 0.05
+    input: numeric
+  x_initial_state_px:
+    value: 0.0
+    input: numeric
+  x_initial_state_vx:
+    value: 1.0
+    input: numeric
+  x_initial_state_ax:
+    value: 1.0
+    input: numeric
+  x_initial_state_py:
+    value: 0.0
+    input: numeric
+  x_initial_state_vy:
+    value: 1.0
+    input: numeric
+  x_initial_state_ay:
+    value: 1.0
+    input: numeric
+  x_initial_state_pz:
+    value: 0.0
+    input: numeric
+  x_initial_state_vz:
+    value: 1.0
+    input: numeric
+  x_initial_state_az:
+    value: 1.0
+    input: numeric
+  initial_belief_px_00:
+    value: 0.05
+    input: numeric
+  initial_belief_vx_11:
+    value: 0.5
+    input: numeric
+  initial_belief_ax_22:
+    value: 0.5
+    input: numeric
+  initial_belief_py_33:
+    value: 0.05
+    input: numeric
+  initial_belief_vy_44:
+    value: 0.5
+    input: numeric
+  initial_belief_ay_55:
+    value: 0.5
+    input: numeric
+  initial_belief_pz_66:
+    value: 0.05
+    input: numeric
+  initial_belief_vz_77:
+    value: 0.5
+    input: numeric
+  initial_belief_az_88:
+    value: 0.5
+    input: numeric
+  process_noise_orientation_angular_velocity_sigma_x:
+    value: 0.05
+    input: numeric
+  process_noise_orientation_angular_velocity_sigma_y:
+    value: 0.05
+    input: numeric
+  process_noise_orientation_angular_velocity_sigma_z:
+    value: 0.05
+    input: numeric
+  process_noise_acceleration_noise_omega_x:
+    value: 0.05
+    input: numeric
+  process_noise_acceleration_noise_omega_y:
+    value: 0.05
+    input: numeric
+  process_noise_acceleration_noise_omega_z:
+    value: 0.05
+    input: numeric
+  sensor_noise_imu_euler_velocity_x:
+    value:  0.5
+    input: numeric
+  sensor_noise_imu_euler_velocity_y:
+    value:  0.5
+    input: numeric
+  sensor_noise_imu_euler_velocity_z:
+    value:  0.5
+    input: numeric
+  sensor_noise_imu_sigma_x:
+    value: 0.009810001
+    input: numeric
+  sensor_noise_imu_sigma_y:
+    value: 0.009810001
+    input: numeric
+  sensor_noise_imu_sigma_z:
+    value: 0.009810001
+    input: numeric
+  sensor_noise_kinect_sigma_x:
+    value: 0.05
+    input: numeric
+  sensor_noise_kinect_sigma_y:
+    value: 0.05
+    input: numeric
+  sensor_noise_kinect_sigma_z:
+    value: 0.05
+    input: numeric
 output:
   html_document:
     df_print: paged
@@ -103,171 +191,10 @@ Execute this line of code to load all the functions
 
 
 ```{r}
+
+source("~/Workspace/Digital-Identity/data_science/scripts/functions.R")
+
 Ts = params$T_s
-orientation_transition_at_index <- function(i){
-  return(processOrientationModel$Ad + matrix(
-    data = c(
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
-      -imkDf$kinect_hand_right_orientation.z[i],-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      0,0,0,0,imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.w[i],
-      imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
-      0,0,0,0,imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,
-      -imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.y[i]*Ts/2 ,
-      imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
-      0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0
-), nrow=7, ncol=7, byrow = TRUE))
-}
-
-quaternion_rotation_matrix <- function(q0, q1, q2, q3){
-     
-    # First row of the rotation matrix
-    r00 = 2 * (q0 * q0 + q1 * q1) - 1
-    r01 = 2 * (q1 * q2 - q0 * q3)
-    r02 = 2 * (q1 * q3 + q0 * q2)
-     
-    # Second row of the rotation matrix
-    r10 = 2 * (q1 * q2 + q0 * q3)
-    r11 = 2 * (q0 * q0 + q2 * q2) - 1
-    r12 = 2 * (q2 * q3 - q0 * q1)
-     
-    # Third row of the rotation matrix
-    r20 = 2 * (q1 * q3 - q0 * q2)
-    r21 = 2 * (q2 * q3 + q0 * q1)
-    r22 = 2 * (q0 * q0 + q3 * q3) - 1
-     
-    # 3x3 rotation matrix
-    rot_matrix = matrix(data = c(r00, r01, r02, r10, r11, r12, r20, r21, r22), nrow = 3, ncol = 3)
-                            
-    return(rot_matrix)
-}
-
-rotated_X_component <- function(i){
-    rotation_matrix = quaternion_rotation_matrix(
-      imkDf$kinect_hand_right_orientation.w[i],
-      imkDf$kinect_hand_right_orientation.x[i],
-      imkDf$kinect_hand_right_orientation.y[i],
-      imkDf$kinect_hand_right_orientation.z[i]
-      )
-
-    return (rotation_matrix[1,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[1,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[1,3] * imkDf$imu_acceleration.z[i])
-}
-
-rotated_y_component <- function(i){
-    rotation_matrix = quaternion_rotation_matrix(
-      imkDf$kinect_hand_right_orientation.w[i],
-      imkDf$kinect_hand_right_orientation.x[i],
-      imkDf$kinect_hand_right_orientation.y[i],
-      imkDf$kinect_hand_right_orientation.z[i]
-      )
-    
-    return (rotation_matrix[2,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[2,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[2,3] * imkDf$imu_acceleration.z[i])
-}
-
-rotated_z_component <- function(i){
-    rotation_matrix = quaternion_rotation_matrix(
-      imkDf$kinect_hand_right_orientation.w[i],
-      imkDf$kinect_hand_right_orientation.x[i],
-      imkDf$kinect_hand_right_orientation.y[i],
-      imkDf$kinect_hand_right_orientation.z[i]
-      )
-    
-    return (rotation_matrix[3,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[3,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[3,3] * imkDf$imu_acceleration.z[i])
-}
-
-acceleration_transition_at_index <- function(i){
-
-rotation_matrix = quaternion_rotation_matrix(
-  imkDf$kinect_hand_right_orientation.w[i],
-  imkDf$kinect_hand_right_orientation.x[i],
-  imkDf$kinect_hand_right_orientation.y[i],
-  imkDf$kinect_hand_right_orientation.z[i])
-
-  return(matrix(data = c(
-    1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
-    0,1,rotation_matrix[1,1] * Ts,         0,0,rotation_matrix[2,1] * Ts,       0,0,rotation_matrix[3,1] * Ts,
-    0,0,1,                                 0,0,0,                               0,0,0,
-    0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
-    0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
-    0,0,0,                                 0,0,1,                               0,0,0,
-    0,0,rotation_matrix[1,3] * Ts**2/2,    0,Ts,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
-    0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
-    0,0,0,                                 0,0,0,                               0,0,1
-  )
-  ,nrow = 9, ncol = 9, byrow=TRUE))
-}
-
-interpolateDataChunk <- function(index, chunk){
-  if(index == 1){
-    index_of_first_non_zero = subset(data.frame(i = 1:length(chunk), x = chunk), x != 0)[1,1]
-    chunk[0:(index_of_first_non_zero-1)] = chunk[index_of_first_non_zero]
-    return(chunk[1:index_of_first_non_zero])
-  }
-  else{
-    if(length(chunk) == 2)
-      return(chunk[1])
-    else if(length(chunk) > 2)
-      numberOfIncrements = length(chunk[2:(length(chunk))])
-    interpolationIncrement = (chunk[length(chunk)] - chunk[1]) / numberOfIncrements
-    return(c(chunk[1], chunk[1] + 1:(numberOfIncrements-1) * interpolationIncrement))
-  }
-}
-
-accumulateChunks <- function(vals){
-  if(vals[1] == 0) {
-  } else {
-    index_of_first_non_zero = subset(data.frame(i = 1:length(vals), x = vals), x != 0)[1,1]
-    index_of_second_non_zero = subset(data.frame(i = 1:(length(vals)-1), x = vals[(index_of_first_non_zero+1):length(vals)]), x != 0)[1,1]
-    if(is.na(index_of_second_non_zero)){
-      vals[length(vals)] = vals[index_of_first_non_zero]
-      return(list(vals))
-    } else {
-      return(list(vals[index_of_first_non_zero:(index_of_second_non_zero+1)]))
-    }
-  }
-}
-
-# Function to interpolate values inbetween
-interpolateZeroesInbetween <- function(measurements){
-  chunks = list()
-  measurements_temp=measurements
-  for(v in 1:length(measurements)){
-    if(length(measurements_temp) > 1){
-      chunks[v] = accumulateChunks(measurements_temp)
-      measurements_temp = measurements_temp[2:length(measurements_temp)]
-    }
-  }
-  names(chunks) <- seq_along(chunks)
-  chunks[sapply(chunks, is.null)] <- NULL
-  return(unlist(mapply(interpolateDataChunk, 1:length(chunks), chunks)))
-}
-
-crossProduct <- function(a1,a2,a3,b1,b2,b3){
-  return(
-    data.frame(
-      x=a2*b3-a3*b2, 
-      y=a3*b1-a1*b3,
-      z=a1*b2-a2*b1
-      )
-    )
-}
-
-scalarProduct <- function(a1,a2,a3,b1,b2,b3){
-  return(a1*b1+a2*b2+a3*b3)
-}
-
-vectorLength <- function(vector3){
-  return(sqrt(vector3$x**2 + vector3$y**2 + vector3$z**2))
-}
-
-justReturn <- function(index,frame){
-  return(frame)
-}
 
 ```
 
@@ -276,131 +203,8 @@ Here is the definition of the state space models
 ```{r}
 # Will need euler angle velocity sensor
 # TODO: Quaternions need to be normalized
-getGuanglongOrientationModel <- function(initialState, initialBelief) {
-  #Currently used variable names -> variable names from Slides
-  # F -> A: State Transition Matrix
-  # a -> x: State Vector
-  # H -> C: Observation Matrix
-  # Q -> Q: Process Noise Matrix
-  # R -> R: Sensor Noise Matrix
-  # P -> P: Sensor Belief
-  
-  processModel = list()
-  # Vielleicht sind die Quaternion states hier dynamisch zu sehen
-  processModel$Ad = matrix(data = c(
-    1,0,0,0,        -initialState[2] * Ts/2  ,-initialState[3]*Ts/2,-initialState[4] * Ts/2,
-    0,1,0,0,        initialState[1] * Ts/2   ,initialState[4]*Ts/2 ,initialState[3] * Ts/2,
-    0,0,1,0,        initialState[4] * Ts/2   ,initialState[1]*Ts/2 ,-initialState[2] * Ts/2,
-    0,0,0,1,        -initialState[3] * Ts/2  ,initialState[2]*Ts/2 ,initialState[1] * Ts/2,
-    0,0,0,0,        1,0,0,
-    0,0,0,0,        0,1,0,
-    0,0,0,0,        0,0,1
-  )
-  ,nrow = 7, ncol = 7, byrow=TRUE)
-  
-  processModel$x = matrix(data = initialState, nrow = 7, ncol = 1) ## state vector
-  
-  processModel$H = matrix(data = c(
-    0,0,0,0,1,0,0,
-    0,0,0,0,0,1,0,
-    0,0,0,0,0,0,1
-  ), nrow = 3, ncol = 7, byrow=TRUE) ## observation/ measurment vector 
-  
-  omega = c(
-    1,
-    1,
-    1,
-    1,
-    params$process_noise_orientation_angular_velocity_sigma_x,
-    params$process_noise_orientation_angular_velocity_sigma_y,
-    params$process_noise_orientation_angular_velocity_sigma_z
-  )
-  
-  
-  processModel$Q = diag(omega)
-  processModel$R = matrix(data = c(
-    params$sensor_noise_imu_euler_velocity_x, 
-    params$sensor_noise_imu_euler_velocity_y,
-    params$sensor_noise_imu_euler_velocity_z
-  ),ncol= 1, nrow = 3)
-  
-  processModel$P = initialBelief
-  
-  processModel$colNames = c("q_0","q_1","q_2","q_3","v_x","v_y","v_z")
-  
-  return(processModel)
-}
-
-# TODO: Transformationsmatrix berechnen 
-getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHandToLocal, gravityVector) {
-  #Currently used variable names -> variable names from Slides
-  # F -> A: State Transition Matrix
-  # a -> x: State Vector
-  # H -> C: Observation Matrix
-  # Q -> Q: Process Noise Matrix
-  # R -> R: Sensor Noise Matrix
-  # P -> P: Sensor Belief
-  processModel = list()
-  Ts = 0.014
-  processModel$Ad = matrix(data = c(
-    1,Ts,matrixHandToLocal$mx_x * Ts**2/2,  0,0,matrixHandToLocal$my_x * Ts**2/2,  0,0,matrixHandToLocal$mz_x * Ts**2/2,
-    0,1,matrixHandToLocal$mx_x * Ts,        0,0,matrixHandToLocal$my_x * Ts,       0,0,matrixHandToLocal$mz_x * Ts,
-    0,0,1,                                  0,0,0,                                 0,0,0,
-    0,0,matrixHandToLocal$mx_y * Ts**2/2,   1,Ts,matrixHandToLocal$my_y * Ts**2/2, 0,0,matrixHandToLocal$mz_y * Ts**2/2,
-    0,0,matrixHandToLocal$mx_y * Ts,        0,1,matrixHandToLocal$my_y * Ts,       0,0,matrixHandToLocal$mz_y * Ts,
-    0,0,0,                                  0,0,1,                                 0,0,0,
-    0,0,matrixHandToLocal$mx_z * Ts**2/2,   0,0,matrixHandToLocal$my_z * Ts**2/2,  1,Ts,matrixHandToLocal$mz_z * Ts**2/2,
-    0,0,matrixHandToLocal$mx_z * Ts,        0,0,matrixHandToLocal$my_z * Ts,       0,1,matrixHandToLocal$mz_z * Ts,
-    0,0,0,                                  0,0,0,                                 0,0,1
-  )
-  ,nrow = 9, ncol = 9, byrow=TRUE)
-  
-  processModel$x = matrix(data = initialState, nrow = 9, ncol = 1) ## state vector
-  processModel$B = matrix(data = c(0,0,0,0,0,0, -vectorLength(gravityVector) * Ts**2/2, -vectorLength(gravityVector) * Ts, 0), nrow = 9, ncol = 1)
-  
-  processModel$H = matrix(data = c(
-    1,0,0,0,0,0,0,0,0,
-    0,0,1,0,0,0,0,0,0,
-    0,0,0,1,0,0,0,0,0,
-    0,0,0,0,0,1,0,0,0,
-    0,0,0,0,0,0,1,0,0,
-    0,0,0,0,0,0,0,0,1
-  ), nrow = 6, ncol = 9, byrow=TRUE) ## observation/ measurment vector 
-  
-  processModel$Gd = matrix(data = c(
-    Ts**2/2,0,0,
-    Ts,     0,0,
-    1,      0,0,
-    0,Ts**2/2,0,
-    0,Ts,     0,
-    0,1,      0,
-    0,0,Ts**2/2,
-    0,0,Ts     ,
-    0,0,1      
-  ), nrow=9, ncol=3, byrow = TRUE)
-  
-  omega = diag(x=c(
-    params$process_noise_acceleration_noise_omega_x,
-    params$process_noise_acceleration_noise_omega_y,
-    params$process_noise_acceleration_noise_omega_z)
-  )
-  
-  processModel$Q = processModel$Gd %*% omega %*% t(processModel$Gd)
-  
-  processModel$P = initialBelief
-  processModel$R = matrix(nrow = 6, ncol = 1, data = c(
-    params$sensor_noise_kinect_sigma_x,
-    params$sensor_noise_kinect_sigma_y,
-    params$sensor_noise_kinect_sigma_z,
-    params$sensor_noise_imu_sigma_x,
-    params$sensor_noise_imu_sigma_y,
-    params$sensor_noise_imu_sigma_z
-  ))
-  
-  processModel$colNames = c("x","v_x","a_x","y","v_y","a_y","z","v_z","a_z")
-  
-  return(processModel)
-}
+# TODO: Transformationsmatrix berechnen für acceleration modell ?
+source("~/Workspace/Digital-Identity/data_science/scripts/models.R")
 ```
 
 
@@ -506,9 +310,15 @@ initial_orientation_belief = diag(
     params$initial_belief_66_euler_vz
     )
 )
+
+orientation_process_noise = data.frame(
+  x = params$process_noise_orientation_angular_velocity_sigma_x,
+  y = params$process_noise_orientation_angular_velocity_sigma_y,
+  z = params$process_noise_orientation_angular_velocity_sigma_z
+)
 #
 
-processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief)
+processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)
 
 ## only for simulation
 rotationMatrix = quaternion_rotation_matrix(1,0,0,0)
@@ -559,7 +369,26 @@ initial_acceleration_belief = diag(c(
   params$initial_belief_az_88
 ))
 
-processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity)
+acceleration_process_noise = data.frame(
+  x = params$process_noise_acceleration_noise_omega_x,
+  y = params$process_noise_acceleration_noise_omega_y,
+  z = params$process_noise_acceleration_noise_omega_z
+)
+
+acceleration_sensor_noise = data.frame(
+  x = params$sensor_noise_kinect_sigma_x,
+  y = params$sensor_noise_kinect_sigma_y,
+  z = params$sensor_noise_kinect_sigma_z,
+  ax = params$sensor_noise_imu_sigma_x,
+  ay = params$sensor_noise_imu_sigma_y,
+  az = params$sensor_noise_imu_sigma_z
+)
+
+processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity, acceleration_process_noise, acceleration_sensor_noise)
+
+```
+
+```{r}
 
 oMTMax = 1000 # orientationModelTimeMaximum
 
@@ -575,6 +404,9 @@ fkfGuanglongOrientationModel = fkf(
   yt = matrix(data = c(imkDfRaw$imu_yaw[oMTMax],imkDfRaw$imu_pitch[oMTMax],imkDfRaw$imu_pitch[oMTMax]), ncol = oMTMax, nrow = 3)
   )
 
+```
+
+```{r}
 aMTMax = 500 # accelerationModelTimeMaximum
 
 fkfGuanglongAccelerationModel = fkf(
@@ -595,9 +427,8 @@ fkfGuanglongAccelerationModel = fkf(
     imkDf$imu_acceleration.z[1:aMTMax]
   ), nrow = 6, ncol = aMTMax)
   )
-
-
 ```
+
 
 The following chunk generates data from an simulator for orientation
 
@@ -638,6 +469,7 @@ simulationOrientationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f
 simuationOrientationMeasurements = lapply(simulationOrientationData, generateNextOrientationMeasurement)
 
 simulatedOrientationDataAsMatrix = matrix(data = unlist(simulationOrientationData), nrow = 7, ncol=simulatedMax)
+simuationOrientationMeasurementsAsMatrix = matrix(data = unlist(simuationOrientationMeasurements), nrow = 3, ncol=simulatedMax)
 
 
 # Simulation of Acceleration
@@ -679,10 +511,10 @@ simulatedDataAccAsMatrix = matrix(data = unlist(simulationAccelerationData), nro
 simuationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simuationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
 
 ## execute only for simulation
-imkDf = data.frame(kinect_hand_right_orientation.w = c(1),
-                   kinect_hand_right_orientation.x = c(1),
-                   kinect_hand_right_orientation.y = c(1),
-                   kinect_hand_right_orientation.z = c(1))
+#imkDf = data.frame(kinect_hand_right_orientation.w = c(1),
+#                   kinect_hand_right_orientation.x = c(1),
+#                   kinect_hand_right_orientation.y = c(1),
+#                   kinect_hand_right_orientation.z = c(1))
 ##
 
 simulatedfkfGuanglongOrientationModel = fkf(
@@ -695,9 +527,9 @@ simulatedfkfGuanglongOrientationModel = fkf(
   Tt = orientation_transition_at_index(1),
   HHt = processOrientationModel$Q,
   yt = matrix(data = c(
-  simulationOrientationMeasurmentsAsMatrix[1,],
-  simulationOrientationMeasurmentsAsMatrix[2,],
-  simulationOrientationMeasurmentsAsMatrix[3,]
+  simuationOrientationMeasurementsAsMatrix[1,],
+  simuationOrientationMeasurementsAsMatrix[2,],
+  simuationOrientationMeasurementsAsMatrix[3,]
   ), nrow = 3, ncol = simulatedMax)
 )
 
@@ -729,38 +561,36 @@ sim_time = sim_time * 0.014
 Plot the orientation
 
 ```{r}
-plot(simulatedOrientationDataAsMatrix[1,] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x", xlab="time in seconds", type='l', ylim = c(-10, 10))
+plot(simuationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x", xlab="time in seconds", type='l', ylim = c(-10, 10))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simulatedOrientationDataAsMatrix[1,] ~ sim_time)
+lines(simuationOrientationMeasurementsAsMatrix[1,] ~ sim_time)
 legend("bottomright", legend = c("v_x state", "simulated vx"), lwd = 3, col = c("blue", "black"))
 
-
-
-plot(simulatedOrientationDataAsMatrix[2,] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_y", xlab="time in seconds", type='l', ylim = c(-10, 10))
+plot(simuationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_y", xlab="time in seconds", type='l', ylim = c(-10, 10))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simulatedOrientationDataAsMatrix[2,] ~ sim_time)
+lines(simuationOrientationMeasurementsAsMatrix[2,] ~ sim_time)
 legend("bottomright", legend = c("v_y state", "simulated v_y"), lwd = 3, col = c("blue", "black"))
 
 
 
-plot(simulatedOrientationDataAsMatrix[3,] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z", xlab="time in seconds", type='l', ylim = c(-10, 10))
+plot(simuationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z", xlab="time in seconds", type='l', ylim = c(-10, 10))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simulatedOrientationDataAsMatrix[3,] ~ sim_time)
+lines(simuationOrientationMeasurementsAsMatrix[3,] ~ sim_time)
 legend("bottomright", legend = c("v_z state", "simulated v_z"), lwd = 3, col = c("blue", "black"))
 
 ```
@@ -777,8 +607,6 @@ polygon(
 lines(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simuationAccelerationMeasurementsAsMatrix[1,] ~ sim_time)
 legend("bottomright", legend = c("p_x state", "simulated px"), lwd = 3, col = c("blue", "black"))
-
-
 
 plot(simuationAccelerationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "p_y in simulation", ylab = "p_y",xlab="time in seconds", type='l',  ylim = c(-1, 4))
 polygon(
@@ -824,8 +652,6 @@ polygon(
 lines(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simuationAccelerationMeasurementsAsMatrix[5,] ~ sim_time)
 legend("bottomright", legend = c("a_y state", "simulated ay"), lwd = 3, col = c("blue", "black"))
-
-
 
 plot(simuationAccelerationMeasurementsAsMatrix[6,] ~ sim_time, pch  = 20, main = "a_z in simulation", ylab = "a_z",xlab="time in seconds", type='l', ylim = c(-1, 3))
 polygon(

@@ -1,26 +1,6 @@
 Ts = 0.014
-process_noise_orientation_angular_velocity_sigma_x = 0.05
-process_noise_orientation_angular_velocity_sigma_y = 0.05
-process_noise_orientation_angular_velocity_sigma_z = 0.05
 
-process_noise_acceleration_noise_omega_x = 0.05
-process_noise_acceleration_noise_omega_y = 0.05
-process_noise_acceleration_noise_omega_z = 0.05
-
-sensor_noise_imu_euler_velocity_x =  0.5
-sensor_noise_imu_euler_velocity_y =  0.5
-sensor_noise_imu_euler_velocity_z =  0.5
-
-sensor_noise_imu_sigma_x = 0.009810001
-sensor_noise_imu_sigma_y = 0.009810001
-sensor_noise_imu_sigma_z = 0.009810001
-
-sensor_noise_kinect_sigma_x = 0.05
-sensor_noise_kinect_sigma_y = 0.05
-sensor_noise_kinect_sigma_z = 0.05
-
-
-getGuanglongOrientationModel <- function(initialState, initialBelief) {
+getGuanglongOrientationModel <- function(initialState, initialBelief, processNoise, sensorNoise) {
   #Currently used variable names -> variable names from Slides
   # F -> A: State Transition Matrix
   # a -> x: State Vector
@@ -57,17 +37,16 @@ getGuanglongOrientationModel <- function(initialState, initialBelief) {
     1,
     1,
     1,
-    process_noise_orientation_angular_velocity_sigma_x,
-    process_noise_orientation_angular_velocity_sigma_y,
-    process_noise_orientation_angular_velocity_sigma_z
+    processNoise$x,
+    processNoise$y,
+    processNoise$z
   )
-  
   
   processModel$Q = diag(omega)
   processModel$R = matrix(data = c(
-    sensor_noise_imu_euler_velocity_x, 
-    sensor_noise_imu_euler_velocity_y,
-    sensor_noise_imu_euler_velocity_z
+    processNoise$x, 
+    processNoise$y,
+    processNoise$z
   ),ncol= 1, nrow = 3)
   
   processModel$P = initialBelief
@@ -78,7 +57,7 @@ getGuanglongOrientationModel <- function(initialState, initialBelief) {
 }
 
 # TODO: Transformationsmatrix berechnen 
-getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHandToLocal, gravityVector) {
+getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHandToLocal, gravityVector, processNoise, sensorNoise) {
   #Currently used variable names -> variable names from Slides
   # F -> A: State Transition Matrix
   # a -> x: State Vector
@@ -93,7 +72,7 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
     1,Ts,matrixHandToLocal$mx_x * Ts**2/2,  0,0,matrixHandToLocal$my_x * Ts**2/2,  0,0,matrixHandToLocal$mz_x * Ts**2/2,
     0,1,matrixHandToLocal$mx_x * Ts,        0,0,matrixHandToLocal$my_x * Ts,       0,0,matrixHandToLocal$mz_x * Ts,
     0,0,1,                                  0,0,0,                                 0,0,0,
-    0,0,matrixHandToLocal$mx_y * Ts**2/2,   1,Ts,matrixHandToLocal$my_y * Ts**2/2,  0,0,matrixHandToLocal$mz_y * Ts**2/2,
+    0,0,matrixHandToLocal$mx_y * Ts**2/2,   1,Ts,matrixHandToLocal$my_y * Ts**2/2, 0,0,matrixHandToLocal$mz_y * Ts**2/2,
     0,0,matrixHandToLocal$mx_y * Ts,        0,1,matrixHandToLocal$my_y * Ts,       0,0,matrixHandToLocal$mz_y * Ts,
     0,0,0,                                  0,0,1,                                 0,0,0,
     0,0,matrixHandToLocal$mx_z * Ts**2/2,   0,0,matrixHandToLocal$my_z * Ts**2/2,  1,Ts,matrixHandToLocal$mz_z * Ts**2/2,
@@ -102,7 +81,9 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
   )
   ,nrow = 9, ncol = 9, byrow=TRUE)
   
-  processModel$x = matrix(data = initialState, nrow = 9, ncol = 1) ## state vector
+  
+  
+  processModel$x = matrix(data = as.double(initialState), nrow = 9, ncol = 1) ## state vector
   processModel$B = matrix(data = c(0,0,0,0,0,0, -vectorLength(gravityVector) * Ts**2/2, -vectorLength(gravityVector) * Ts, 0), nrow = 9, ncol = 1)
   
   processModel$H = matrix(data = c(
@@ -127,21 +108,21 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
   ), nrow=9, ncol=3, byrow = TRUE)
   
   omega = diag(x=c(
-    process_noise_acceleration_noise_omega_x,
-    process_noise_acceleration_noise_omega_y,
-    process_noise_acceleration_noise_omega_z)
+    processNoise$x,
+    processNoise$y,
+    processNoise$z)
   )
   
   processModel$Q = processModel$Gd %*% omega %*% t(processModel$Gd)
   
   processModel$P = initialBelief
   processModel$R = matrix(nrow = 6, ncol = 1, data = c(
-    sensor_noise_kinect_sigma_x,
-    sensor_noise_kinect_sigma_y,
-    sensor_noise_kinect_sigma_z,
-    sensor_noise_imu_sigma_x,
-    sensor_noise_imu_sigma_y,
-    sensor_noise_imu_sigma_z
+    sensorNoise$x,
+    sensorNoise$y,
+    sensorNoise$z,
+    sensorNoise$ax,
+    sensorNoise$ay,
+    sensorNoise$az
   ))
   
   processModel$colNames = c("x","v_x","a_x","y","v_y","a_y","z","v_z","a_z")

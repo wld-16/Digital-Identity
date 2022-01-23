@@ -30,7 +30,14 @@ test_that("model remains 0 when input 0", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief,initial_matrixHandToLocal , initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+    ) 
   
   result = model$Ad %*% initialIdleState
   
@@ -53,7 +60,14 @@ test_that("model a_x=1 without rotation", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief,initial_matrixHandToLocal , initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% initialIdleState
   
@@ -76,7 +90,14 @@ test_that("model a_y=1 without rotation", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief,initial_matrixHandToLocal , initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% initialIdleState
   
@@ -99,7 +120,14 @@ test_that("model a_z=1 without rotation", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief,initial_matrixHandToLocal , initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% initialIdleState
   
@@ -129,7 +157,14 @@ test_that("model test a_x = 1 with x rotation 90 deg", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief, initial_matrixHandToLocal, initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% matrix(data = initialIdleState, nrow = 9, ncol = 1)
   
@@ -159,7 +194,14 @@ test_that("model test a_x = 1 with y rotation 180 deg", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief, initial_matrixHandToLocal, initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% matrix(data = initialIdleState, nrow = 9, ncol = 1)
   
@@ -189,7 +231,14 @@ test_that("model test a_x = 1 with z rotation 90 deg", {
     mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
   )
   
-  model = getGuanglongAccelerationModel(initialIdleState, initialIdleBelief, initial_matrixHandToLocal, initial_gravity) 
+  model = getGuanglongAccelerationModel(
+    initialIdleState,
+    initialIdleBelief,
+    initial_matrixHandToLocal,
+    initial_gravity,
+    acceleration_process_noise, 
+    acceleration_sensor_noise
+  ) 
   
   result = model$Ad %*% matrix(data = initialIdleState, nrow = 9, ncol = 1)
   
