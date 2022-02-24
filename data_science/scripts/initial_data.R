@@ -114,8 +114,8 @@ initial_acceleration_belief = diag(c(
 acceleration_process_noise = data.frame(x = 0.05, y = 0.05, z = 0.05)
 acceleration_sensor_noise = data.frame(x = 0.05, y = 0.05, z = 0.05, ax = 0.009810001, ay = 0.009810001, az = 0.009810001)
 
-orientation_process_noise = data.frame(x = 0.05, y = 0.05, z = 0.05)
-orientation_sensor_noise = data.frame(x = 0.5, y = 0.5, z = 0.5)
+orientation_process_noise = data.frame(vx = 0.05, vy = 0.05, vz = 0.05)
+orientation_sensor_noise = data.frame(vx = 0.5, vy = 0.5, vz = 0.5)
 
 processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity, acceleration_process_noise, acceleration_sensor_noise)
 processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)

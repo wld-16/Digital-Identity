@@ -1,8 +1,10 @@
 ---
 title: "Improving inertial Measurement data with visual sensor data from Kinect Camera"
 params: 
+  base_import_path:
+    value: "D:/Projekte/Digital-Identity/data_science/"
   data_import_path:
-    value: "~/Workspace/Digital-Identity/data_science/res/imu_and_kinect_with_eule7r.csv"
+    value: "res/imu_and_kinect_with_eule7r.csv"
     input: file
   T_s:
     value: 0.014
@@ -23,10 +25,10 @@ params:
     value: 1.0
     input: numeric
   x_initial_state_euler_vy:
-    value: 1.0
+    value: 0.2
     input: numeric
   x_initial_state_euler_vz:
-    value: 1.0
+    value: 0.0
     input: numeric
   initial_belief_00_q0:
     value: 0.5
@@ -41,37 +43,37 @@ params:
     value: 0.5
     input: numeric
   initial_belief_44_euler_vx:
-    value: 0.05
+    value: 0.5
     input: numeric
   initial_belief_55_euler_vy:
-    value: 0.05
+    value: 0.0
     input: numeric
   initial_belief_66_euler_vz:
-    value: 0.05
+    value: 0.0
     input: numeric
   x_initial_state_px:
     value: 0.0
     input: numeric
   x_initial_state_vx:
-    value: 1.0
+    value: 0.0
     input: numeric
   x_initial_state_ax:
-    value: 1.0
+    value: 0.0
     input: numeric
   x_initial_state_py:
     value: 0.0
     input: numeric
   x_initial_state_vy:
-    value: 1.0
+    value: 0.0
     input: numeric
   x_initial_state_ay:
-    value: 1.0
+    value: 0.0
     input: numeric
   x_initial_state_pz:
     value: 0.0
     input: numeric
   x_initial_state_vz:
-    value: 1.0
+    value: 0.0
     input: numeric
   x_initial_state_az:
     value: 1.0
@@ -80,28 +82,28 @@ params:
     value: 0.05
     input: numeric
   initial_belief_vx_11:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_ax_22:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_py_33:
     value: 0.05
     input: numeric
   initial_belief_vy_44:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_ay_55:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_pz_66:
     value: 0.05
     input: numeric
   initial_belief_vz_77:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_az_88:
-    value: 0.5
+    value: 0.05
     input: numeric
   process_noise_orientation_angular_velocity_sigma_x:
     value: 0.05
@@ -170,6 +172,7 @@ Execute this chunk to load install the required libraries
 #install.packages("LaplacesDemon")
 #install.packages('Rcpp')
 #install.packages('KFK')
+#install.packages("shiny")
 ```
 
 
@@ -184,6 +187,7 @@ library(reshape2)
 library(LaplacesDemon)
 library(Rcpp)
 library(FKF)
+library(shiny)
 ```
 
 Execute this line of code to load all the functions
@@ -192,7 +196,7 @@ Execute this line of code to load all the functions
 
 ```{r}
 
-source("~/Workspace/Digital-Identity/data_science/scripts/functions.R")
+source(paste(params$base_import_path, "/scripts/functions.R",sep=""))
 
 Ts = params$T_s
 
@@ -204,7 +208,7 @@ Here is the definition of the state space models
 # Will need euler angle velocity sensor
 # TODO: Quaternions need to be normalized
 # TODO: Transformationsmatrix berechnen für acceleration modell ?
-source("~/Workspace/Digital-Identity/data_science/scripts/models.R")
+source(paste(params$base_import_path, "/scripts/models.R",sep=""))
 ```
 
 
@@ -212,7 +216,7 @@ source("~/Workspace/Digital-Identity/data_science/scripts/models.R")
 To load the data from the sensors execute this snippet of code 
 
 ```{r}
-imkDfRaw <- read.csv2(params$data_import_path)
+imkDfRaw <- read.csv2(paste(params$base_import_path, params$data_import_path, sep=""))
 ```
 
 
@@ -284,21 +288,11 @@ initial_orientation_state = c(
   params$x_initial_state_q1,
   params$x_initial_state_q2,
   params$x_initial_state_q3,
-  imkDfRaw$imu_yaw[1],
-  imkDfRaw$imu_pitch[1],
-  imkDfRaw$imu_roll[1]
+  params$x_initial_state_euler_vx,
+  params$x_initial_state_euler_vy,
+  params$x_initial_state_euler_vz
 )
-## only for simulation
-initial_orientation_state = c(
-  params$x_initial_state_q0, 
-  params$x_initial_state_q1,
-  params$x_initial_state_q2,
-  params$x_initial_state_q3,
-  1,
-  0.2,
-  0
-)
-##
+
 initial_orientation_belief = diag(
   c(
     params$initial_belief_00_q0,  
@@ -312,9 +306,15 @@ initial_orientation_belief = diag(
 )
 
 orientation_process_noise = data.frame(
-  x = params$process_noise_orientation_angular_velocity_sigma_x,
-  y = params$process_noise_orientation_angular_velocity_sigma_y,
-  z = params$process_noise_orientation_angular_velocity_sigma_z
+  vx = params$process_noise_orientation_angular_velocity_sigma_x,
+  vy = params$process_noise_orientation_angular_velocity_sigma_y,
+  vz = params$process_noise_orientation_angular_velocity_sigma_z
+)
+
+orientation_sensor_noise = data.frame(
+  vx = params$sensor_noise_imu_euler_velocity_x,
+  vy = params$sensor_noise_imu_euler_velocity_y,
+  vz = params$sensor_noise_imu_euler_velocity_z
 )
 #
 
@@ -324,7 +324,7 @@ processOrientationModel = getGuanglongOrientationModel(initial_orientation_state
 rotationMatrix = quaternion_rotation_matrix(1,0,0,0)
 ##
 
-rotationMatrix = quaternion_rotation_matrix(imkDf$kinect_hand_right_orientation.w, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.y, imkDf$kinect_hand_right_orientation.z)
+#rotationMatrix = quaternion_rotation_matrix(imkDf$kinect_hand_right_orientation.w, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.y, imkDf$kinect_hand_right_orientation.z)
 
 initial_matrixHandToLocal = data.frame(
   mx_x = rotationMatrix[1,1], my_x = rotationMatrix[1,2], mz_x = rotationMatrix[1,3],
@@ -337,6 +337,7 @@ initial_gravity = data.frame(
   y = imkDf$imu_gravity.y[1],
   z = imkDf$imu_gravity.z[1]
   )
+
 ## only for simalation
 initial_gravity = data.frame(
   x = 0,
@@ -388,9 +389,12 @@ processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_st
 
 ```
 
+Apply Kalman Filter on models with data
+
 ```{r}
 
 oMTMax = 1000 # orientationModelTimeMaximum
+
 
 fkfGuanglongOrientationModel = fkf(
   a0 = processOrientationModel$x[,1],
@@ -401,7 +405,7 @@ fkfGuanglongOrientationModel = fkf(
   Zt = array(processOrientationModel$H, dim=c(3,7,1)),
   Tt = array(as.numeric(unlist(lapply(1:1,orientation_transition_at_index))), dim=c(7, 7, oMTMax)),
   HHt = array(processOrientationModel$Q, dim=c(7,7,1)),
-  yt = matrix(data = c(imkDfRaw$imu_yaw[oMTMax],imkDfRaw$imu_pitch[oMTMax],imkDfRaw$imu_pitch[oMTMax]), ncol = oMTMax, nrow = 3)
+  yt = matrix(data = c(imkDfRaw$imu_yaw[oMTMax],imkDfRaw$imu_pitch[oMTMax],imkDfRaw$imu_pitch[oMTMax]), ncol = oMTMax, nrow = 3, byrow = TRUE)
   )
 
 ```
@@ -409,9 +413,11 @@ fkfGuanglongOrientationModel = fkf(
 ```{r}
 aMTMax = 500 # accelerationModelTimeMaximum
 
+diag(9) * 0.5
+
 fkfGuanglongAccelerationModel = fkf(
   a0 = processAccelerationModel$x[,1],
-  P0  = processAccelerationModel$P,
+  P0 = processAccelerationModel$P,
   dt = matrix(data = 0, nrow = 9, ncol = 1),
   ct = matrix(data = 0, nrow = 6, ncol = 1),
   GGt = diag(nrow = 6, ncol = 6),
@@ -425,243 +431,8 @@ fkfGuanglongAccelerationModel = fkf(
     imkDf$imu_acceleration.x[1:aMTMax],
     imkDf$imu_acceleration.y[1:aMTMax],
     imkDf$imu_acceleration.z[1:aMTMax]
-  ), nrow = 6, ncol = aMTMax)
+  ), nrow = 6, ncol = aMTMax, byrow = TRUE)
   )
-```
-
-
-The following chunk generates data from an simulator for orientation
-
-```{r}
-# Simulation of orientation
-
-simulatedMax = 30
-
-generateNextOrientationFrame <- function(x_k, x_ki){
-  A_k = processOrientationModel$Ad
-  B = diag(x = 0,nrow=7)
-  uk = matrix(nrow=7, ncol=1, data = 0)
-  wk = matrix(nrow=7, ncol=1, data = c(
-    0,
-    0,
-    0,
-    0,
-    params$process_noise_orientation_angular_velocity_sigma_x,
-    params$process_noise_orientation_angular_velocity_sigma_y,
-    params$process_noise_orientation_angular_velocity_sigma_z))
-  
-  x_ki = A_k %*% x_k + B %*% uk + wk
-  return(x_ki)
-}
-
-generateNextOrientationMeasurement <- function(x_k, x_ki){
-  H = processOrientationModel$H
-  v_k = processOrientationModel$R
-  
-  z_k = H %*% x_k + v_k
-  return(z_k)
-}
-
-x_k = as.double(initial_orientation_state)
-simulationOrientationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextOrientationFrame, accumulate = TRUE)
-
-
-simuationOrientationMeasurements = lapply(simulationOrientationData, generateNextOrientationMeasurement)
-
-simulatedOrientationDataAsMatrix = matrix(data = unlist(simulationOrientationData), nrow = 7, ncol=simulatedMax)
-simuationOrientationMeasurementsAsMatrix = matrix(data = unlist(simuationOrientationMeasurements), nrow = 3, ncol=simulatedMax)
-
-
-# Simulation of Acceleration
-
-generateNextAccelerationFrame <- function(x_k, x_ki){
-  A_k = processAccelerationModel$Ad
-  B = diag(x = 0,nrow=9)
-  uk = matrix(nrow=9, ncol=1, data = 0)
-  wk = matrix(nrow=9, ncol=1, data = c(
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    params$process_noise_acceleration_noise_omega_x,
-    params$process_noise_acceleration_noise_omega_y,
-    params$process_noise_acceleration_noise_omega_z))
-  
-  x_ki = A_k %*% x_k + B %*% uk + wk
-  return(x_ki)
-}
-
-generateNextAccelerationMeasurement <- function(x_k){
-  H = processAccelerationModel$H
-  v_k = processAccelerationModel$R
-  
-  z_k = H %*% x_k + v_k
-  return(z_k)
-}
-
-x_k = matrix(initial_acceleration_state)
-
-simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
-
-simuationAccelerationMeasurements = lapply(simulationAccelerationData, generateNextAccelerationMeasurement)
-
-simulatedDataAccAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
-simuationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simuationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
-
-## execute only for simulation
-#imkDf = data.frame(kinect_hand_right_orientation.w = c(1),
-#                   kinect_hand_right_orientation.x = c(1),
-#                   kinect_hand_right_orientation.y = c(1),
-#                   kinect_hand_right_orientation.z = c(1))
-##
-
-simulatedfkfGuanglongOrientationModel = fkf(
-  a0 = processOrientationModel$x[,1],
-  P0 = processOrientationModel$P,
-  dt = matrix(data = 0, nrow = 7, ncol = 1),
-  ct = matrix(data = 0, nrow = 3, ncol = 1),
-  GGt = diag(nrow = 3, ncol = 3),
-  Zt = processOrientationModel$H,
-  Tt = orientation_transition_at_index(1),
-  HHt = processOrientationModel$Q,
-  yt = matrix(data = c(
-  simuationOrientationMeasurementsAsMatrix[1,],
-  simuationOrientationMeasurementsAsMatrix[2,],
-  simuationOrientationMeasurementsAsMatrix[3,]
-  ), nrow = 3, ncol = simulatedMax)
-)
-
-simulatedfkfGuanglongAccelerationModel = fkf(
-  a0 = processAccelerationModel$x[,1],
-  P0  = processAccelerationModel$P,
-  dt = matrix(data = 0, nrow = 9, ncol = 1),
-  ct = matrix(data = 0, nrow = 6, ncol = 1),
-  GGt = diag(nrow = 6, ncol = 6),
-  Zt = processAccelerationModel$H,
-  Tt = acceleration_transition_at_index(1),
-  HHt = processAccelerationModel$Q,
-  yt = matrix(data = c(
-    simuationAccelerationMeasurementsAsMatrix[1,],
-    simuationAccelerationMeasurementsAsMatrix[2,],
-    simuationAccelerationMeasurementsAsMatrix[3,],
-    simuationAccelerationMeasurementsAsMatrix[4,],
-    simuationAccelerationMeasurementsAsMatrix[5,],
-    simuationAccelerationMeasurementsAsMatrix[6,]
-  ), nrow = 6, ncol = simulatedMax)
-  )
-
-sim_time = c(1:simulatedMax)
-sim_time = sim_time * 0.014
-
-
-```
-
-Plot the orientation
-
-```{r}
-plot(simuationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x", xlab="time in seconds", type='l', ylim = c(-10, 10))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationOrientationMeasurementsAsMatrix[1,] ~ sim_time)
-legend("bottomright", legend = c("v_x state", "simulated vx"), lwd = 3, col = c("blue", "black"))
-
-plot(simuationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_y", xlab="time in seconds", type='l', ylim = c(-10, 10))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationOrientationMeasurementsAsMatrix[2,] ~ sim_time)
-legend("bottomright", legend = c("v_y state", "simulated v_y"), lwd = 3, col = c("blue", "black"))
-
-
-
-plot(simuationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z", xlab="time in seconds", type='l', ylim = c(-10, 10))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationOrientationMeasurementsAsMatrix[3,] ~ sim_time)
-legend("bottomright", legend = c("v_z state", "simulated v_z"), lwd = 3, col = c("blue", "black"))
-
-```
-
-
-Plot the acc simulations
-```{r}
-plot(simuationAccelerationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "p_x in simulation", ylab = "p_x", xlab="time in seconds", type='l', ylim = c(-0.5, 0.5))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[1,] ~ sim_time)
-legend("bottomright", legend = c("p_x state", "simulated px"), lwd = 3, col = c("blue", "black"))
-
-plot(simuationAccelerationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "p_y in simulation", ylab = "p_y",xlab="time in seconds", type='l',  ylim = c(-1, 4))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[2,] ~ sim_time)
-legend("bottomright", legend = c("p_z state", "simulated py"), lwd = 3, col = c("blue", "black"))
-
-
-
-plot(simuationAccelerationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "p_z in simulation", ylab = "p_z",xlab="time in seconds", type='l', ylim = c(-2, 2))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[3,] ~ sim_time)
-legend("bottomright", legend = c("p_z state", "simulated pz"), lwd = 3, col = c("blue", "black"))
-
-
-plot(simuationAccelerationMeasurementsAsMatrix[4,] ~ sim_time, pch  = 20, main = "a_x in simulation", ylab = "a_x", xlab="time", type='l', ylim = c(-1,3))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[4,] ~ sim_time)
-legend("bottomright", legend = c("a_x state", "simulated ax"), lwd = 3, col = c("blue", "black"))
-
-
-
-plot(simuationAccelerationMeasurementsAsMatrix[5,] ~ sim_time, pch  = 20, main = "a_y in simulation", ylab = "a_y",xlab="time in seconds", type='l',  ylim = c(-1,3))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[5,] ~ sim_time)
-legend("bottomright", legend = c("a_y state", "simulated ay"), lwd = 3, col = c("blue", "black"))
-
-plot(simuationAccelerationMeasurementsAsMatrix[6,] ~ sim_time, pch  = 20, main = "a_z in simulation", ylab = "a_z",xlab="time in seconds", type='l', ylim = c(-1, 3))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simuationAccelerationMeasurementsAsMatrix[6,] ~ sim_time)
-legend("bottomright", legend = c("a_z state", "simulated az"), lwd = 3, col = c("blue", "black"))
 ```
 
 
@@ -686,7 +457,7 @@ polygon(
   y = c(fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] + fkfGuanglongAccelerationModel$att[1,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[1,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] )),
   col = "lightsteelblue",
   border = NA)
-lines(fkfGuanglongAccelerationModel$att[7,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(fkfGuanglongAccelerationModel$att[3,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
 legend("bottomright", legend = c("a_x state", "imu x"), lwd = 3, col = c("blue", "black"))
 

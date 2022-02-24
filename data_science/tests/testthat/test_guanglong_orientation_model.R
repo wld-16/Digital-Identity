@@ -72,6 +72,7 @@ test_that("model quaternion change when x_angle_velocity = 2 and q = identity", 
     processNoise = orientation_process_noise,
     sensorNoise = orientation_sensor_noise)
   
+  print(model$Ad)
   result = model$Ad %*% initial_orientation_state
   expect_equal(result[,1], c(1,2 * model$Ts/2,0,0,2,0,0), nrow = 7, ncol = 1)
 })
@@ -96,4 +97,6 @@ test_that("model quaternion change when x_angle_velocity = 2 and q = (.5,.5,.5,.
                  0,
                  0
                  ), nrow = 7, ncol = 1)
+  print(result[,1])
 })
+

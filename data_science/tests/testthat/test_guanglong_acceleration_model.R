@@ -245,3 +245,13 @@ test_that("model test a_x = 1 with z rotation 90 deg", {
   expect_equal(result[,1], c(0,0,1,0,0,0,model$Ts**2/2,model$Ts,0))
 })
 
+test_that("model test a_x = 1 with z rotation 90 deg", {
+  initialIdleState = c(0,0,1,0,0,0,0,0,0)
+  initialIdleBelief = diag(9)
+  initial_gravity = data.frame(
+    x = 0,
+    y = 0,
+    z = 9.81
+  )
+  
+})

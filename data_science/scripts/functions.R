@@ -1,5 +1,21 @@
 Ts = 0.014
 
+simulated_orientation_transition_at_index <- function(i){
+  return (
+    matrix(
+      data = c(
+        1,0,0,0,        -simulated_normalized_quaternions[i,2] * Ts/2  ,-simulated_normalized_quaternions[i,3]*Ts/2     ,-simulated_normalized_quaternions[i,4] * Ts/2,
+        0,1,0,0,        simulated_normalized_quaternions[i,1] * Ts/2   ,simulated_normalized_quaternions[i,4]*Ts/2      ,simulated_normalized_quaternions[i,3] * Ts/2,
+        0,0,1,0,        simulated_normalized_quaternions[i,4] * Ts/2   ,simulated_normalized_quaternions[i,1]*Ts/2      ,-simulated_normalized_quaternions[i,2] * Ts/2,
+        0,0,0,1,        -simulated_normalized_quaternions[i,3] * Ts/2  ,simulated_normalized_quaternions[i,2]*Ts/2      ,simulated_normalized_quaternions[i,1] * Ts/2,
+        0,0,0,0,        1,0,0,
+        0,0,0,0,        0,1,0,
+        0,0,0,0,        0,0,1
+      ), nrow = 7, ncol = 7, byrow = TRUE
+    )
+  )
+}
+
 orientation_transition_at_index <- function(i){
   return(processOrientationModel$Ad + matrix(
     data = c(
@@ -76,6 +92,28 @@ rotated_z_component <- function(i){
   return (rotation_matrix[3,1] * imkDf$imu_acceleration.x[i] + rotation_matrix[3,2] * imkDf$imu_acceleration.y[i] + rotation_matrix[3,3] * imkDf$imu_acceleration.z[i])
 }
 
+acceleration_simulation_transition_at_index <- function(i){
+  
+  rotation_matrix = quaternion_rotation_matrix(
+    simulation_rotation_quaternion$w[i],
+    simulation_rotation_quaternion$x[i],
+    simulation_rotation_quaternion$y[i],
+    simulation_rotation_quaternion$z[i])
+  
+  return(matrix(data = c(
+    1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
+    0,1,rotation_matrix[1,1] * Ts,         0,0,rotation_matrix[2,1] * Ts,       0,0,rotation_matrix[3,1] * Ts,
+    0,0,1,                                 0,0,0,                               0,0,0,
+    0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
+    0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
+    0,0,0,                                 0,0,1,                               0,0,0,
+    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
+    0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
+    0,0,0,                                 0,0,0,                               0,0,1
+  )
+  ,nrow = 9, ncol = 9, byrow=TRUE))
+}
+
 acceleration_transition_at_index <- function(i){
   
   rotation_matrix = quaternion_rotation_matrix(
@@ -91,7 +129,7 @@ acceleration_transition_at_index <- function(i){
     0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
     0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
     0,0,0,                                 0,0,1,                               0,0,0,
-    0,0,rotation_matrix[1,3] * Ts**2/2,    0,Ts,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
+    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
     0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
     0,0,0,                                 0,0,0,                               0,0,1
   )
@@ -163,4 +201,34 @@ vectorLength <- function(vector3){
 
 justReturn <- function(index,frame){
   return(frame)
+}
+
+eulerToQuaternion <- function(theta, ux, uy, uz) {
+  theta = theta / 180 * pi
+  return(data.frame(
+    w = cos(theta/2),
+    x = ux * sin(theta/2),
+    y = uy * sin(theta/2),
+    z = uz * sin(theta/2)
+  ))
+}
+
+rad2deg <- function(rad) {(rad * 180) / (pi)}
+deg2rad <- function(deg) {(deg * pi) / (180)}
+
+quaternion_multiplication <- function(q1, q2){
+  x =  q1$x * q2$w + q1$y * q2$z - q1$z * q2$y + q1$w * q2$x;
+  y = -q1$x * q2$z + q1$y * q2$w + q1$z * q2$x + q1$w * q2$y;
+  z =  q1$x * q2$y - q1$y * q2$x + q1$z * q2$w + q1$w * q2$z;
+  w = -q1$x * q2$x - q1$y * q2$y - q1$z * q2$z + q1$w * q2$w;
+  
+  M = sqrt(w**2 + x**2 + y**2 + z**2)
+  
+  return(data.frame(
+    w = w / M,
+    x = x / M,
+    y = y / M,
+    z = z / M
+  ))
+  
 }
