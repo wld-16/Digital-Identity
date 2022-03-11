@@ -6,26 +6,29 @@ params:
   T_s:
     value: 0.014
     input: numeric
+  sample_size: 
+    value: 300
+    input: numeric
   x_initial_state_q0:
-    value: 1.01
+    value: 1.0
     input: numeric
   x_initial_state_q1:
-    value: 0.01
+    value: 0.0
     input: numeric
   x_initial_state_q2:
-    value: 0.01
+    value: 0.0
     input: numeric
   x_initial_state_q3:
-    value: 0.01
+    value: 0.0
     input: numeric
   x_initial_state_euler_vx:
-    value: 1.01
+    value: 0.000
     input: numeric
   x_initial_state_euler_vy:
-    value: 0.01
+    value: 3.000
     input: numeric
   x_initial_state_euler_vz:
-    value: 0.01
+    value: 0.000
     input: numeric
   initial_belief_00_q0:
     value: 0.05
@@ -58,67 +61,67 @@ params:
     value: 0.05
     input: numeric
   sensor_noise_imu_euler_velocity_x:
-    value: 0.5
+    value: 0.01
     input: numeric
   sensor_noise_imu_euler_velocity_y:
-    value: 0.5
+    value: 0.01
     input: numeric
   sensor_noise_imu_euler_velocity_z:
-    value: 0.5
+    value: 0.01
     input: numeric
   x_initial_state_px:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_vx:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_ax:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_py:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_vy:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_ay:
-    value: 20.01
+    value: 0.0001
     input: numeric
   x_initial_state_pz:
-    value: 0.01
+    value: 10.00001
     input: numeric
   x_initial_state_vz:
-    value: 0.01
+    value: 0.00001
     input: numeric
   x_initial_state_az:
     value: -9.81
     input: numeric
   initial_belief_px_00:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_vx_11:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_ax_22:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_py_33:
-    value: 1.01
+    value: 10.01
     input: numeric
   initial_belief_vy_44:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_ay_55:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_pz_66:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_vz_77:
-    value: 1.01
+    value: 0.01
     input: numeric
   initial_belief_az_88:
-    value: 1.01
+    value: 0.01
     input: numeric
   process_noise_acceleration_noise_omega_x:
     value: 0.02
@@ -179,20 +182,23 @@ library(Rcpp)
 library(FKF)
 ```
 
+```{r}
+print(params)
+```
+
 ```{r, echo=FALSE}
 #Execute this line of code to load all the functions
 
 source(paste(params$base_import_path, "/scripts/functions.R",sep=""))
 
 Ts = params$T_s
+simulatedMax = params$sample_size
 
 ```
 
 ```{r, echo=FALSE}
 # Here is the definition of the state space models
 # Will need euler angle velocity sensor
-# TODO: Quaternions need to be normalized
-# TODO: Transformationsmatrix berechnen für acceleration modell ?
 source(paste(params$base_import_path, "/scripts/models.R",sep=""))
 ```
 
@@ -235,11 +241,31 @@ orientation_sensor_noise = data.frame(
 )
 #
 
-processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)
+processOrientationModel = getGuanglongOrientationModel(Ts, initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)
+
+simulation_rotation_quaternion = data.frame(
+  w = array(data = 1, dim = simulatedMax),
+  x = array(data = 0, dim = simulatedMax),
+  y = array(data = 0, dim = simulatedMax),
+  z = array(data = 0, dim = simulatedMax)
+)
+
+#simulation_rotation_quaternion = data.frame(
+#  w = array(data = 1, dim = simulatedMax),
+#  x = array(data = 0, dim = simulatedMax),
+#  y = array(data = 0, dim = simulatedMax),
+#  z = array(data = 0, dim = simulatedMax)
+#)
 
 ## only for simulation
-rotationMatrix = quaternion_rotation_matrix(1/sqrt(2),0,1/sqrt(2),0)
+rotationMatrix = quaternion_rotation_matrix(
+  simulation_rotation_quaternion$w[1],
+  simulation_rotation_quaternion$x[1],
+  simulation_rotation_quaternion$y[1],
+  simulation_rotation_quaternion$z[1]
+  )
 ##
+#rotationMatrix = quaternion_rotation_matrix(1,0,0,0)
 
 initial_matrixHandToLocal = data.frame(
   mx_x = rotationMatrix[1,1], my_x = rotationMatrix[1,2], mz_x = rotationMatrix[1,3],
@@ -294,7 +320,7 @@ acceleration_sensor_noise = data.frame(
   az = params$sensor_noise_imu_sigma_z
 )
 
-processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity, acceleration_process_noise, acceleration_sensor_noise)
+processAccelerationModel = getGuanglongAccelerationModel(Ts, initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity, acceleration_process_noise, acceleration_sensor_noise)
 
 ```
 
@@ -304,15 +330,6 @@ processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_st
 
 # Simulation of orientation
 
-simulatedMax = 300
-
-simulation_rotation_quaternion = data.frame(
-  w = array(data = 1, dim = simulatedMax),
-  x = array(data = 0, dim = simulatedMax),
-  y = array(data = 0, dim = simulatedMax),
-  z = array(data = 0, dim = simulatedMax)
-)
-
 orientation_process_noise = data.frame(
   vx = params$process_noise_orientation_angular_velocity_sigma_x,
   vy = params$process_noise_orientation_angular_velocity_sigma_y,
@@ -320,27 +337,27 @@ orientation_process_noise = data.frame(
 )
 
 simulation_orientation_process_noise = data.frame(
-  vx = 0.5,
-  vy = 0.5,
-  vz = 0.5
+  vx = 0.01,
+  vy = 0.01,
+  vz = 0.01
 )
 
 simulation_orientation_sensor_noise = data.frame(
-  vx = 0.05,
-  vy = 0.05,
-  vz = 0.05
+  vx = 0.01,
+  vy = 0.01,
+  vz = 0.01
 )
 
 simulation_acceleration_process_noise = data.frame(
-  x = 0.1,
-  y = 0.1,
-  z = 0.1
+  x = 0.05,
+  y = 0.05,
+  z = 0.05
 )
 
 simulation_acceleration_sensor_noise = data.frame(
-  x = 0.01,
-  y = 0.01,
-  z = 0.01,
+  x = 0.2,
+  y = 0.2,
+  z = 0.2,
   ax = 0.01,
   ay = 0.01,
   az = 0.01
@@ -361,26 +378,12 @@ simulationOrientationMeasurements = lapply(simulationOrientationData, generateNe
 simulatedOrientationDataAsMatrix = matrix(data = unlist(simulationOrientationData), nrow = 7, ncol=simulatedMax)
 simulationOrientationMeasurementsAsMatrix = matrix(data = unlist(simulationOrientationMeasurements), nrow = 3, ncol=simulatedMax)
 
-simulated_normalized_quaternions = matrix(data = c(simulatedOrientationDataAsMatrix[1,], simulatedOrientationDataAsMatrix[2,], simulatedOrientationDataAsMatrix[3,], simulatedOrientationDataAsMatrix[4,]), nrow = simulatedMax, ncol=4)
-
-
-# Simulation Data for Position
-
-setAccelerationSimulationModell(processAccelerationModel)
-setAccelerationSimulationProcessNoise(simulation_acceleration_process_noise)
-setAccelerationSimulationSensorNoise(simulation_acceleration_sensor_noise)
-
-x_k = as.double(initial_acceleration_state)
-
-# With gravity
-simulationAcceleratinonData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrameWithGravity, accumulate = TRUE)
-# without gravity
-#simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
-
-simulationAccelerationMeasurements = lapply(simulationAccelerationData, generateNextAccelerationMeasurement)
-
-simulatedDataAccAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
-simulationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simulationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
+simulated_normalized_quaternions = matrix(data = c(
+  simulatedOrientationDataAsMatrix[1,],
+  simulatedOrientationDataAsMatrix[2,],
+  simulatedOrientationDataAsMatrix[3,],
+  simulatedOrientationDataAsMatrix[4,]
+  ), nrow = simulatedMax, ncol=4)
 
 simulatedfkfGuanglongOrientationModel = fkf(
   a0 = processOrientationModel$x[,1],
@@ -389,7 +392,7 @@ simulatedfkfGuanglongOrientationModel = fkf(
   ct = matrix(data = 0, nrow = 3, ncol = 1),
   GGt = diag(nrow = 3, ncol = 3),
   Zt = processOrientationModel$H,
-  Tt = array(as.numeric(unlist(lapply(1:simulatedMax,simulated_orientation_transition_at_index))), dim=c(7, 7, simulatedMax)),
+  Tt = array(as.numeric(unlist(lapply(1:simulatedMax, simulated_orientation_transition_at_index))), dim=c(7, 7, simulatedMax)),
   HHt = processOrientationModel$Q,
   yt = matrix(data = c(
     simulationOrientationMeasurementsAsMatrix[1,],
@@ -398,10 +401,57 @@ simulatedfkfGuanglongOrientationModel = fkf(
   ), nrow = 3, ncol = simulatedMax, byrow = TRUE)
 )
 
+
+normalizedOrientationState = normalizeQuaternion(
+  simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax],
+  simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax],
+  simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax],
+  simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax]
+)
+
+simulation_rotation_quaternion = data.frame(
+  w = array(data = normalizedOrientationState$w, dim = simulatedMax),
+  x = array(data = normalizedOrientationState$x, dim = simulatedMax),
+  y = array(data = normalizedOrientationState$y, dim = simulatedMax),
+  z = array(data = normalizedOrientationState$z, dim = simulatedMax)
+)
+
+#simulation_rotation_quaternion = data.frame(
+#  w = array(data = 1, dim = simulatedMax),
+#  x = array(data = 0, dim = simulatedMax),
+#  y = array(data = 0, dim = simulatedMax),
+#  z = array(data = 0, dim = simulatedMax)
+#)
+
+
+
+# Simulation Data for Position
+
+setAccelerationSimulationModell(processAccelerationModel)
+setAccelerationSimulationProcessNoise(simulation_acceleration_process_noise)
+setAccelerationSimulationSensorNoise(simulation_acceleration_sensor_noise)
+setAccelerationSimulationIndex(1)
+
+x_k = as.double(initial_acceleration_state)
+
+# With gravity
+simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn, x_k), f=generateNextAccelerationFrameWithGravity, accumulate = TRUE)
+#simulationAccelerationData = lapply(simulationAccelerationData, function(data) data + c(0,0,0,0,0,0,0,0,-9.81))
+# without gravity
+#simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
+
+simulationAccelerationMeasurements = lapply(simulationAccelerationData, generateNextAccelerationMeasurement)
+
+simulatedDataAccAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
+simulationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simulationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
+
+
+  
 simulatedfkfGuanglongAccelerationModel = fkf(
   a0 = processAccelerationModel$x[,1],
   P0  = processAccelerationModel$P,
   dt = processAccelerationModel$B,
+  #dt = matrix(data = 0, nrow = 9, ncol = 1),
   ct = matrix(data = 0, nrow = 6, ncol = 1),
   GGt = diag(x= c(1,1,1,1,1,1)),
   Zt = processAccelerationModel$H,
@@ -418,7 +468,7 @@ simulatedfkfGuanglongAccelerationModel = fkf(
   )
 
 sim_time = c(1:simulatedMax)
-sim_time = sim_time * 0.014
+sim_time = sim_time * Ts
 
 
 ```
@@ -429,44 +479,56 @@ sim_time = sim_time * 0.014
 
 # Plot the orientation
 
-plot(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] ~ sim_time, pch  = 20, main = "q_w state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot_limit_offset = 0.5
+
+plot(normalizedOrientationState$w[1:simulatedMax] ~ sim_time, pch  = 20, main = "q_w state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(
+  min(normalizedOrientationState$w[1:simulatedMax]) - plot_limit_offset, 
+  max(normalizedOrientationState$w[1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] )),
+  y = c(simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] + normalizedOrientationState$w[1:simulatedMax], rev(normalizedOrientationState$w[1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[1,1,1:simulatedMax] )),
   col = "lightsteelblue", 
   border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("q_w state"), lwd = 3, col = c("blue"))
+lines(normalizedOrientationState$w[1:simulatedMax] ~ sim_time, col = "blue")
+legend("bottomright", legend = c("q_w state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
 
-plot(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] ~ sim_time, pch  = 20, main = "q_x state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(normalizedOrientationState$x[1:simulatedMax] ~ sim_time, pch  = 20, main = "q_x state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(
+  min(normalizedOrientationState$x[1:simulatedMax]) - plot_limit_offset, 
+  max(normalizedOrientationState$x[1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] )),
+  y = c(simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] + normalizedOrientationState$x[1:simulatedMax], rev(normalizedOrientationState$x[1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[2,2,1:simulatedMax] )),
   col = "lightsteelblue", 
   border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("q_x state"), lwd = 3, col = c("blue"))
+lines(normalizedOrientationState$x[1:simulatedMax] ~ sim_time, col = "blue")
+legend("bottomright", legend = c("q_x state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
-plot(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] ~ sim_time, pch  = 20, main = "q_y state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(normalizedOrientationState$y[1:simulatedMax] ~ sim_time, pch  = 20, main = "q_y state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(
+  min(normalizedOrientationState$y[1:simulatedMax]) - plot_limit_offset, 
+  max(normalizedOrientationState$y[1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] )),
+  y = c(simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] + normalizedOrientationState$y[1:simulatedMax], rev(normalizedOrientationState$y[1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[3,3,1:simulatedMax] )),
   col = "lightsteelblue", 
   border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("q_y state"), lwd = 3, col = c("blue"))
+lines(normalizedOrientationState$y[1:simulatedMax] ~ sim_time, col = "blue")
+legend("bottomright", legend = c("q_y state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
-plot(simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax] ~ sim_time, pch  = 20, main = "q_z state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(normalizedOrientationState$z[1:simulatedMax] ~ sim_time, pch  = 20, main = "q_z state", ylab = "value normalized", xlab="time in seconds", type='l', ylim=c(
+  min(normalizedOrientationState$z[1:simulatedMax]) - plot_limit_offset, 
+  max(normalizedOrientationState$z[1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongOrientationModel$Ptt[4,4,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[4,4,1:simulatedMax] )),
+  y = c(simulatedfkfGuanglongOrientationModel$Ptt[4,4,1:simulatedMax] + normalizedOrientationState$z[1:simulatedMax], rev(normalizedOrientationState$z[1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[4,4,1:simulatedMax] )),
   col = "lightsteelblue", 
   border = NA)
-lines(simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("q_z state"), lwd = 3, col = c("blue"))
+lines(normalizedOrientationState$z[1:simulatedMax] ~ sim_time, col = "blue")
+legend("bottomright", legend = c("q_z state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
-plot(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x", xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[1,]) - plot_limit_offset, 
+  max(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[1,]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[5,5,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[5,5,1:simulatedMax] )),
@@ -474,9 +536,11 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time)
-legend("bottomright", legend = c("v_x state", "simulated vx"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_x state", "simulated vx", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_y", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_y", xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[2,]) - plot_limit_offset,
+  max(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[2,]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[6,6,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[6,6,1:simulatedMax] )),
@@ -484,10 +548,12 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time)
-legend("bottomright", legend = c("v_y state", "simulated v_y"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_y state", "simulated v_y", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z", xlab="time in seconds", type='l', ylim=c(-5,5))
+plot(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z", xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[3,]) - plot_limit_offset,
+  max(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[3,]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongOrientationModel$Ptt[7,7,1:simulatedMax] + simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax], rev(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax] - simulatedfkfGuanglongOrientationModel$Ptt[7,7,1:simulatedMax] )),
@@ -495,7 +561,7 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time)
-legend("bottomright", legend = c("v_z state", "simulated v_z"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_z state", "simulated v_z", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 plot(simulatedfkfGuanglongOrientationModel, type = "resid.qq")
 ```
@@ -503,7 +569,12 @@ plot(simulatedfkfGuanglongOrientationModel, type = "resid.qq")
 ## Acceleration Plots
 
 ```{r, echo=FALSE}
-plot(simulationAccelerationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "p_x in simulation", ylab = "p_x", xlab="time in seconds", type='l')
+
+plot_limit_offset = 0.5
+
+plot(simulationAccelerationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = "p_x in simulation", ylab = "p_x", xlab="time in seconds", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[1,], simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[1,], simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[1,1,1:simulatedMax] )),
@@ -511,18 +582,22 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[1,] ~ sim_time)
-legend("bottomright", legend = c("p_x state", "simulated px"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("p_x state", "simulated px", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x",xlab="time in seconds", type='l')
+plot(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_x in simulation", ylab = "v_x",xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]) - plot_limit_offset,
+  max(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[2,2,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("v_y state"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_y state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
-plot(simulationAccelerationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "a_x in simulation", ylab = "a_x", xlab="time", type='l')
+plot(simulationAccelerationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = "a_x in simulation", ylab = "a_x", xlab="time", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[2,], simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[2,], simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[3,3,1:simulatedMax] )),
@@ -530,9 +605,11 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[2,] ~ sim_time)
-legend("bottomright", legend = c("a_x state", "simulated ax"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("a_x state", "simulated ax", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulationAccelerationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "p_y in simulation", ylab = "p_y",xlab="time in seconds", type='l')
+plot(simulationAccelerationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = "p_y in simulation", ylab = "p_y",xlab="time in seconds", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[4,4,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[4,4,1:simulatedMax] )),
@@ -540,20 +617,24 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[3,] ~ sim_time)
-legend("bottomright", legend = c("p_y state", "simulated py"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("p_y state", "simulated py", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_z",xlab="time in seconds", type='l')
+plot(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_y in simulation", ylab = "v_z",xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]) - plot_limit_offset,
+  max(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[5,5,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[5,5,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("v_y state"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_y state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
 
-plot(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time, pch  = 20, main = "a_y in simulation", ylab = "a_y",xlab="time in seconds", type='l')
+plot(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time, pch  = 20, main = "a_y in simulation", ylab = "a_y",xlab="time in seconds", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] )),
@@ -561,9 +642,11 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$at[6,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time)
-legend("bottomright", legend = c("a_y state", "simulated ay"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("a_y state", "simulated ay", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulationAccelerationMeasurementsAsMatrix[5,] ~ sim_time, pch  = 20, main = "p_z in simulation", ylab = "p_z",xlab="time in seconds", type='l')
+plot(simulationAccelerationMeasurementsAsMatrix[5,] ~ sim_time, pch  = 20, main = "p_z in simulation", ylab = "p_z",xlab="time in seconds", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[5,], simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[5,], simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[7,7,1:simulatedMax] )),
@@ -571,20 +654,24 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[5,] ~ sim_time)
-legend("bottomright", legend = c("p_z state", "simulated pz"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("p_z state", "simulated pz", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z",xlab="time in seconds", type='l')
+plot(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ sim_time, pch  = 20, main = "v_z in simulation", ylab = "v_z",xlab="time in seconds", type='l', ylim=c(
+  min(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]) - plot_limit_offset,
+  max(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[8,8,1:simulatedMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax] ~ sim_time, col = "blue")
-legend("bottomright", legend = c("v_z state"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("v_z state", "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
 
-plot(simulationAccelerationMeasurementsAsMatrix[6,] ~ sim_time, pch  = 20, main = "a_z in simulation", ylab = "a_z",xlab="time in seconds", type='l')
+plot(simulationAccelerationMeasurementsAsMatrix[6,] ~ sim_time, pch  = 20, main = "a_z in simulation", ylab = "a_z",xlab="time in seconds", type='l', ylim=c(
+  min(simulationAccelerationMeasurementsAsMatrix[6,], simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]) - plot_limit_offset,
+  max(simulationAccelerationMeasurementsAsMatrix[6,], simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[9,9,1:simulatedMax] )),
@@ -592,7 +679,7 @@ polygon(
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[6,] ~ sim_time)
-legend("bottomright", legend = c("a_z state", "simulated az"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("a_z state", "simulated az", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 plot(simulatedfkfGuanglongAccelerationModel, type = "resid.qq")
 ```

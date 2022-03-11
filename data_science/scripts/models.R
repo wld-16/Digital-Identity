@@ -1,6 +1,4 @@
-Ts = 0.014
-
-getGuanglongOrientationModel <- function(initialState, initialBelief, processNoise, sensorNoise) {
+getGuanglongOrientationModel <- function(Ts, initialState, initialBelief, processNoise, sensorNoise) {
   #Currently used variable names -> variable names from Slides
   # F -> A: State Transition Matrix
   # a -> x: State Vector
@@ -10,7 +8,7 @@ getGuanglongOrientationModel <- function(initialState, initialBelief, processNoi
   # P -> P: Sensor Belief
   
   processModel = list()
-  processModel$Ts = 0.014
+  processModel$Ts = Ts
   # Vielleicht sind die Quaternion states hier dynamisch zu sehen
   # Arrays in R starten mit 1
   processModel$Ad = matrix(data = c(
@@ -77,7 +75,7 @@ getGuanglongOrientationModel <- function(initialState, initialBelief, processNoi
 }
 
 # TODO: Transformationsmatrix berechnen 
-getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHandToLocal, gravityVector, processNoise, sensorNoise) {
+getGuanglongAccelerationModel <- function(Ts, initialState, initialBelief, matrixHandToLocal, gravityVector, processNoise, sensorNoise) {
   #Currently used variable names -> variable names from Slides
   # F -> A: State Transition Matrix
   # a -> x: State Vector
@@ -86,7 +84,6 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
   # R -> R: Sensor Noise Matrix
   # P -> P: Sensor Belief
   processModel = list()
-  Ts = 0.014
   processModel$Ts = Ts
   processModel$Ad = matrix(data = c(
     1,Ts,matrixHandToLocal$mx_x * Ts**2/2,  0,0,matrixHandToLocal$my_x * Ts**2/2,  0,0,matrixHandToLocal$mz_x * Ts**2/2,
@@ -115,7 +112,7 @@ getGuanglongAccelerationModel <- function(initialState, initialBelief, matrixHan
     0,0,0,0,0,0,0,0,1
   ), nrow = 6, ncol = 9, byrow=TRUE) ## observation/ measurment vector 
   
-  ## Gd Matrix with noise
+  ## Gd Matrix with rotation
   #processModel$Gd = matrix(data = c(
   #  matrixHandToLocal$mx_x * Ts**2/2,matrixHandToLocal$mx_y * Ts**2/2,matrixHandToLocal$mx_z * Ts**2/2,
   #  matrixHandToLocal$mx_x * Ts,     matrixHandToLocal$mx_y * Ts,matrixHandToLocal$mx_z * Ts,

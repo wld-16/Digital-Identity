@@ -183,35 +183,56 @@ void loop() {
       }
       serializeJson(doc, Serial);
   } else {
+      
       Quaternion quat = imuUnit.getQuaternion();
       VectorInt16 acc = imuUnit.getAcceleration();
-     
-      char cstr[60];
-      char floatStrX[8]; // 
-      char floatStrY[8];
-      char floatStrZ[8];
-      char floatStrW[8];
 
       if(isOutputtingAccelerometerData) {
-        Serial.print(acc.x + ", ");
-        Serial.print(acc.y + ", ");
-        Serial.print(acc.z + ", ");
+        Serial.print(((float) acc.x) / 8092 * 9.81);
+        Serial.print(",\t\t");
+        Serial.print(((float) acc.y) / 8092 * 9.81);
+        Serial.print(",\t\t");
+        Serial.print(((float) acc.z) / 8092 * 9.81);
+        Serial.print(",\t\t");
       }
 
       if(isOutputtingGyroQuaternionData){
-        dtostrf(quat.x, 6, 4, floatStrX);
-        dtostrf(quat.y, 6, 4, floatStrY);
-        dtostrf(quat.z, 6, 4, floatStrZ);
-        dtostrf(quat.w, 6, 4, floatStrW);  
+      
+      char floatStrX[9]; // 
+      char floatStrY[9];
+      char floatStrZ[9];
+      char floatStrW[9];
+        
+        dtostrf(quat.x, 8, 5, floatStrX);
+        dtostrf(quat.y, 8, 5, floatStrY);
+        dtostrf(quat.z, 8, 5, floatStrZ);
+        dtostrf(quat.w, 8, 5, floatStrW);  
         
         Serial.print(floatStrX);
-        Serial.print(", ");
+        Serial.print(",\t");
         Serial.print(floatStrY);
-        Serial.print(", ");
+        Serial.print(",\t");
         Serial.print(floatStrZ);
-        Serial.print(", ");
+        Serial.print(",\t");
         Serial.print(floatStrW);
-        Serial.print(", ");
+        Serial.print(",\t");
+      }
+
+      if(isOutputtingGyroEulerAnglesData){
+        char floatStrX[9]; // 
+        char floatStrY[9];
+        char floatStrZ[9];
+        
+        dtostrf(imuUnit.getYaw(), 5, 3, floatStrX);
+        dtostrf(imuUnit.getPitch(), 5, 3, floatStrY);
+        dtostrf(imuUnit.getRoll(), 5, 3, floatStrZ);
+         
+        Serial.print(floatStrX);
+        Serial.print(",\t\t");
+        Serial.print(floatStrY);
+        Serial.print(",\t\t");
+        Serial.print(floatStrZ);
+        Serial.print(",\t\t");
       }
   }
 

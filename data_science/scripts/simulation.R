@@ -43,16 +43,12 @@ generateNextOrientationFrame <- function(x_k, x_ki){
   
   x_ki = A_k %*% x_k + B %*% uk + wk
   
-  q1 = x_ki[1]
-  q2 = x_ki[2]
-  q3 = x_ki[3]
-  q4 = x_ki[4]
+  nquat = normalizeQuaternion(x_ki[1], x_ki[2], x_ki[3], x_ki[4])
   
-  M = sqrt(q1**2 + q2**2 + q3**2 + q4**2)
-  x_ki[1] = x_ki[1]/M
-  x_ki[2] = x_ki[2]/M
-  x_ki[3] = x_ki[3]/M
-  x_ki[4] = x_ki[4]/M
+  x_ki[1] = nquat$w
+  x_ki[2] = nquat$x
+  x_ki[3] = nquat$y
+  x_ki[4] = nquat$z
   
   return(x_ki)
 }
@@ -97,16 +93,29 @@ getAccelerationSimulationModell <- function() {
   return(get("sim_model", acceleration_simulation_environment))
 }
 
+setAccelerationSimulationIndex <- function(i) {
+  assign("index", i, env=acceleration_simulation_environment)
+}
+
+getAccelerationSimulationIndex <- function() {
+  return(get("index", acceleration_simulation_environment))
+}
+
+incrementAccelerationSimulationIndex <- function() {
+  i = getAccelerationSimulationIndex()
+  assign("index", i+1, env=acceleration_simulation_environment)
+}
+
 # Simulation of Acceleration
 
 generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
-  sim_model = getAccelerationSimulationModell()
   sim_process_noise = getAccelerationSimulationProcessNoise()
+  index = getAccelerationSimulationIndex()
   
   Ts = 0.014
-  A_k = sim_model$Ad
+  A_k = acceleration_simulation_transition_at_index(index)
   B = diag(x = 1, nrow=9)
-  uk = matrix(nrow=9, ncol=1, data = c(0,0,0,-9.81 * Ts**2/2,-9.81 * Ts,1,0,0,0))
+  uk = matrix(nrow=9, ncol=1, data = c(0,0,0,0,0,0, -9.81 * (0.014**2)/2, -9.81 * 0.014,0))
   wk = matrix(nrow=9, ncol=1, data = c(
     0,
     0,
@@ -119,6 +128,8 @@ generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
     rnorm(1,0,sim_process_noise$z)))
   
   x_ki = A_k %*% x_k + B %*% uk + wk 
+  
+  incrementAccelerationSimulationIndex()
   return(x_ki)
 }
 

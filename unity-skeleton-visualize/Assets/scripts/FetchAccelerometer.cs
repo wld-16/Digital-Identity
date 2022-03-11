@@ -22,7 +22,7 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
     #endregion
 
     #region output 
-
+    
     [SerializeField] private bool removeGravity = true;
     [SerializeField] public Vector3 rawOutput;
     [SerializeField] public List<float> outputData;
@@ -66,9 +66,9 @@ public class FetchAccelerometer : MonoBehaviour, IPushData
             .Aggregate((leftVector3, rightVector3) => leftVector3 + rightVector3);
         fetchedGravityVector = readWith.orientations.ring.gravity.ToVector3();
 
-        outputData[0] = rawOutput.x - (removeGravity ? fetchedGravityVector.x * 9.81f : 0);
-        outputData[1] = rawOutput.y - (removeGravity ? fetchedGravityVector.y * 9.81f : 0);
-        outputData[2] = rawOutput.z - (removeGravity ? fetchedGravityVector.z * 9.81f : 0);
+        outputData[0] = rawOutput.x * fetchedGravityVector.x;
+        outputData[1] = rawOutput.y * fetchedGravityVector.y;
+        outputData[2] = rawOutput.z * fetchedGravityVector.z;
 
         if (Math.Abs(rawOutput.magnitude) > 0.001f)
         {
@@ -123,7 +123,7 @@ enum OutputAccelerationAxis
     ZERO
 }
 
-[SerializeField]
+[Serializable]
 class AccelerationMapping
 {
     [SerializeField] private InputAccelerationAxis iaa;

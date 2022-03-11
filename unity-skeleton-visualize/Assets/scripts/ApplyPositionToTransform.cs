@@ -79,7 +79,6 @@ public class ApplyPositionToTransform : MonoBehaviour, IPullData
     public void PullData(Type type)
     {
         List<float> receivedData = getDataDeliverer(type).getData();
-        Debug.Log(receivedData[0]);
         if (receivedData.Count >= 3 && (!float.IsNaN(receivedData[0]) && !float.IsNaN(receivedData[1]) && !float.IsNaN(receivedData[2])))
         {
             transform.localPosition = new Vector3(receivedData[0], receivedData[1], receivedData[2]) + offset;

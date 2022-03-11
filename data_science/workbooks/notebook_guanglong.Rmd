@@ -22,88 +22,34 @@ params:
     value: 0.0
     input: numeric
   x_initial_state_euler_vx:
-    value: 1.0
+    value: 0.000
     input: numeric
   x_initial_state_euler_vy:
-    value: 0.2
+    value: 3.000
     input: numeric
   x_initial_state_euler_vz:
-    value: 0.0
+    value: 0.000
     input: numeric
   initial_belief_00_q0:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_11_q1:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_22_q2:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_33_q3:
-    value: 0.5
+    value: 0.05
     input: numeric
   initial_belief_44_euler_vx:
-    value: 0.5
+    value: 2.1
     input: numeric
   initial_belief_55_euler_vy:
-    value: 0.0
+    value: 2.1
     input: numeric
   initial_belief_66_euler_vz:
-    value: 0.0
-    input: numeric
-  x_initial_state_px:
-    value: 0.0
-    input: numeric
-  x_initial_state_vx:
-    value: 0.0
-    input: numeric
-  x_initial_state_ax:
-    value: 0.0
-    input: numeric
-  x_initial_state_py:
-    value: 0.0
-    input: numeric
-  x_initial_state_vy:
-    value: 0.0
-    input: numeric
-  x_initial_state_ay:
-    value: 0.0
-    input: numeric
-  x_initial_state_pz:
-    value: 0.0
-    input: numeric
-  x_initial_state_vz:
-    value: 0.0
-    input: numeric
-  x_initial_state_az:
-    value: 1.0
-    input: numeric
-  initial_belief_px_00:
-    value: 0.05
-    input: numeric
-  initial_belief_vx_11:
-    value: 0.05
-    input: numeric
-  initial_belief_ax_22:
-    value: 0.05
-    input: numeric
-  initial_belief_py_33:
-    value: 0.05
-    input: numeric
-  initial_belief_vy_44:
-    value: 0.05
-    input: numeric
-  initial_belief_ay_55:
-    value: 0.05
-    input: numeric
-  initial_belief_pz_66:
-    value: 0.05
-    input: numeric
-  initial_belief_vz_77:
-    value: 0.05
-    input: numeric
-  initial_belief_az_88:
-    value: 0.05
+    value: 2.1
     input: numeric
   process_noise_orientation_angular_velocity_sigma_x:
     value: 0.05
@@ -114,6 +60,69 @@ params:
   process_noise_orientation_angular_velocity_sigma_z:
     value: 0.05
     input: numeric
+  sensor_noise_imu_euler_velocity_x:
+    value: 0.01
+    input: numeric
+  sensor_noise_imu_euler_velocity_y:
+    value: 0.01
+    input: numeric
+  sensor_noise_imu_euler_velocity_z:
+    value: 0.01
+    input: numeric
+  x_initial_state_px:
+    value: 0.00001
+    input: numeric
+  x_initial_state_vx:
+    value: 0.00001
+    input: numeric
+  x_initial_state_ax:
+    value: 0.00001
+    input: numeric
+  x_initial_state_py:
+    value: 0.00001
+    input: numeric
+  x_initial_state_vy:
+    value: 0.00001
+    input: numeric
+  x_initial_state_ay:
+    value: 0.0001
+    input: numeric
+  x_initial_state_pz:
+    value: 0.00001
+    input: numeric
+  x_initial_state_vz:
+    value: 0.00001
+    input: numeric
+  x_initial_state_az:
+    value: 0
+    input: numeric
+  initial_belief_px_00:
+    value: 10.01
+    input: numeric
+  initial_belief_vx_11:
+    value: 10.01
+    input: numeric
+  initial_belief_ax_22:
+    value: 10.01
+    input: numeric
+  initial_belief_py_33:
+    value: 10.01
+    input: numeric
+  initial_belief_vy_44:
+    value: 10.01
+    input: numeric
+  initial_belief_ay_55:
+    value: 10.01
+    input: numeric
+  initial_belief_pz_66:
+    value: 10.01
+    input: numeric
+  initial_belief_vz_77:
+    value: 10.01
+    input: numeric
+  initial_belief_az_88:
+    value: 10.01
+    input: numeric
   process_noise_acceleration_noise_omega_x:
     value: 0.05
     input: numeric
@@ -123,32 +132,23 @@ params:
   process_noise_acceleration_noise_omega_z:
     value: 0.05
     input: numeric
-  sensor_noise_imu_euler_velocity_x:
-    value:  0.5
-    input: numeric
-  sensor_noise_imu_euler_velocity_y:
-    value:  0.5
-    input: numeric
-  sensor_noise_imu_euler_velocity_z:
-    value:  0.5
-    input: numeric
-  sensor_noise_imu_sigma_x:
-    value: 0.009810001
-    input: numeric
-  sensor_noise_imu_sigma_y:
-    value: 0.009810001
-    input: numeric
-  sensor_noise_imu_sigma_z:
-    value: 0.009810001
-    input: numeric
   sensor_noise_kinect_sigma_x:
-    value: 0.05
+    value: 0.01
     input: numeric
   sensor_noise_kinect_sigma_y:
-    value: 0.05
+    value: 0.01
     input: numeric
   sensor_noise_kinect_sigma_z:
-    value: 0.05
+    value: 0.01
+    input: numeric
+  sensor_noise_imu_sigma_x:
+    value: 0.01
+    input: numeric
+  sensor_noise_imu_sigma_y:
+    value: 0.01
+    input: numeric
+  sensor_noise_imu_sigma_z:
+    value: 0.01
     input: numeric
 output:
   html_document:
@@ -161,7 +161,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 Execute this chunk to load install the required libraries
 
-```{r}
+```{r, echo=FALSE}
 #install.packages("RMThreshold")
 #install.packages("jsonlite")
 #install.packages("ggplot2")
@@ -178,7 +178,8 @@ Execute this chunk to load install the required libraries
 
 Execute this chunk of code to load all the libraries
 
-```{r}
+```{r, echo=FALSE}
+library(shiny)
 library(dplyr)
 library(RMThreshold)
 library(ggplot2)
@@ -187,14 +188,13 @@ library(reshape2)
 library(LaplacesDemon)
 library(Rcpp)
 library(FKF)
-library(shiny)
 ```
 
 Execute this line of code to load all the functions
 
 
 
-```{r}
+```{r, echo=FALSE}
 
 source(paste(params$base_import_path, "/scripts/functions.R",sep=""))
 
@@ -206,12 +206,8 @@ Here is the definition of the state space models
 
 ```{r}
 # Will need euler angle velocity sensor
-# TODO: Quaternions need to be normalized
-# TODO: Transformationsmatrix berechnen für acceleration modell ?
 source(paste(params$base_import_path, "/scripts/models.R",sep=""))
 ```
-
-
 
 To load the data from the sensors execute this snippet of code 
 
@@ -231,51 +227,6 @@ imkDfRaw$t = (imkDfRaw$t.m * 60 * 1000 + imkDfRaw$t.s * 1000 + imkDfRaw$t.ms)
 # Darauf achten das datens?tze gleiche L?nge aufweisen
 
 imkDf = imkDfRaw[abs(imkDfRaw$kinect_foot_right.x) > 0,]
-
-uXP = crossProduct(imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.x, imkDf$imu_acceleration.x, imkDf$imu_acceleration.y, imkDf$imu_acceleration.z)
-
-
-rightSide_qp = imkDf$kinect_hand_left_orientation.w * c(imkDf$imu_acceleration.x, imkDf$imu_acceleration.y, imkDf$imu_acceleration.z) + uXP
-
-qp = data.frame(w = scalarProduct(
-  -imkDf$kinect_hand_right_orientation.x,
-  -imkDf$kinect_hand_right_orientation.y, 
-  -imkDf$kinect_hand_right_orientation.z,
-  imkDf$imu_acceleration.x,
-  imkDf$imu_acceleration.y,
-  imkDf$imu_acceleration.z
-  ),x = rightSide_qp$x,y = rightSide_qp$y,z = rightSide_qp$z)
-
-uXP = crossProduct(qp$x,qp$y,qp$z,
-                   imkDf$kinect_hand_right_orientation.x,
-                   imkDf$kinect_hand_right_orientation.y,
-                   imkDf$kinect_hand_right_orientation.z)
-
-rightSide_qp_q = qp$w * c( 
-  -imkDf$kinect_hand_right_orientation.x,
-  -imkDf$kinect_hand_right_orientation.y, 
-  -imkDf$kinect_hand_right_orientation.z) + uXP
-
-# Ist das Skalarprodukt hier überhaupt notwendig??
-qp_q = data.frame(w = scalarProduct(
-  -qp$x,
-  -qp$y,
-  -qp$z,
-  -imkDf$kinect_hand_right_orientation.x,
-  -imkDf$kinect_hand_right_orientation.y, 
-  -imkDf$kinect_hand_right_orientation.z
-), x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
-
-rotatedValues = data.frame(x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
-
-#imkDf$rotated_x_acceleration = rightSide_qp_q$x
-#imkDf$rotated_y_acceleration = rightSide_qp_q$y
-#imkDf$rotated_z_acceleration = rightSide_qp_q$z
-
-imkDf$rotated_x_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_X_component)))
-imkDf$rotated_y_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_y_component)))
-imkDf$rotated_z_acceleration = as.numeric(unlist(lapply(1:length(imkDf$t.m),rotated_z_component)))
-
 
 ```
 
@@ -318,13 +269,14 @@ orientation_sensor_noise = data.frame(
 )
 #
 
-processOrientationModel = getGuanglongOrientationModel(initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)
+processOrientationModel = getGuanglongOrientationModel(Ts, initial_orientation_state, initial_orientation_belief, orientation_process_noise, orientation_sensor_noise)
 
-## only for simulation
-rotationMatrix = quaternion_rotation_matrix(1,0,0,0)
-##
-
-#rotationMatrix = quaternion_rotation_matrix(imkDf$kinect_hand_right_orientation.w, imkDf$kinect_hand_right_orientation.x, imkDf$kinect_hand_right_orientation.y, imkDf$kinect_hand_right_orientation.z)
+rotationMatrix = quaternion_rotation_matrix(
+  imkDf$kinect_hand_right_orientation.w,
+  imkDf$kinect_hand_right_orientation.x,
+  imkDf$kinect_hand_right_orientation.y,
+  imkDf$kinect_hand_right_orientation.z
+  )
 
 initial_matrixHandToLocal = data.frame(
   mx_x = rotationMatrix[1,1], my_x = rotationMatrix[1,2], mz_x = rotationMatrix[1,3],
@@ -332,19 +284,12 @@ initial_matrixHandToLocal = data.frame(
   mx_z = rotationMatrix[3,1], my_z = rotationMatrix[3,2], mz_z = rotationMatrix[3,3]
 )
 
-initial_gravity = data.frame(
-  x = imkDf$imu_gravity.x[1],
-  y = imkDf$imu_gravity.y[1],
-  z = imkDf$imu_gravity.z[1]
-  )
+gravity = data.frame(
+  x = imkDf$imu_gravity.x,
+  y = imkDf$imu_gravity.y,
+  z = imkDf$imu_gravity.z
+)
 
-## only for simalation
-initial_gravity = data.frame(
-  x = 0,
-  y = 0,
-  z = 1
-  )
-##
 
 initial_acceleration_state = c(
   params$x_initial_state_px,  
@@ -385,7 +330,7 @@ acceleration_sensor_noise = data.frame(
   az = params$sensor_noise_imu_sigma_z
 )
 
-processAccelerationModel = getGuanglongAccelerationModel(initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, initial_gravity, acceleration_process_noise, acceleration_sensor_noise)
+processAccelerationModel = getGuanglongAccelerationModel(Ts, initial_acceleration_state, initial_acceleration_belief, initial_matrixHandToLocal, gravity[1,], acceleration_process_noise, acceleration_sensor_noise)
 
 ```
 
@@ -393,34 +338,73 @@ Apply Kalman Filter on models with data
 
 ```{r}
 
-oMTMax = 1000 # orientationModelTimeMaximum
-
+oMTMax = length(imkDf$t.m) # orientationModelTimeMaximum
 
 fkfGuanglongOrientationModel = fkf(
   a0 = processOrientationModel$x[,1],
   P0 = processOrientationModel$P,
   dt = matrix(data = 0, nrow = 7, ncol = 1),
   ct = matrix(data = 0, nrow = 3, ncol = 1),
-  GGt = array(diag(nrow = 3, ncol = 3), dim=c(3,3,1)),
-  Zt = array(processOrientationModel$H, dim=c(3,7,1)),
-  Tt = array(as.numeric(unlist(lapply(1:1,orientation_transition_at_index))), dim=c(7, 7, oMTMax)),
-  HHt = array(processOrientationModel$Q, dim=c(7,7,1)),
-  yt = matrix(data = c(imkDfRaw$imu_yaw[oMTMax],imkDfRaw$imu_pitch[oMTMax],imkDfRaw$imu_pitch[oMTMax]), ncol = oMTMax, nrow = 3, byrow = TRUE)
+  GGt = diag(nrow = 3, ncol = 3),
+  Zt = processOrientationModel$H,
+  Tt = array(as.numeric(unlist(lapply(1:oMTMax,orientation_transition_at_index))), dim=c(7, 7, oMTMax)),
+  HHt = processOrientationModel$Q,
+  yt = matrix(data = c(
+    deg2rad(imkDf$imu_pitch[1:oMTMax]),
+    deg2rad(imkDf$imu_roll[1:oMTMax]),
+    deg2rad(imkDf$imu_yaw[1:oMTMax])
+    ), nrow = 3, ncol = oMTMax, byrow = TRUE)
   )
 
 ```
 
 ```{r}
-aMTMax = 500 # accelerationModelTimeMaximum
 
-diag(9) * 0.5
+normalized_kalman_imu_Quat = normalizeQuaternion(
+  fkfGuanglongOrientationModel$att[1,],
+  fkfGuanglongOrientationModel$att[2,],
+  fkfGuanglongOrientationModel$att[3,],
+  fkfGuanglongOrientationModel$att[4,]
+)
+
+kinect_quat = data.frame(
+    w = imkDf$kinect_hand_right_orientation.w[1:oMTMax],
+    x = imkDf$kinect_hand_right_orientation.x[1:oMTMax],
+    y = imkDf$kinect_hand_right_orientation.y[1:oMTMax],
+    z = imkDf$kinect_hand_right_orientation.z[1:oMTMax]
+  )
+  
+vec = data.frame(
+    x = imkDf$imu_acceleration.x[1:oMTMax],
+    y = imkDf$imu_acceleration.y[1:oMTMax],
+    z = imkDf$imu_acceleration.z[1:oMTMax]
+)
+
+quat = quaternion_multiplication(kinect_quat, normalized_kalman_imu_Quat)
+rotatedVector = rotateVectorByQuaternion(vec, quat)
+
+imkDf$rotated_x_acceleration = rotatedVector$x[1:oMTMax]
+imkDf$rotated_y_acceleration = rotatedVector$y[1:oMTMax]
+imkDf$rotated_z_acceleration = rotatedVector$z[1:oMTMax]
+
+```
+
+
+
+```{r}
+
+
+
+aMTMax = oMTMax # accelerationModelTimeMaximum
+
 
 fkfGuanglongAccelerationModel = fkf(
   a0 = processAccelerationModel$x[,1],
   P0 = processAccelerationModel$P,
-  dt = matrix(data = 0, nrow = 9, ncol = 1),
+  #dt = matrix(data = 0, nrow = 9, ncol = 1),
+  dt = rbind(0,0,0, 0,0,0, -vectorLength(gravity) * 9.81 * Ts**2/2, -vectorLength(gravity) * 9.81 * Ts,0),
   ct = matrix(data = 0, nrow = 6, ncol = 1),
-  GGt = diag(nrow = 6, ncol = 6),
+  GGt = diag(6),
   Zt = processAccelerationModel$H,
   Tt = array(as.numeric(unlist(lapply(1:aMTMax,acceleration_transition_at_index))), dim=c(9, 9, aMTMax)),
   HHt = processAccelerationModel$Q,
@@ -428,9 +412,9 @@ fkfGuanglongAccelerationModel = fkf(
     imkDf$kinect_hand_right.x[1:aMTMax],
     imkDf$kinect_hand_right.y[1:aMTMax],
     imkDf$kinect_hand_right.z[1:aMTMax],
-    imkDf$imu_acceleration.x[1:aMTMax],
-    imkDf$imu_acceleration.y[1:aMTMax],
-    imkDf$imu_acceleration.z[1:aMTMax]
+    imkDf$rotated_x_acceleration[1:aMTMax],
+    -imkDf$rotated_z_acceleration[1:aMTMax],
+    -imkDf$rotated_y_acceleration[1:aMTMax]
   ), nrow = 6, ncol = aMTMax, byrow = TRUE)
   )
 ```
@@ -440,62 +424,81 @@ Plot the data
 
 ```{r}
 
-plot(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "x", ylab = "x",xlab="time", type='l', ylim = c(-1, 1))
-polygon(
-  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
-  y = c(fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] + fkfGuanglongAccelerationModel$att[1,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[1,1:aMTMax ] - fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(fkfGuanglongAccelerationModel$att[1, 1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
-lines(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_x state", "kinect x"), lwd = 3, col = c("blue", "black"))
+plot_limit_offset = 0.5
 
-
-plot(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_x", ylab = "a_x",xlab="time", type='l')
+plot(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_x for data", ylab = "p_x", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$kinect_hand_right.x[1:aMTMax], fkfGuanglongAccelerationModel$att[1,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$kinect_hand_right.x[1:aMTMax], fkfGuanglongAccelerationModel$att[1,1:aMTMax]) + plot_limit_offset))
 polygon(
   x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
   y = c(fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] + fkfGuanglongAccelerationModel$att[1,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[1,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[1,1,1:aMTMax] )),
   col = "lightsteelblue",
   border = NA)
-lines(fkfGuanglongAccelerationModel$att[3,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
-lines(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_x state", "imu x"), lwd = 3, col = c("blue", "black"))
+lines(fkfGuanglongAccelerationModel$att[1,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("p_x state", "kinect px", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 4, main = "y", ylab = "y",xlab="time", type='l')
-polygon(
-  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
-  y = c(fkfGuanglongAccelerationModel$Ptt[2,2,1:aMTMax] + fkfGuanglongAccelerationModel$att[2,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[2,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[2,2,1:aMTMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(fkfGuanglongAccelerationModel$att[2,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
-lines(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_y state", "kinect y"), lwd = 3, col = c("blue", "black"))
 
-
-plot(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_y", ylab = "a_y",xlab="time", type='l')
-polygon(
-  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
-  y = c(fkfGuanglongAccelerationModel$Ptt[8,8,1:aMTMax] + fkfGuanglongAccelerationModel$att[8,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[8,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[8,8,1:aMTMax] )),
-  col = "lightsteelblue",
-  border = NA)
-lines(fkfGuanglongAccelerationModel$att[8,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
-lines(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_y state", "imu y"), lwd = 3, col = c("blue", "black"))
-
-
-plot(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 4, main = "z", ylab = "z",xlab="time", type='l')
+plot(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_x for data", ylab = "a_x", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$rotated_x_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[3,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$rotated_x_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[3,1:aMTMax]) + plot_limit_offset))
 polygon(
   x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
   y = c(fkfGuanglongAccelerationModel$Ptt[3,3,1:aMTMax] + fkfGuanglongAccelerationModel$att[3,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[3,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[3,3,1:aMTMax] )),
   col = "lightsteelblue",
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[3,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("a_x state", "imu ax", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+
+
+
+plot(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_y for data", ylab = "p_y", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$kinect_hand_right.y[1:aMTMax], fkfGuanglongAccelerationModel$att[4,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$kinect_hand_right.y[1:aMTMax], fkfGuanglongAccelerationModel$att[4,1:aMTMax]) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[4,4,1:aMTMax] + fkfGuanglongAccelerationModel$att[4,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[4,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[4,4,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[4,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("p_y state", "kinect py", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+
+
+
+plot(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_y for data", ylab = "a_y", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$rotated_y_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[6,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$rotated_y_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[6,1:aMTMax]) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[6,6,1:aMTMax] + fkfGuanglongAccelerationModel$att[6,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[6,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[6,6,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[6,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
+lines(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
+legend("bottomright", legend = c("a_y state", "imu ay", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+
+
+
+
+plot(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_z for data", ylab = "p_z", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$kinect_hand_right.z[1:aMTMax], fkfGuanglongAccelerationModel$att[7,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$kinect_hand_right.z[1:aMTMax], fkfGuanglongAccelerationModel$att[7,1:aMTMax]) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
+  y = c(fkfGuanglongAccelerationModel$Ptt[7,7,1:aMTMax] + fkfGuanglongAccelerationModel$att[7,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[7,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[7,7,1:aMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
+lines(fkfGuanglongAccelerationModel$att[7,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_z state", "z"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("p_z state", "kinect pz", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_z", ylab = "a_z",xlab="time", type='l')
+plot(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_z for data", ylab = "a_z", xlab="time in seconds", type='l', ylim=c(
+  min(imkDf$rotated_z_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[9,1:aMTMax]) - plot_limit_offset,
+  max(imkDf$rotated_z_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[9,1:aMTMax]) + plot_limit_offset))
 polygon(
   x = c(imkDf$t[1:aMTMax], rev(imkDf$t[1:aMTMax])),
   y = c(fkfGuanglongAccelerationModel$Ptt[9,9,1:aMTMax] + fkfGuanglongAccelerationModel$att[9,1:aMTMax], rev(fkfGuanglongAccelerationModel$att[9,1:aMTMax] - fkfGuanglongAccelerationModel$Ptt[9,9,1:aMTMax] )),
@@ -503,17 +506,44 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[9,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_z state", "imu z"), lwd = 3, col = c("blue", "black"))
+legend("bottomright", legend = c("a_z state", "imu az", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-
-plot(imkDfRaw$imu_yaw[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "yaw", ylab = "yaw",xlab="time", type='l')
+plot(deg2rad(imkDf$imu_pitch[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vx", ylab = "vx", xlab="time", type='l', ylim=c(
+  min(fkfGuanglongOrientationModel$att[5,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) - plot_limit_offset,
+  max(fkfGuanglongOrientationModel$att[5,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:oMTMax], rev(imkDf$t[1:oMTMax])),
+  y = c(fkfGuanglongOrientationModel$Ptt[5,5,1:oMTMax] + fkfGuanglongOrientationModel$att[5,1:oMTMax], rev(fkfGuanglongOrientationModel$att[5,1:oMTMax] - fkfGuanglongOrientationModel$Ptt[5,5,1:oMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
 lines(fkfGuanglongOrientationModel$att[5,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+lines(deg2rad(imkDf$imu_pitch[1:oMTMax]) ~ imkDf$t[1:oMTMax])
+legend("bottomright", legend = c("v_x state", "simulated v_z", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(imkDfRaw$imu_pitch[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "pitch", ylab = "pitch",xlab="time", type='l')
+plot(deg2rad(imkDf$imu_roll[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vy", ylab = "vy", xlab="time", type='l', ylim=c(
+  min(fkfGuanglongOrientationModel$att[6,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) - plot_limit_offset,
+  max(fkfGuanglongOrientationModel$att[6,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:oMTMax], rev(imkDf$t[1:oMTMax])),
+  y = c(fkfGuanglongOrientationModel$Ptt[6,6,1:oMTMax] + fkfGuanglongOrientationModel$att[6,1:oMTMax], rev(fkfGuanglongOrientationModel$att[6,1:oMTMax] - fkfGuanglongOrientationModel$Ptt[6,6,1:oMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
 lines(fkfGuanglongOrientationModel$att[6,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+lines(deg2rad(imkDf$imu_roll[1:oMTMax]) ~ imkDf$t[1:oMTMax])
+legend("bottomright", legend = c("v_y state", "simulated v_y", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(imkDfRaw$imu_roll[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = "roll", ylab = "roll",xlab="time", type='l',  ylim = c(-70, 50))
+plot(deg2rad(imkDf$imu_yaw[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vz", ylab = "vz", xlab="time", type='l', ylim=c(
+  min(fkfGuanglongOrientationModel$att[7,1:oMTMax], deg2rad(imkDf$imu_yaw[1:oMTMax])) - plot_limit_offset,
+  max(fkfGuanglongOrientationModel$att[7,1:oMTMax], deg2rad(imkDf$imu_yaw[1:oMTMax])) + plot_limit_offset))
+polygon(
+  x = c(imkDf$t[1:oMTMax], rev(imkDf$t[1:oMTMax])),
+  y = c(fkfGuanglongOrientationModel$Ptt[7,7,1:oMTMax] + fkfGuanglongOrientationModel$att[7,1:oMTMax], rev(fkfGuanglongOrientationModel$att[7,1:oMTMax] - fkfGuanglongOrientationModel$Ptt[7,7,1:oMTMax] )),
+  col = "lightsteelblue",
+  border = NA)
 lines(fkfGuanglongOrientationModel$att[7,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
+lines(deg2rad(imkDf$imu_yaw[1:oMTMax]) ~ imkDf$t[1:oMTMax])
+legend("bottomright", legend = c("v_z state", "simulated v_z", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+
 
 ```
 

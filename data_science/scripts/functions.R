@@ -19,20 +19,13 @@ simulated_orientation_transition_at_index <- function(i){
 orientation_transition_at_index <- function(i){
   return(processOrientationModel$Ad + matrix(
     data = c(
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
-      -imkDf$kinect_hand_right_orientation.z[i],-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      0,0,0,0,imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.w[i],
-      imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
-      0,0,0,0,imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,
-      -imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
-      imkDf$kinect_hand_right_orientation.y[i]*Ts/2 ,
-      imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
-      0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0,
-      0,0,0,0,0,0,0
+      0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,-imkDf$kinect_hand_right_orientation.z[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
+      0,0,0,0, imkDf$kinect_hand_right_orientation.x[i] * Ts/2, imkDf$kinect_hand_right_orientation.w[i]*Ts/2 , imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
+      0,0,0,0, imkDf$kinect_hand_right_orientation.w[i] * Ts/2, imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
+      0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2, imkDf$kinect_hand_right_orientation.y[i]*Ts/2 , imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
+      0,0,0,0, 0,0,0,
+      0,0,0,0, 0,0,0,
+      0,0,0,0, 0,0,0
     ), nrow=7, ncol=7, byrow = TRUE))
 }
 
@@ -107,7 +100,7 @@ acceleration_simulation_transition_at_index <- function(i){
     0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
     0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
     0,0,0,                                 0,0,1,                               0,0,0,
-    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2, 1,Ts,rotation_matrix[3,3] *Ts**2/2,
+    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2,  1,Ts,rotation_matrix[3,3] *Ts**2/2,
     0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
     0,0,0,                                 0,0,0,                               0,0,1
   )
@@ -117,10 +110,10 @@ acceleration_simulation_transition_at_index <- function(i){
 acceleration_transition_at_index <- function(i){
   
   rotation_matrix = quaternion_rotation_matrix(
-    imkDf$kinect_hand_right_orientation.w[i],
-    imkDf$kinect_hand_right_orientation.x[i],
-    imkDf$kinect_hand_right_orientation.y[i],
-    imkDf$kinect_hand_right_orientation.z[i])
+    quat$w[i],
+    quat$x[i],
+    quat$y[i],
+    quat$z[i])
   
   return(matrix(data = c(
     1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
@@ -164,6 +157,11 @@ accumulateChunks <- function(vals){
       return(list(vals[index_of_first_non_zero:(index_of_second_non_zero+1)]))
     }
   }
+}
+
+normalizeQuaternion <- function(q1, q2, q3, q4){
+  M = sqrt(q1**2 + q2**2 + q3**2 + q4**2)
+  return(data.frame(w = q1 / M, x = q2 / M, y = q3 / M, z = q4 / M))
 }
 
 # Function to interpolate values inbetween
@@ -230,5 +228,51 @@ quaternion_multiplication <- function(q1, q2){
     y = y / M,
     z = z / M
   ))
+  
+}
+
+rotateVectorByQuaternion <- function(vec, quat) {
+  
+  uXP = crossProduct(
+    quat$x,
+    quat$y,
+    quat$z,
+    vec$x,
+    vec$y,
+    vec$z)
+  
+  
+  rightSide_qp = quat$w * c(vec$x, vec$y, vec$z) + uXP
+  
+  qp = data.frame(w = scalarProduct(
+    -quat$x,
+    -quat$y, 
+    -quat$z,
+    vec$x,
+    vec$y,
+    vec$z
+  ),x = rightSide_qp$x,y = rightSide_qp$y,z = rightSide_qp$z)
+  
+  uXP = crossProduct(qp$x,qp$y,qp$z,
+                     quat$x,
+                     quat$y,
+                     quat$z)
+  
+  rightSide_qp_q = qp$w * c( 
+    -quat$x,
+    -quat$y, 
+    -quat$z) + uXP
+  
+  # Ist das Skalarprodukt hier überhaupt notwendig??
+  qp_q = data.frame(w = scalarProduct(
+    -qp$x,
+    -qp$y,
+    -qp$z,
+    -quat$x,
+    -quat$y, 
+    -quat$z
+  ), x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
+  
+  return(rightSide_qp_q)
   
 }
