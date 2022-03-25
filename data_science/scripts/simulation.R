@@ -115,7 +115,7 @@ generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
   Ts = 0.014
   A_k = acceleration_simulation_transition_at_index(index)
   B = diag(x = 1, nrow=9)
-  uk = matrix(nrow=9, ncol=1, data = c(0,0,0,0,0,0, -9.81 * (0.014**2)/2, -9.81 * 0.014,0))
+  uk = matrix(nrow=9, ncol=1, data = c(0,0,0,0,0,0,0,0,0))
   wk = matrix(nrow=9, ncol=1, data = c(
     0,
     0,

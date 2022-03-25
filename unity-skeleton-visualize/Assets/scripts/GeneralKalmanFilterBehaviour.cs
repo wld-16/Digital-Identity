@@ -49,15 +49,8 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
     [SerializeField] protected float dt = 14.0f / 1000.0f;
     [SerializeField] protected double mean = 0;
     [SerializeField] protected double stdDev = 2.56;
-    private KalmanFilter kalmanFilter;
+    protected KalmanFilter kalmanFilter;
     public KalmanFilter KalmanFilter => kalmanFilter;
-
-    #endregion
-
-    #region options
-
-    [SerializeField] private bool useDynamicOrientationTransition;
-    [SerializeField] private bool useDynamicAccelerationTransition;
 
     #endregion
 
@@ -86,7 +79,7 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         dataOffset = transform.localPosition;
     }
 
-    private KalmanFilter initKalman(KalmanFilter kalmanFilter)
+    protected KalmanFilter initKalman(KalmanFilter kalmanFilter)
     {
         kalmanFilter.F = DenseMatrix.OfArray(new float[9, 9]
         {
@@ -184,25 +177,7 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
             {ay},
             {az}
         });
-
-
-        if (useDynamicAccelerationTransition)
-        {
-            List<float> data = getDataDeliverer(typeof(FetchTransformationMatrixOfKinect)).getData();
-            Matrix<float> dataMatrix = DenseMatrix.OfArray(new float[3, 3]
-            {
-                {data[0], data[3], data[6]},
-                {data[1], data[4], data[7]},
-                {data[2], data[5], data[8]}
-            });
-            kalmanFilter.H = UpdateDynamicFWithTransformation(dataMatrix);
-        }
-
-        if (useDynamicOrientationTransition)
-        {
-            List<float> data = getDataDeliverer(typeof(FetchOrientationOfKinect)).getData();
-            kalmanFilter.H = UpdateDynamicFWithQuaternion(new Quaternion(data[1], data[2], data[3], data[0]));
-        }
+        
 
 
         kalmanFilter = KalmanUpdate(Z, kalmanFilter);
@@ -215,7 +190,7 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
     }
 
 
-    private KalmanFilter KalmanUpdate(Matrix<float> z, KalmanFilter kalmanFilter)
+    protected KalmanFilter KalmanUpdate(Matrix<float> z, KalmanFilter kalmanFilter)
     {
         Matrix<float> S = kalmanFilter.H * kalmanFilter.P * kalmanFilter.H.Transpose() + kalmanFilter.R;
         Matrix<float> K = kalmanFilter.P * kalmanFilter.H.Transpose() * S.Inverse();
@@ -245,7 +220,7 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         return (-0.5 * (k * Log(2 * PI) + Log(S.Determinant())) - (z * 0.5));
     }
 
-    private Dictionary<String, Matrix<float>> KalmanPredict(KalmanFilter kalmanFilter)
+    protected Dictionary<String, Matrix<float>> KalmanPredict(KalmanFilter kalmanFilter)
     {
         Matrix<float> x = kalmanFilter.F * kalmanFilter.x;
         Matrix<float> P = kalmanFilter.F * kalmanFilter.P * kalmanFilter.F.Transpose() + kalmanFilter.Q;
@@ -283,44 +258,6 @@ public class GeneralKalmanFilterBehaviour : MonoBehaviour, IPushData, IPullData
         }
     }
 
-    Matrix<float> UpdateDynamicFWithQuaternion(Quaternion quat)
-    {
-        return DenseMatrix.OfArray(new float[7, 7]
-        {
-            {1f, 0f, 0f, 0f, -quat.x * dt / 2, -quat.y, -quat.z * dt / 2},
-            {0, 1f, 0, 0, quat.w * dt / 2, quat.z, quat.y * dt / 2},
-            {0, 0, 1, 0, quat.z * dt / 2, quat.w * dt / 2, -quat.x * dt / 2},
-            {0, 0, 0, 1, -quat.y * dt / 2, quat.x * dt / 2, quat.w * dt / 2},
-            {0, 0, 0, 0, 1, 0, 0},
-            {0, 0, 0, 0, 0, 1, 0},
-            {0, 0, 0, 0, 0, 0, 1}
-        });
-    }
-
-    Matrix<float> UpdateDynamicFWithTransformation(Matrix<float> handToLocal)
-    {
-        return DenseMatrix.OfArray(new float[9, 9]
-        {
-            {
-                1f, dt, (float) (handToLocal[0, 0] * Pow(dt, 2) / 2), 0, 0,
-                (float) (handToLocal[1, 0] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[2, 0] * Pow(dt, 2) / 2)
-            },
-            {0, 1, handToLocal[0, 0] * dt, 0, 0, handToLocal[1, 0] * dt, 0, 0, handToLocal[2, 0] * dt},
-            {0, 0, 1, 0, 0, 0, 0, 0, 0},
-            {
-                0, dt, (float) (handToLocal[0, 1] * Pow(dt, 2) / 2), 1, dt,
-                (float) (handToLocal[1, 1] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[2, 2] * Pow(dt, 2) / 2)
-            },
-            {0, 0, handToLocal[0, 1] * dt, 0, 1, handToLocal[1, 1] * dt, 0, 0, handToLocal[2, 1] * dt},
-            {0, 0, 0, 0, 0, 1, 0, 0, 0},
-            {
-                0, dt, (float) (handToLocal[0, 2] * Pow(dt, 2) / 2), 0, 0, (float) (handToLocal[1, 2] * Pow(dt, 2) / 2),
-                1, dt, (float) (handToLocal[2, 2] * Pow(dt, 2) / 2)
-            },
-            {0, 0, handToLocal[0, 2] * dt, 0, 0, handToLocal[1, 2] * dt, 0, 1, handToLocal[2, 2] * dt},
-            {0, 0, 0, 0, 0, 0, 0, 0, 1}
-        });
-    }
 
     public List<IPullData> getDataRecipients()
     {

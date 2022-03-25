@@ -24,7 +24,9 @@ public class KeepPositionInsideBounds : MonoBehaviour
     {
         if (!bounds.Contains(positionTransformToCheck.position))
         {
+            transform.position = bounds.ClosestPoint(positionTransformToCheck.position); 
             rb.velocity = Vector3.zero;
+            //rb.AddForce(-(positionTransformToCheck.position - bounds.ClosestPoint(positionTransformToCheck.position)));
         }
     }
 }

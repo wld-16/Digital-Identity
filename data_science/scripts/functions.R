@@ -101,7 +101,7 @@ acceleration_simulation_transition_at_index <- function(i){
     0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
     0,0,0,                                 0,0,1,                               0,0,0,
     0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2,  1,Ts,rotation_matrix[3,3] *Ts**2/2,
-    0,0,rotation_matrix[1,3] *Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
+    0,0,rotation_matrix[1,3] * Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
     0,0,0,                                 0,0,0,                               0,0,1
   )
   ,nrow = 9, ncol = 9, byrow=TRUE))
@@ -214,11 +214,13 @@ eulerToQuaternion <- function(theta, ux, uy, uz) {
 rad2deg <- function(rad) {(rad * 180) / (pi)}
 deg2rad <- function(deg) {(deg * pi) / (180)}
 
+# Deprecated
 quaternion_multiplication <- function(q1, q2){
-  x =  q1$x * q2$w + q1$y * q2$z - q1$z * q2$y + q1$w * q2$x;
-  y = -q1$x * q2$z + q1$y * q2$w + q1$z * q2$x + q1$w * q2$y;
-  z =  q1$x * q2$y - q1$y * q2$x + q1$z * q2$w + q1$w * q2$z;
-  w = -q1$x * q2$x - q1$y * q2$y - q1$z * q2$z + q1$w * q2$w;
+  w = q2$w * q1$w - q2$x * q1$x - q2$y * q1$y - q1$z * q2$z
+  x = q2$w * q1$x + q2$x * q1$w - q2$y * q1$z + q1$z * q2$y
+  y = q2$w * q1$y + q2$x * q1$z + q2$y * q1$w - q1$z * q2$x
+  z = q2$w * q1$z - q2$x * q1$y + q2$y * q1$x + q1$z * q2$w
+  
   
   M = sqrt(w**2 + x**2 + y**2 + z**2)
   
@@ -231,7 +233,30 @@ quaternion_multiplication <- function(q1, q2){
   
 }
 
+quaternion_multi <- function(q1, q2){
+  w = q2$w * q1$w - q2$x * q1$x - q2$y * q1$y - q2$z * q1$z
+  x = q2$w * q1$x + q2$x * q1$w - q2$y * q1$z + q2$z * q1$y
+  y = q2$w * q1$y + q2$x * q1$z + q2$y * q1$w - q2$z * q1$x
+  z = q2$w * q1$z - q2$x * q1$y + q2$y * q1$x + q2$z * q1$w
+  
+  return(data.frame(w = w,x = x,y = y,z = z))
+}
+
+rotate_vector_by <- function(vec, quat){
+  print(vec)
+  print(quat)
+  vec_quat = data.frame(w = 0, x = vec$x, y = vec$y, z = vec$z)
+  quat_conjugate = data.frame(w = quat$w, x = -quat$x, y = -quat$y, z = -quat$z)
+  qq = quaternion_multi(quat, vec_quat)
+  rotated_quat = quaternion_multi(qq, quat_conjugate)
+  
+  return(data.frame(x = rotated_quat$x, y = rotated_quat$y, z = rotated_quat$z))
+}
+
 rotateVectorByQuaternion <- function(vec, quat) {
+  
+  print(vec)
+  print(quat)
   
   uXP = crossProduct(
     quat$x,
@@ -241,8 +266,12 @@ rotateVectorByQuaternion <- function(vec, quat) {
     vec$y,
     vec$z)
   
+  print(uXP)
+  
   
   rightSide_qp = quat$w * c(vec$x, vec$y, vec$z) + uXP
+  
+  print(rightSide_qp)
   
   qp = data.frame(w = scalarProduct(
     -quat$x,
@@ -258,10 +287,14 @@ rotateVectorByQuaternion <- function(vec, quat) {
                      quat$y,
                      quat$z)
   
+  print(uXP)
+  
   rightSide_qp_q = qp$w * c( 
     -quat$x,
     -quat$y, 
     -quat$z) + uXP
+  
+  print(rightSide_qp_q)
   
   # Ist das Skalarprodukt hier überhaupt notwendig??
   qp_q = data.frame(w = scalarProduct(

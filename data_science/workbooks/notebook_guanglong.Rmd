@@ -412,9 +412,9 @@ fkfGuanglongAccelerationModel = fkf(
     imkDf$kinect_hand_right.x[1:aMTMax],
     imkDf$kinect_hand_right.y[1:aMTMax],
     imkDf$kinect_hand_right.z[1:aMTMax],
-    imkDf$rotated_x_acceleration[1:aMTMax],
-    -imkDf$rotated_z_acceleration[1:aMTMax],
-    -imkDf$rotated_y_acceleration[1:aMTMax]
+    imkDf$imu_acceleration.x[1:oMTMax],
+    imkDf$imu_acceleration.y[1:oMTMax],
+    imkDf$imu_acceleration.z[1:oMTMax]
   ), nrow = 6, ncol = aMTMax, byrow = TRUE)
   )
 ```
@@ -426,7 +426,7 @@ Plot the data
 
 plot_limit_offset = 0.5
 
-plot(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_x for data", ylab = "p_x", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(p[x] ~ " for data"), ylab = expression(p[x] ~" in m"), xlab="t in s", type='l', ylim=c(
   min(imkDf$kinect_hand_right.x[1:aMTMax], fkfGuanglongAccelerationModel$att[1,1:aMTMax]) - plot_limit_offset,
   max(imkDf$kinect_hand_right.x[1:aMTMax], fkfGuanglongAccelerationModel$att[1,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -436,11 +436,11 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[1,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$kinect_hand_right.x[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_x state", "kinect px", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(p[x] ~ " state"), expression("kinect " ~ p[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
 
-plot(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_x for data", ylab = "a_x", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(a[x] ~ " for data"), ylab = expression(a[x] ~" in m/" ~ s^2), xlab="t in s", type='l', ylim=c(
   min(imkDf$rotated_x_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[3,1:aMTMax]) - plot_limit_offset,
   max(imkDf$rotated_x_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[3,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -450,11 +450,11 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[3,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$rotated_x_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_x state", "imu ax", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(a[x] ~ " state"), expression("imu " ~ a[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
 
-plot(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_y for data", ylab = "p_y", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(p[y] ~ " for data"), ylab = expression(p[y] ~" in m"), xlab="t in s", type='l', ylim=c(
   min(imkDf$kinect_hand_right.y[1:aMTMax], fkfGuanglongAccelerationModel$att[4,1:aMTMax]) - plot_limit_offset,
   max(imkDf$kinect_hand_right.y[1:aMTMax], fkfGuanglongAccelerationModel$att[4,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -464,11 +464,11 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[4,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$kinect_hand_right.y[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_y state", "kinect py", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(p[y] ~ " state"), expression("kinect " ~ p[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
 
-plot(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_y for data", ylab = "a_y", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(a[y] ~ " for data"), ylab = expression(a[y] ~" in m/" ~ s^2), xlab="t in s", type='l', ylim=c(
   min(imkDf$rotated_y_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[6,1:aMTMax]) - plot_limit_offset,
   max(imkDf$rotated_y_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[6,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -478,12 +478,12 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[6,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$rotated_y_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_y state", "imu ay", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(a[y] ~ " state"), expression("imu " ~ a[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
 
 
-plot(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "p_z for data", ylab = "p_z", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(p[z] ~ " for data"), ylab = expression(p[z] ~" in m"), xlab="t in s", type='l', ylim=c(
   min(imkDf$kinect_hand_right.z[1:aMTMax], fkfGuanglongAccelerationModel$att[7,1:aMTMax]) - plot_limit_offset,
   max(imkDf$kinect_hand_right.z[1:aMTMax], fkfGuanglongAccelerationModel$att[7,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -493,10 +493,10 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[7,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$kinect_hand_right.z[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("p_z state", "kinect pz", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(p[y] ~ " state"), expression("kinect " ~ p[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = "a_z for data", ylab = "a_z", xlab="time in seconds", type='l', ylim=c(
+plot(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax], pch  = 20, main = expression(a[z] ~ " for data"), ylab = expression(a[z] ~" in m/" ~ s^2), xlab="t in s", type='l', ylim=c(
   min(imkDf$rotated_z_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[9,1:aMTMax]) - plot_limit_offset,
   max(imkDf$rotated_z_acceleration[1:aMTMax], fkfGuanglongAccelerationModel$att[9,1:aMTMax]) + plot_limit_offset))
 polygon(
@@ -506,9 +506,9 @@ polygon(
   border = NA)
 lines(fkfGuanglongAccelerationModel$att[9,1:aMTMax] ~ imkDf$t[1:aMTMax], col = "blue")
 lines(imkDf$rotated_z_acceleration[1:aMTMax] ~ imkDf$t[1:aMTMax])
-legend("bottomright", legend = c("a_z state", "imu az", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(a[z] ~ " state"), expression("imu " ~ a[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(deg2rad(imkDf$imu_pitch[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vx", ylab = "vx", xlab="time", type='l', ylim=c(
+plot(deg2rad(imkDf$imu_pitch[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[x]), ylab = expression(omega[x] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[5,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[5,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) + plot_limit_offset))
 polygon(
@@ -518,9 +518,9 @@ polygon(
   border = NA)
 lines(fkfGuanglongOrientationModel$att[5,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
 lines(deg2rad(imkDf$imu_pitch[1:oMTMax]) ~ imkDf$t[1:oMTMax])
-legend("bottomright", legend = c("v_x state", "simulated v_z", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(omega[x] ~ " state"), expression("imu " ~ omega[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(deg2rad(imkDf$imu_roll[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vy", ylab = "vy", xlab="time", type='l', ylim=c(
+plot(deg2rad(imkDf$imu_roll[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[y]), ylab = expression(omega[y] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[6,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[6,1:oMTMax], deg2rad(imkDf$imu_pitch[1:oMTMax])) + plot_limit_offset))
 polygon(
@@ -530,9 +530,9 @@ polygon(
   border = NA)
 lines(fkfGuanglongOrientationModel$att[6,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
 lines(deg2rad(imkDf$imu_roll[1:oMTMax]) ~ imkDf$t[1:oMTMax])
-legend("bottomright", legend = c("v_y state", "simulated v_y", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(omega[y] ~ " state"), expression("imu " ~ omega[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(deg2rad(imkDf$imu_yaw[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = "orientation vz", ylab = "vz", xlab="time", type='l', ylim=c(
+plot(deg2rad(imkDf$imu_yaw[1:oMTMax]) ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[z]), ylab = expression(omega[z] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[7,1:oMTMax], deg2rad(imkDf$imu_yaw[1:oMTMax])) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[7,1:oMTMax], deg2rad(imkDf$imu_yaw[1:oMTMax])) + plot_limit_offset))
 polygon(
@@ -542,7 +542,7 @@ polygon(
   border = NA)
 lines(fkfGuanglongOrientationModel$att[7,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "blue")
 lines(deg2rad(imkDf$imu_yaw[1:oMTMax]) ~ imkDf$t[1:oMTMax])
-legend("bottomright", legend = c("v_z state", "simulated v_z", "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
+legend("bottomright", legend = c(expression(omega[z] ~ " state"), expression("imu " ~ omega[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
 ```

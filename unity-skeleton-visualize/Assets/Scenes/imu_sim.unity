@@ -487,8 +487,6 @@ MonoBehaviour:
   dt: 0.014
   mean: 0
   stdDev: 2.56
-  useDynamicOrientationTransition: 0
-  useDynamicAccelerationTransition: 0
 --- !u!1 &336110977
 GameObject:
   m_ObjectHideFlags: 0
@@ -1238,8 +1236,11 @@ GameObject:
   - component: {fileID: 1138188291}
   - component: {fileID: 1138188290}
   - component: {fileID: 1138188289}
-  - component: {fileID: 1138188288}
   - component: {fileID: 1138188294}
+  - component: {fileID: 1138188295}
+  - component: {fileID: 1138188288}
+  - component: {fileID: 1138188297}
+  - component: {fileID: 1138188296}
   m_Layer: 0
   m_Name: imu_sensor
   m_TagString: Untagged
@@ -1263,19 +1264,284 @@ Transform:
   m_Father: {fileID: 1923022128}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &1138188288
-BoxCollider:
+--- !u!114 &1138188288
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1138188286}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bfbae918c5b8c441ab68be17b8ab6ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputComponent:
+  - {fileID: 1138188295}
+  outputComponents: []
+  inputData: []
+  dataOffset: {x: 0, y: 0, z: 0}
+  observationOutputMapping: 000000000000000000000000
+  kalmanResultX: []
+  outputData: []
+  sigmaValues:
+    values: []
+  x: []
+  P:
+    dimension: 9
+    data:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  F:
+    dimension: 9
+    data:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  H:
+    dimension: 9
+    data:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  dt: 0.014
+  mean: 0
+  stdDev: 2.56
 --- !u!114 &1138188289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1398,8 +1664,234 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 1, y: 1, z: 1}
+    m_Extent: {x: 0.5, y: 0.5, z: 0.5}
   centerIsPosition: 1
+  rb: {fileID: 1138188291}
+  positionTransformToCheck: {fileID: 1138188287}
+--- !u!114 &1138188295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138188286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dc87be3e9653645aa0006ef0f216e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputComponent:
+  - {fileID: 1138188289}
+  outputComponents: []
+  inputData:
+  - 0
+  - 0
+  - 0
+  dataOffset: {x: 0, y: 0, z: 0}
+  observationOutputMapping: 000000000000000000000000
+  kalmanResultX: []
+  outputData:
+  - 0
+  - 0
+  - 0
+  sigmaValues:
+    values: []
+  x:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  P:
+    dimension: 7
+    data:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+  F:
+    dimension: 7
+    data:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  H:
+    dimension: 7
+    data:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  dt: 0.014
+  mean: 0
+  stdDev: 2.56
+--- !u!114 &1138188296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138188286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b65f4469627b2614e98b148857e2699f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  receivingComponents: []
+  _kinectManager: {fileID: 336110978}
+  _skeletonPositionIndex: 11
+  outputOrientation: {x: 0, y: 0, z: 0, w: 1}
+  outputData: []
+--- !u!114 &1138188297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138188286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf10c186ea24088439c796f6dfb56e60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1161951940
 GameObject:
   m_ObjectHideFlags: 0
@@ -1956,8 +2448,6 @@ MonoBehaviour:
   dt: 0.014
   mean: 0
   stdDev: 2.56
-  useDynamicOrientationTransition: 0
-  useDynamicAccelerationTransition: 0
 --- !u!1 &1302940295
 GameObject:
   m_ObjectHideFlags: 0
@@ -2173,7 +2663,7 @@ GameObject:
   - component: {fileID: 1491667804}
   - component: {fileID: 1491667803}
   - component: {fileID: 1491667802}
-  - component: {fileID: 1491667807}
+  - component: {fileID: 1491667808}
   m_Layer: 0
   m_Name: imu_sensor
   m_TagString: Untagged
@@ -2305,19 +2795,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inputDataComponent: {fileID: 1491667802}
   applyRigidbody: {fileID: 1491667804}
---- !u!65 &1491667807
-BoxCollider:
+--- !u!114 &1491667808
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1491667800}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ecea0e97386d564f8bd27a35fb61ff5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+  centerIsPosition: 1
+  rb: {fileID: 1491667804}
+  positionTransformToCheck: {fileID: 1491667801}
 --- !u!1001 &1563167001
 PrefabInstance:
   m_ObjectHideFlags: 0
