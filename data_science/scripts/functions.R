@@ -5,7 +5,7 @@ simulated_orientation_transition_at_index <- function(i){
     matrix(
       data = c(
         1,0,0,0,        -simulated_normalized_quaternions[i,2] * Ts/2  ,-simulated_normalized_quaternions[i,3]*Ts/2     ,-simulated_normalized_quaternions[i,4] * Ts/2,
-        0,1,0,0,        simulated_normalized_quaternions[i,1] * Ts/2   ,simulated_normalized_quaternions[i,4]*Ts/2      ,simulated_normalized_quaternions[i,3] * Ts/2,
+        0,1,0,0,        simulated_normalized_quaternions[i,1] * Ts/2   ,-simulated_normalized_quaternions[i,4]*Ts/2      ,simulated_normalized_quaternions[i,3] * Ts/2,
         0,0,1,0,        simulated_normalized_quaternions[i,4] * Ts/2   ,simulated_normalized_quaternions[i,1]*Ts/2      ,-simulated_normalized_quaternions[i,2] * Ts/2,
         0,0,0,1,        -simulated_normalized_quaternions[i,3] * Ts/2  ,simulated_normalized_quaternions[i,2]*Ts/2      ,simulated_normalized_quaternions[i,1] * Ts/2,
         0,0,0,0,        1,0,0,
@@ -20,7 +20,7 @@ orientation_transition_at_index <- function(i){
   return(processOrientationModel$Ad + matrix(
     data = c(
       0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,-imkDf$kinect_hand_right_orientation.z[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      0,0,0,0, imkDf$kinect_hand_right_orientation.x[i] * Ts/2, imkDf$kinect_hand_right_orientation.w[i]*Ts/2 , imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
+      0,0,0,0, imkDf$kinect_hand_right_orientation.x[i] * Ts/2,-imkDf$kinect_hand_right_orientation.w[i]*Ts/2 , imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
       0,0,0,0, imkDf$kinect_hand_right_orientation.w[i] * Ts/2, imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
       0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2, imkDf$kinect_hand_right_orientation.y[i]*Ts/2 , imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
       0,0,0,0, 0,0,0,
@@ -94,14 +94,14 @@ acceleration_simulation_transition_at_index <- function(i){
     simulation_rotation_quaternion$z[i])
   
   return(matrix(data = c(
-    1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
+    1,Ts,rotation_matrix[1,1] * Ts**2/2,   0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
     0,1,rotation_matrix[1,1] * Ts,         0,0,rotation_matrix[2,1] * Ts,       0,0,rotation_matrix[3,1] * Ts,
     0,0,1,                                 0,0,0,                               0,0,0,
-    0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] *Ts**2/2,
-    0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] *Ts,
+    0,0,rotation_matrix[1,2] * Ts**2/2,    1,Ts,rotation_matrix[2,2] * Ts**2/2, 0,0,rotation_matrix[3,2] * Ts**2/2,
+    0,0,rotation_matrix[1,2] * Ts,         0,1,rotation_matrix[2,2] * Ts,       0,0,rotation_matrix[3,2] * Ts,
     0,0,0,                                 0,0,1,                               0,0,0,
-    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2,  1,Ts,rotation_matrix[3,3] *Ts**2/2,
-    0,0,rotation_matrix[1,3] * Ts,          0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] *Ts,
+    0,0,rotation_matrix[1,3] * Ts**2/2,    0,0,rotation_matrix[2,3] * Ts**2/2,  1,Ts,rotation_matrix[3,3] * Ts**2/2,
+    0,0,rotation_matrix[1,3] * Ts,         0,0,rotation_matrix[2,3] * Ts,       0,1,rotation_matrix[3,3] * Ts,
     0,0,0,                                 0,0,0,                               0,0,1
   )
   ,nrow = 9, ncol = 9, byrow=TRUE))
@@ -243,8 +243,6 @@ quaternion_multi <- function(q1, q2){
 }
 
 rotate_vector_by <- function(vec, quat){
-  print(vec)
-  print(quat)
   vec_quat = data.frame(w = 0, x = vec$x, y = vec$y, z = vec$z)
   quat_conjugate = data.frame(w = quat$w, x = -quat$x, y = -quat$y, z = -quat$z)
   qq = quaternion_multi(quat, vec_quat)
@@ -254,9 +252,6 @@ rotate_vector_by <- function(vec, quat){
 }
 
 rotateVectorByQuaternion <- function(vec, quat) {
-  
-  print(vec)
-  print(quat)
   
   uXP = crossProduct(
     quat$x,

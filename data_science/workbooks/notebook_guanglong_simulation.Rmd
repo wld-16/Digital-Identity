@@ -4,7 +4,7 @@ params:
   base_import_path:
     value: "D:/Projekte/Digital-Identity/data_science/"
   output_path: 
-    value: "D:/Projekte/Digital-Identity/data_science/workbooks/plots/simulation_rotate_vz_and_accelerate_forward/"
+    value: "D:/Projekte/Digital-Identity/data_science/workbooks/plots/test/"
   T_s:
     value: 0.014
     input: numeric
@@ -24,13 +24,13 @@ params:
     value: 0.0
     input: numeric
   x_initial_state_euler_vx:
-    value: 0.000
+    value: 0.00000000000001
     input: numeric
   x_initial_state_euler_vy:
-    value: 0.000
+    value: 0.00000000000001
     input: numeric
   x_initial_state_euler_vz:
-    value: 3.000
+    value: 0.00000000000001
     input: numeric
   initial_belief_00_q0:
     value: 0.05
@@ -87,7 +87,7 @@ params:
     value: 0.0000000000001
     input: numeric
   x_initial_state_ay:
-    value: 3.0000000000001
+    value: 0.0000000000001
     input: numeric
   x_initial_state_pz:
     value: 0.0000000000001
@@ -96,43 +96,43 @@ params:
     value: 0.0000000000001
     input: numeric
   x_initial_state_az:
-    value: 0.0000000000001
+    value: 9.81
     input: numeric
   initial_belief_px_00:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_vx_11:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_ax_22:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_py_33:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_vy_44:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_ay_55:
-    value: 3.01
+    value: 0.31
     input: numeric
   initial_belief_pz_66:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_vz_77:
-    value: 0.01
+    value: 0.31
     input: numeric
   initial_belief_az_88:
-    value: 0.01
+    value: 0.31
     input: numeric
   process_noise_acceleration_noise_omega_x:
-    value: 0.02
+    value: 0.05
     input: numeric
   process_noise_acceleration_noise_omega_y:
-    value: 0.02
+    value: 0.05
     input: numeric
   process_noise_acceleration_noise_omega_z:
-    value: 0.02
+    value: 0.05
     input: numeric
   sensor_noise_kinect_sigma_x:
     value: 0.01
@@ -144,58 +144,58 @@ params:
     value: 0.01
     input: numeric
   sensor_noise_imu_sigma_x:
-    value: 0.01
+    value: 0.05
     input: numeric
   sensor_noise_imu_sigma_y:
-    value: 0.01
+    value: 0.05
     input: numeric
   sensor_noise_imu_sigma_z:
-    value: 0.01
+    value: 0.05
     input: numeric
   simulation_acceleration_process_noise_x:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_acceleration_process_noise_y:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_acceleration_process_noise_z:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_position_sensor_noise_x:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_position_sensor_noise_y:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_position_sensor_noise_z:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_acceleration_sensor_noise_x:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_acceleration_sensor_noise_y:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_acceleration_sensor_noise_z:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_process_angle_velocity_noise_x:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_process_angle_velocity_noise_y:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_process_angle_velocity_noise_z:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_x:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_y:
-    value: 0.0000000000001
+    value: 0
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_z:
-    value: 0.0000000000001
+    value: 0
     input: numeric
 ---
 
@@ -230,7 +230,8 @@ library(FKF)
 library(yaml)
 ```
 
-```{r}
+```{r, echo=FALSE}
+# Create the directory for the plots 
 if(!dir.exists(params$output_path)){
   dir.create(params$output_path)
 }
@@ -240,7 +241,7 @@ close(fileConn)
 ```
 
 ```{r, echo=FALSE}
-# Execute this line of code to load all the functions
+# Execute this line of code to load self implemented functions
 
 source(paste(params$base_import_path, "/scripts/functions.R",sep=""))
 
@@ -250,7 +251,7 @@ simulatedMax = params$sample_size
 ```
 
 ```{r, echo=FALSE}
-# Here is the definition of the state space models
+# Here is the definition of the state space model
 # Will need euler angle velocity sensor
 source(paste(params$base_import_path, "/scripts/models.R",sep=""))
 ```
@@ -303,22 +304,13 @@ simulation_rotation_quaternion = data.frame(
   z = array(data = 0, dim = simulatedMax)
 )
 
-#simulation_rotation_quaternion = data.frame(
-#  w = array(data = 1, dim = simulatedMax),
-#  x = array(data = 0, dim = simulatedMax),
-#  y = array(data = 0, dim = simulatedMax),
-#  z = array(data = 0, dim = simulatedMax)
-#)
-
-## only for simulation
+## only for simulation, this should be the kinect quaternion with real data
 rotationMatrix = quaternion_rotation_matrix(
   simulation_rotation_quaternion$w[1],
   simulation_rotation_quaternion$x[1],
   simulation_rotation_quaternion$y[1],
   simulation_rotation_quaternion$z[1]
   )
-##
-#rotationMatrix = quaternion_rotation_matrix(1,0,0,0)
 
 initial_matrixHandToLocal = data.frame(
   mx_x = rotationMatrix[1,1], my_x = rotationMatrix[1,2], mz_x = rotationMatrix[1,3],
@@ -424,6 +416,14 @@ source(paste(params$base_import_path, "/scripts/simulation.R",sep=""))
 setOrientationSimulationModell(processOrientationModel)
 setOrientationSimulationProcessNoise(simulation_orientation_process_noise)
 setOrientationSimulationSensorNoise(simulation_orientation_sensor_noise)
+setOrientationSimulationIndex(1)
+
+simulated_normalized_quaternions = matrix(data = c(
+  1,
+  0,
+  0,
+  0
+  ), nrow = simulatedMax, ncol=4, byrow = TRUE)
 
 x_k = as.double(initial_orientation_state)
 simulationOrientationData = Reduce(x = lapply(1:simulatedMax, justReturn, x_k), f=generateNextOrientationFrame, accumulate = TRUE)
@@ -469,15 +469,6 @@ simulation_rotation_quaternion = data.frame(
   z = array(data = normalizedOrientationState$z, dim = simulatedMax)
 )
 
-#simulation_rotation_quaternion = data.frame(
-#  w = array(data = 1, dim = simulatedMax),
-#  x = array(data = 0, dim = simulatedMax),
-#  y = array(data = 0, dim = simulatedMax),
-#  z = array(data = 0, dim = simulatedMax)
-#)
-
-
-
 # Simulation Data for Position
 
 setAccelerationSimulationModell(processAccelerationModel)
@@ -487,69 +478,57 @@ setAccelerationSimulationIndex(1)
 
 x_k = as.double(initial_acceleration_state)
 
+base_gravity = data.frame(x = rep(0,times=simulatedMax), y = rep(0,times=simulatedMax), z = rep(9.81,times=simulatedMax))
+
+gravity = rotate_vector_by(base_gravity, simulation_rotation_quaternion)
+
 # With gravity
 simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn, x_k), f=generateNextAccelerationFrameWithGravity, accumulate = TRUE)
 
-kalmanOrientation = data.frame(
-  w = simulatedfkfGuanglongOrientationModel$att[1,1:simulatedMax], 
-  x = simulatedfkfGuanglongOrientationModel$att[2,1:simulatedMax],
-  y = simulatedfkfGuanglongOrientationModel$att[3,1:simulatedMax],
-  z = simulatedfkfGuanglongOrientationModel$att[4,1:simulatedMax])
-
-base_gravity = data.frame(x = rep(0,times=simulatedMax), y = rep(0,times=simulatedMax), z = rep(9.81,times=simulatedMax))
-
-normalizedQuaternionOrientation = normalizeQuaternion(kalmanOrientation$w, kalmanOrientation$x, kalmanOrientation$y, kalmanOrientation$z)
-
-gravity = rotate_vector_by(base_gravity, normalizedQuaternionOrientation)
-gravity[,1] = gravity[,1]
-gravity[,2] = gravity[,2]
-gravity[,3] = gravity[,3]
-#gravityVector = rotateVectorByQuaternion(data.frame(x = 0, y = 0, z = 9.81), simulation_rotation_quaternion)
 #simulationAccelerationData = lapply(simulationAccelerationData, function(data) data + c(0,0,gravity$x,0,0,gravity$y,0,0,gravity$z))
 # without gravity
-simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
+#simulationAccelerationData = Reduce(x = lapply(1:simulatedMax, justReturn,x_k), f=generateNextAccelerationFrame, accumulate = TRUE)
 
 simulationAccelerationMeasurements = lapply(simulationAccelerationData, generateNextAccelerationMeasurement)
 
 simulatedDataAccAsMatrix = matrix(data = unlist(simulationAccelerationData), nrow = 9, ncol=simulatedMax)
 
-# For Gravity
-simulatedDataAccAsMatrix[3,] = simulatedDataAccAsMatrix[3,] + gravity$x
-simulatedDataAccAsMatrix[6,] = simulatedDataAccAsMatrix[6,] + gravity$y
-simulatedDataAccAsMatrix[9,] = simulatedDataAccAsMatrix[9,] + gravity$z
+#simulatedDataAccAsMatrix[3,] = simulatedDataAccAsMatrix[3,] + gravity$x
+#simulatedDataAccAsMatrix[6,] = simulatedDataAccAsMatrix[6,] + gravity$y
+#simulatedDataAccAsMatrix[9,] = simulatedDataAccAsMatrix[9,] + gravity$z
 
 simulationAccelerationMeasurementsAsMatrix = matrix(data = unlist(simulationAccelerationMeasurements), nrow = 6, ncol=simulatedMax)
 
-simulationAccelerationMeasurementsAsMatrix[2,] = simulationAccelerationMeasurementsAsMatrix[2,] + gravity$x
-simulationAccelerationMeasurementsAsMatrix[4,] = simulationAccelerationMeasurementsAsMatrix[4,] + gravity$y
-simulationAccelerationMeasurementsAsMatrix[6,] = simulationAccelerationMeasurementsAsMatrix[6,] + gravity$z
+#simulationAccelerationMeasurementsAsMatrix[2,] = simulationAccelerationMeasurementsAsMatrix[2,] + gravity$x
+#simulationAccelerationMeasurementsAsMatrix[4,] = simulationAccelerationMeasurementsAsMatrix[4,] + gravity$y
+#simulationAccelerationMeasurementsAsMatrix[6,] = simulationAccelerationMeasurementsAsMatrix[6,] + gravity$z
 
+#processAccelerationModel$x[,1][9] = 9.81
 
   
 simulatedfkfGuanglongAccelerationModel = fkf(
   a0 = processAccelerationModel$x[,1],
   P0 = processAccelerationModel$P,
-  dt = processAccelerationModel$B,
-  #dt = matrix(data = c(
-  #  -gravity$x * Ts**2/2,
-  #  -gravity$x * Ts,
-  #  rep(0,times=simulatedMax),
-  #  -gravity$y * Ts**2/2,
-  #  -gravity$y * Ts,
-  #  rep(0,times=simulatedMax),
-  #  -gravity$z * Ts**2/2,
-  #  -gravity$z * Ts,
-  #  rep(0,times=simulatedMax)
-  #  ), nrow = 9, ncol = simulatedMax, byrow = TRUE),
-  #ct = matrix(data = c(0,0,0, -9.81 * Ts**2/2, -9.81), nrow = 6, ncol = 1),
-  ct = matrix(data = c(
+  dt = matrix(data = c(
     -gravity$x * Ts**2/2,
+    -gravity$x * Ts,
     rep(0,times=simulatedMax),
     -gravity$y * Ts**2/2,
+    -gravity$y * Ts,
     rep(0,times=simulatedMax),
     -gravity$z * Ts**2/2,
+    -gravity$z * Ts,
     rep(0,times=simulatedMax)
-  ), nrow = 6, ncol = simulatedMax),
+  ), nrow = 9, ncol = simulatedMax, byrow = TRUE),
+  #ct = matrix(data = c(0,0,0, 0, 0,0), nrow = 6, ncol = 1),
+  ct = matrix(data = c(
+    rep(0,times=simulatedMax),
+    rep(0,times=simulatedMax),
+    rep(0,times=simulatedMax),
+    rep(0,times=simulatedMax),
+    rep(0,times=simulatedMax),
+    rep(0,times=simulatedMax)
+  ), nrow = 6, ncol = simulatedMax, byrow = TRUE),
   GGt = diag(x= c(1,1,1,1,1,1)),
   Zt = processAccelerationModel$H,
   Tt = array(as.numeric(unlist(lapply(1:simulatedMax,acceleration_simulation_transition_at_index))), dim=c(9, 9, simulatedMax)),
@@ -751,7 +730,7 @@ polygon(
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simulationAccelerationMeasurementsAsMatrix[5,] ~ sim_time)
+lines(simulatedDataAccAsMatrix[7,] ~ sim_time)
 legend("bottomright", legend = c(expression(p[z] ~ " state"), expression("simulated " ~ p[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
@@ -781,3 +760,9 @@ legend("bottomright", legend = c(expression(a[z] ~ " state"), expression("simula
 
 #plot(simulatedfkfGuanglongAccelerationModel, type = "resid.qq")
 ```
+
+
+```{r}
+print(params)
+```
+

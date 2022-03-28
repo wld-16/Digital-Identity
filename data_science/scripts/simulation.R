@@ -28,7 +28,9 @@ generateNextOrientationFrame <- function(x_k, x_ki){
   sim_model = getOrientationSimulationModell()
   sim_orientation_process_noise = getOrientationSimulationProcessNoise()
   
-  A_k = sim_model$Ad
+  index = getOrientationSimulationIndex()
+  
+  A_k = simulated_orientation_transition_at_index(index)
   B = diag(x = 0,nrow=7)
   uk = matrix(nrow=7, ncol=1, data = 0)
   wk = matrix(nrow=7, ncol=1, data = c(
@@ -50,6 +52,8 @@ generateNextOrientationFrame <- function(x_k, x_ki){
   x_ki[3] = nquat$y
   x_ki[4] = nquat$z
   
+  incrementOrientationSimulationIndex()
+  
   return(x_ki)
 }
 
@@ -65,6 +69,19 @@ generateNextOrientationMeasurement <- function(x_k, x_ki){
   
   z_k = H %*% x_k + v_k
   return(z_k)
+}
+
+setOrientationSimulationIndex <- function(i) {
+  assign("index", i, env=orientation_simulation_environment)
+}
+
+getOrientationSimulationIndex <- function() {
+  return(get("index", orientation_simulation_environment))
+}
+
+incrementOrientationSimulationIndex <- function() {
+  i = getOrientationSimulationIndex()
+  assign("index", i+1, env=orientation_simulation_environment)
 }
 
 acceleration_simulation_environment <- new.env()
@@ -115,7 +132,6 @@ generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
   Ts = 0.014
   A_k = acceleration_simulation_transition_at_index(index)
   B = diag(x = 1, nrow=9)
-  uk = matrix(nrow=9, ncol=1, data = c(0,0,0,0,0,0,0,0,0))
   wk = matrix(nrow=9, ncol=1, data = c(
     0,
     0,
@@ -125,9 +141,21 @@ generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
     rnorm(1,0,sim_process_noise$y),
     0,
     0,
-    rnorm(1,0,sim_process_noise$z)))
+    rnorm(1,0,sim_process_noise$z)
+    ))
   
-  x_ki = A_k %*% x_k + B %*% uk + wk 
+  uk = matrix(nrow=9, ncol=1, data = c(
+    -gravity$x[index] * Ts**2/2,
+    -gravity$x[index] * Ts,
+    0,
+    -gravity$y[index] * Ts**2/2,
+    -gravity$y[index] * Ts,
+    0,
+    -gravity$z[index] * Ts**2/2,
+    -gravity$z[index] * Ts,
+    0))
+  
+  x_ki = A_k %*% x_k + B %*% uk + wk
   
   incrementAccelerationSimulationIndex()
   return(x_ki)

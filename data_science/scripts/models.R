@@ -13,7 +13,7 @@ getGuanglongOrientationModel <- function(Ts, initialState, initialBelief, proces
   # Arrays in R starten mit 1
   processModel$Ad = matrix(data = c(
     1,0,0,0,        -initialState[2] * Ts/2  ,-initialState[3]*Ts/2     ,-initialState[4] * Ts/2,
-    0,1,0,0,        initialState[1] * Ts/2   ,initialState[4]*Ts/2      ,initialState[3] * Ts/2,
+    0,1,0,0,        initialState[1] * Ts/2   ,-initialState[4]*Ts/2      ,initialState[3] * Ts/2,
     0,0,1,0,        initialState[4] * Ts/2   ,initialState[1]*Ts/2      ,-initialState[2] * Ts/2,
     0,0,0,1,        -initialState[3] * Ts/2  ,initialState[2]*Ts/2      ,initialState[1] * Ts/2,
     0,0,0,0,        1,0,0,
@@ -43,7 +43,7 @@ getGuanglongOrientationModel <- function(Ts, initialState, initialBelief, proces
   
   processModel$Gd = matrix( data = c(
     -initialState[2] * Ts/2,-initialState[3]*Ts/2,-initialState[4] * Ts/2,
-    initialState[1] * Ts/2,initialState[4]*Ts/2,initialState[3] * Ts/2,
+    initialState[1] * Ts/2,-initialState[4]*Ts/2,initialState[3] * Ts/2,
     initialState[4] * Ts/2,initialState[1]*Ts/2 ,-initialState[2] * Ts/2,
     -initialState[3] * Ts/2,initialState[2]*Ts/2 ,initialState[1] * Ts/2,
     1,0,0,
