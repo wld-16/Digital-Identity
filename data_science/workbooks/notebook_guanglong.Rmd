@@ -292,8 +292,8 @@ initial_matrixHandToLocal = data.frame(
 # Von Imu zu Kinect Punktspiegelung an z,y ebenen
 gravity = data.frame(
   x = imkDf$imu_gravity.x,
-  y = -imkDf$imu_gravity.z,
-  z = -imkDf$imu_gravity.y
+  z = imkDf$imu_gravity.z,
+  y = imkDf$imu_gravity.y
 )
 
 
@@ -361,7 +361,6 @@ imkDf$imu_yaw_velocity = deg2rad(imkDf$imu_yaw_velocity)
 
 kinect_head_to_wrist_quat = quaternion_head_to_right_hand_chain(imkDf)
 
-
 fkfGuanglongOrientationModel = fkf(
   a0 = processOrientationModel$x[,1],
   P0 = processOrientationModel$P,
@@ -403,8 +402,8 @@ gravity = gravity * 9.81
 
 # Von Imu zu Kinect Punktspiegelung an z,y ebenen
 temporary_var = imkDf$imu_acceleration.y
-imkDf$imu_acceleration.y[1:oMTMax] = -imkDf$imu_acceleration.z[1:oMTMax]
-imkDf$imu_acceleration.z[1:oMTMax] = -temporary_var[1:oMTMax]
+#imkDf$imu_acceleration.y[1:oMTMax] = -imkDf$imu_acceleration.z[1:oMTMax]
+#imkDf$imu_acceleration.z[1:oMTMax] = -temporary_var[1:oMTMax]
 
 
 quat = normalized_kalman_imu_Quat
