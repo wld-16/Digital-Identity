@@ -161,6 +161,7 @@ generateNextAccelerationFrameWithGravity <- function(x_k, x_ki){
   return(x_ki)
 }
 
+# Deprecated
 generateNextAccelerationFrame <- function(x_k, x_ki){
   sim_model = getAccelerationSimulationModell()
   sim_process_noise = getAccelerationSimulationProcessNoise()

@@ -4,7 +4,7 @@ params:
   base_import_path:
     value: "D:/Projekte/Digital-Identity/data_science/"
   output_path: 
-    value: "D:/Projekte/Digital-Identity/data_science/workbooks/plots/test/"
+    value: "D:/Projekte/Digital-Identity/data_science/workbooks/plots/simulation_rotate_vz_accelerate_y_with_noise/"
   T_s:
     value: 0.014
     input: numeric
@@ -30,7 +30,7 @@ params:
     value: 0.00000000000001
     input: numeric
   x_initial_state_euler_vz:
-    value: 0.00000000000001
+    value: 3.0000000000001
     input: numeric
   initial_belief_00_q0:
     value: 0.05
@@ -87,7 +87,7 @@ params:
     value: 0.0000000000001
     input: numeric
   x_initial_state_ay:
-    value: 0.0000000000001
+    value: 3.0000000000001
     input: numeric
   x_initial_state_pz:
     value: 0.0000000000001
@@ -153,49 +153,49 @@ params:
     value: 0.05
     input: numeric
   simulation_acceleration_process_noise_x:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_acceleration_process_noise_y:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_acceleration_process_noise_z:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_position_sensor_noise_x:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_position_sensor_noise_y:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_position_sensor_noise_z:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_acceleration_sensor_noise_x:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_acceleration_sensor_noise_y:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_acceleration_sensor_noise_z:
-    value: 0
+    value: 0.05
     input: numeric
   simulation_orientation_process_angle_velocity_noise_x:
-    value: 0
+    value: 0.005
     input: numeric
   simulation_orientation_process_angle_velocity_noise_y:
-    value: 0
+    value: 0.005
     input: numeric
   simulation_orientation_process_angle_velocity_noise_z:
-    value: 0
+    value: 0.005
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_x:
-    value: 0
+    value: 0.005
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_y:
-    value: 0
+    value: 0.005
     input: numeric
   simulation_orientation_sensor_angle_velocity_noise_z:
-    value: 0
+    value: 0.005
     input: numeric
 ---
 
@@ -640,8 +640,89 @@ lines(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax] ~ sim_time, co
 lines(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time)
 legend("bottomright", legend = c(expression(omega[z] ~ "state"), expression("simulated " ~ omega[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-#plot(simulatedfkfGuanglongOrientationModel, type = "resid.qq")
+
+plot(simulatedfkfGuanglongOrientationModel, type = "resid.qq")
 ```
+
+```{r}
+
+orientation_kalman_statistics = data.frame(
+  max_q_w = max(normalizedOrientationState$w[1:simulatedMax]),
+  min_q_w = min(normalizedOrientationState$w[1:simulatedMax]),
+  var_q_w = var(normalizedOrientationState$w[1:simulatedMax]),
+  mean_q_w = mean(normalizedOrientationState$w[1:simulatedMax]),
+  first_q_w = normalizedOrientationState$w[1],
+  last_q_w = normalizedOrientationState$w[simulatedMax],
+  max_q_x = max(normalizedOrientationState$x[1:simulatedMax]),
+  min_q_x = min(normalizedOrientationState$x[1:simulatedMax]),
+  var_q_x = var(normalizedOrientationState$x[1:simulatedMax]),
+  mean_q_x = mean(normalizedOrientationState$x[1:simulatedMax]),
+  first_q_x = normalizedOrientationState$x[1],
+  last_q_x = normalizedOrientationState$x[simulatedMax],
+  max_q_y = max(normalizedOrientationState$y[1:simulatedMax]),
+  min_q_y = min(normalizedOrientationState$y[1:simulatedMax]),
+  var_q_y = var(normalizedOrientationState$y[1:simulatedMax]),
+  mean_q_y = mean(normalizedOrientationState$y[1:simulatedMax]),
+  first_q_y = normalizedOrientationState$y[1],
+  last_q_y = normalizedOrientationState$y[simulatedMax],
+  max_q_z = max(normalizedOrientationState$z[1:simulatedMax]),
+  min_q_z = min(normalizedOrientationState$z[1:simulatedMax]),
+  var_q_z = var(normalizedOrientationState$z[1:simulatedMax]),
+  mean_q_z = mean(normalizedOrientationState$z[1:simulatedMax]),
+  first_q_z = normalizedOrientationState$z[1],
+  last_q_z = normalizedOrientationState$z[simulatedMax],
+  max_v_x = max(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax]),
+  min_v_x = min(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax]),
+  var_v_x = var(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax]),
+  mean_v_x = mean(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax]),
+  first_v_x = simulatedfkfGuanglongOrientationModel$att[5,1],
+  last_v_x = simulatedfkfGuanglongOrientationModel$att[5,simulatedMax],
+  max_v_y = max(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax]),
+  min_v_y = min(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax]),
+  var_v_y = var(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax]),
+  mean_v_y = mean(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax]),
+  first_v_y = simulatedfkfGuanglongOrientationModel$att[6,1],
+  last_v_y = simulatedfkfGuanglongOrientationModel$att[6,simulatedMax],
+  max_v_z = max(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax]),
+  min_v_z = min(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax]),
+  var_v_z = var(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax]),
+  mean_v_z = mean(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax]),
+  first_v_z = simulatedfkfGuanglongOrientationModel$att[7,1],
+  last_v_z = simulatedfkfGuanglongOrientationModel$att[7,simulatedMax]
+)
+
+orientation_simulation_measurement_statistics = data.frame(
+  max_v_x = max(simulationOrientationMeasurementsAsMatrix[1,]),
+  min_v_x = min(simulationOrientationMeasurementsAsMatrix[1,]),
+  var_v_x = var(simulationOrientationMeasurementsAsMatrix[1,]),
+  mean_v_x = mean(simulationOrientationMeasurementsAsMatrix[1,]),
+  first_v_x = simulationOrientationMeasurementsAsMatrix[1,][1],
+  last_v_x = simulationOrientationMeasurementsAsMatrix[1,][simulatedMax],
+  max_v_y = max(simulationOrientationMeasurementsAsMatrix[2,]),
+  min_v_y = min(simulationOrientationMeasurementsAsMatrix[2,]),
+  var_v_y = var(simulationOrientationMeasurementsAsMatrix[2,]),
+  mean_v_y = mean(simulationOrientationMeasurementsAsMatrix[2,]),
+  first_v_y = simulationOrientationMeasurementsAsMatrix[2,][1],
+  last_v_y = simulationOrientationMeasurementsAsMatrix[2,][simulatedMax],
+  max_v_z = max(simulationOrientationMeasurementsAsMatrix[3,]),
+  min_v_z = min(simulationOrientationMeasurementsAsMatrix[3,]),
+  var_v_z = var(simulationOrientationMeasurementsAsMatrix[3,]),
+  mean_v_z = mean(simulationOrientationMeasurementsAsMatrix[3,]),
+  first_v_z = simulationOrientationMeasurementsAsMatrix[3,][1],
+  last_v_z = simulationOrientationMeasurementsAsMatrix[3,][simulatedMax]
+)
+
+
+fileConn<-file(paste(params$output_path,"orientation_simulation_measurement_stats.txt", sep = ""))
+  writeLines(as.yaml(orientation_simulation_measurement_statistics), fileConn)
+  close(fileConn)
+
+fileConn<-file(paste(params$output_path,"orientation_kalman_stats.txt", sep = ""))
+  writeLines(as.yaml(orientation_kalman_statistics), fileConn)
+  close(fileConn)
+
+```
+
 
 ## Acceleration Plots
 
@@ -684,9 +765,7 @@ lines(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax] ~ sim_time, c
 lines(simulationAccelerationMeasurementsAsMatrix[2,] ~ sim_time)
 legend("bottomright", legend = c(expression(a[x] ~ " state"), expression("simulated " ~ a[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulationAccelerationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = expression(p[y] ~ " in simulation"), ylab = expression(p[y] ~" in m"),xlab="t in s", type='l', ylim=c(
-  min(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) - plot_limit_offset,
-  max(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) + plot_limit_offset))
+plot(simulationAccelerationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = expression(p[y] ~ " in simulation"), ylab = expression(p[y] ~" in m"),xlab="t in s", type='l', ylim=c(min(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) - plot_limit_offset,  max(simulationAccelerationMeasurementsAsMatrix[3,], simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]) + plot_limit_offset))
 polygon(
   x = c(sim_time, rev(sim_time)),
   y = c(simulatedfkfGuanglongAccelerationModel$Ptt[4,4,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[4,4,1:simulatedMax] )),
@@ -709,14 +788,8 @@ lines(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax] ~ sim_time, c
 legend("bottomright", legend = c(expression(v[y] ~ " state"), "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
 
-plot(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time, pch  = 20, main = expression(a[y] ~ " in simulation"), ylab = expression(a[y] ~" in m/" ~ s^2),xlab="t in s", type='l', ylim=c(
-  min(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) - plot_limit_offset,
-  max(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) + plot_limit_offset))
-polygon(
-  x = c(sim_time, rev(sim_time)),
-  y = c(simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] )),
-  col = "lightsteelblue",
-  border = NA)
+plot(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time, pch  = 20, main = expression(a[y] ~ " in simulation"), ylab = expression(a[y] ~" in m/" ~ s^2),xlab="t in s", type='l', ylim=c(min(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) - plot_limit_offset,  max(simulationAccelerationMeasurementsAsMatrix[4,], simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]) + plot_limit_offset))
+polygon(x = c(sim_time, rev(sim_time)),y = c(simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] + simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax], rev(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$Ptt[6,6,1:simulatedMax] )), col = "lightsteelblue", border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$at[6,1:simulatedMax] ~ sim_time, col = "blue")
 lines(simulationAccelerationMeasurementsAsMatrix[4,] ~ sim_time)
 legend("bottomright", legend = c(expression(a[y] ~ " state"), expression("simulated " ~ a[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
@@ -730,7 +803,7 @@ polygon(
   col = "lightsteelblue",
   border = NA)
 lines(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax] ~ sim_time, col = "blue")
-lines(simulatedDataAccAsMatrix[7,] ~ sim_time)
+lines(simulationAccelerationMeasurementsAsMatrix[5,] ~ sim_time)
 legend("bottomright", legend = c(expression(p[z] ~ " state"), expression("simulated " ~ p[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
@@ -758,8 +831,115 @@ lines(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax] ~ sim_time, c
 lines(simulationAccelerationMeasurementsAsMatrix[6,] ~ sim_time)
 legend("bottomright", legend = c(expression(a[z] ~ " state"), expression("simulated " ~ a[z]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-#plot(simulatedfkfGuanglongAccelerationModel, type = "resid.qq")
+plot(simulatedfkfGuanglongAccelerationModel, type = "resid.qq")
 ```
+
+```{r}
+acceleration_simulation_measurement_statistics = data.frame(
+  max_p_x = max(simulationAccelerationMeasurementsAsMatrix[1,]),
+  min_p_x = min(simulationAccelerationMeasurementsAsMatrix[1,]),
+  var_p_x = var(simulationAccelerationMeasurementsAsMatrix[1,]),
+  mean_p_x = mean(simulationAccelerationMeasurementsAsMatrix[1,]),
+  first_p_X = simulationAccelerationMeasurementsAsMatrix[1,][1],
+  last_p_X = simulationAccelerationMeasurementsAsMatrix[1,][simulatedMax],
+  max_a_x = max(simulationAccelerationMeasurementsAsMatrix[2,]),
+  min_a_x = min(simulationAccelerationMeasurementsAsMatrix[2,]),
+  var_a_x = var(simulationAccelerationMeasurementsAsMatrix[2,]),
+  mean_a_x = mean(simulationAccelerationMeasurementsAsMatrix[2,]),
+  first_a_X = simulationAccelerationMeasurementsAsMatrix[2,][1],
+  last_a_X = simulationAccelerationMeasurementsAsMatrix[2,][simulatedMax],
+  max_p_y = max(simulationAccelerationMeasurementsAsMatrix[3,]),
+  min_p_y = min(simulationAccelerationMeasurementsAsMatrix[3,]),
+  var_p_y = var(simulationAccelerationMeasurementsAsMatrix[3,]),
+  mean_p_y = mean(simulationAccelerationMeasurementsAsMatrix[3,]),
+  first_p_y = simulationAccelerationMeasurementsAsMatrix[3,][1],
+  last_p_y = simulationAccelerationMeasurementsAsMatrix[3,][simulatedMax],
+  max_a_y = max(simulationAccelerationMeasurementsAsMatrix[4,]),
+  min_a_y = min(simulationAccelerationMeasurementsAsMatrix[4,]),
+  var_a_y = var(simulationAccelerationMeasurementsAsMatrix[4,]),
+  mean_a_y = mean(simulationAccelerationMeasurementsAsMatrix[4,]),
+  first_a_y = simulationAccelerationMeasurementsAsMatrix[4,][1],
+  last_a_y = simulationAccelerationMeasurementsAsMatrix[4,][simulatedMax],
+  max_p_z = max(simulationAccelerationMeasurementsAsMatrix[5,]),
+  min_p_z = min(simulationAccelerationMeasurementsAsMatrix[5,]),
+  var_p_z = var(simulationAccelerationMeasurementsAsMatrix[5,]),
+  mean_p_z = mean(simulationAccelerationMeasurementsAsMatrix[5,]),
+  first_p_z = simulationAccelerationMeasurementsAsMatrix[5,][1],
+  last_p_z = simulationAccelerationMeasurementsAsMatrix[5,][simulatedMax],
+  max_a_z = max(simulationAccelerationMeasurementsAsMatrix[6,]),
+  min_a_z = min(simulationAccelerationMeasurementsAsMatrix[6,]),
+  var_a_z = var(simulationAccelerationMeasurementsAsMatrix[6,]),
+  mean_a_z = mean(simulationAccelerationMeasurementsAsMatrix[6,]),
+  first_a_z = simulationAccelerationMeasurementsAsMatrix[6,][1],
+  last_a_z = simulationAccelerationMeasurementsAsMatrix[6,][simulatedMax]
+)
+
+acceleration_simulation_kalman_statistics = data.frame(
+  max_p_x = max(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]),
+  min_p_x = min(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]),
+  var_p_x = var(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]),
+  mean_p_x = mean(simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax]),
+  first_p_x = simulatedfkfGuanglongAccelerationModel$att[1,1],
+  last_p_x = simulatedfkfGuanglongAccelerationModel$att[1,simulatedMax],
+  max_v_x = max(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]),
+  min_v_x = min(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]),
+  var_v_x = var(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]),
+  mean_v_x = mean(simulatedfkfGuanglongAccelerationModel$att[2,1:simulatedMax]),
+  first_v_x = simulatedfkfGuanglongAccelerationModel$att[2,1],
+  last_v_x = simulatedfkfGuanglongAccelerationModel$att[2,simulatedMax],
+  max_a_x = max(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]),
+  min_a_x = min(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]),
+  var_a_x = var(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]),
+  mean_a_x = mean(simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax]),
+  first_a_x = simulatedfkfGuanglongAccelerationModel$att[3,1],
+  last_a_x = simulatedfkfGuanglongAccelerationModel$att[3,simulatedMax],
+  max_p_y = max(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]),
+  min_p_y = min(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]),
+  var_p_y = var(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]),
+  mean_p_y = mean(simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax]),
+  first_p_y = simulatedfkfGuanglongAccelerationModel$att[4,1],
+  last_p_y = simulatedfkfGuanglongAccelerationModel$att[4,simulatedMax],
+  max_v_y = max(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]),
+  min_v_y = min(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]),
+  var_v_y = var(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]),
+  mean_v_y = mean(simulatedfkfGuanglongAccelerationModel$att[5,1:simulatedMax]),
+  first_v_y = simulatedfkfGuanglongAccelerationModel$att[5,1],
+  last_v_y = simulatedfkfGuanglongAccelerationModel$att[5,simulatedMax],
+  max_a_y = max(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]),
+  min_a_y = min(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]),
+  var_a_y = var(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]),
+  mean_a_y = mean(simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax]),
+  first_a_y = simulatedfkfGuanglongAccelerationModel$att[6,1],
+  last_a_y = simulatedfkfGuanglongAccelerationModel$att[6,simulatedMax],
+  max_p_z = max(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]),
+  min_p_z = min(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]),
+  var_p_z = var(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]),
+  mean_p_z = mean(simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax]),
+  first_p_z = simulatedfkfGuanglongAccelerationModel$att[7,1],
+  last_p_z = simulatedfkfGuanglongAccelerationModel$att[7,simulatedMax],
+  max_v_z = max(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]),
+  min_v_z = min(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]),
+  var_v_z = var(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]),
+  mean_v_z = mean(simulatedfkfGuanglongAccelerationModel$att[8,1:simulatedMax]),
+  first_v_z = simulatedfkfGuanglongAccelerationModel$att[8,1],
+  last_v_z = simulatedfkfGuanglongAccelerationModel$att[8,simulatedMax],
+  max_a_z = max(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]),
+  min_a_z = min(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]),
+  var_a_z = var(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]),
+  mean_a_z = mean(simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]),
+  first_a_z = simulatedfkfGuanglongAccelerationModel$att[9,1],
+  last_a_z = simulatedfkfGuanglongAccelerationModel$att[9,simulatedMax]
+  )
+  
+  fileConn<-file(paste(params$output_path,"acceleration_simulation_stats.txt", sep = ""))
+  writeLines(as.yaml(acceleration_simulation_measurement_statistics), fileConn)
+  close(fileConn)
+  
+  fileConn<-file(paste(params$output_path,"acceleration_kalman_stats.txt", sep = ""))
+  writeLines(as.yaml(acceleration_simulation_kalman_statistics), fileConn)
+  close(fileConn)
+```
+
 
 
 ```{r}

@@ -16,6 +16,7 @@ public class PrintData : MonoBehaviour
         set { _isTracking = value; }
     }
 
+    private Vector3 previous_ypr = Vector3.zero; 
 
     [SerializeField] private SampleUserPolling_ReadWrite _readWrite;
     [SerializeField] private String path;
@@ -35,6 +36,15 @@ public class PrintData : MonoBehaviour
             "imu_gravity.x;imu_gravity.y;imu_gravity.z;" +
             "imu_orientation.x;imu_orientation.y;imu_orientation.z;imu_orientation.w;" +
             "imu_yaw;imu_pitch;imu_roll;" +
+            "imu_yaw_velocity;imu_pitch_velocity;imu_roll_velocity;" +
+            "kinect_head_orientation.x;kinect_head_orientation.y;kinect_head_orientation.z;kinect_head_orientation.w;" +
+            "kinect_shoulder_center_orientation.x;kinect_shoulder_center_orientation.y;kinect_shoulder_center_orientation.z;kinect_shoulder_center_orientation.w;" +
+            "kinect_shoulder_right_orientation.x;kinect_shoulder_right_orientation.y;kinect_shoulder_right_orientation.z;kinect_shoulder_right_orientation.w;" +
+            "kinect_shoulder_left_orientation.x;kinect_shoulder_left_orientation.y;kinect_shoulder_left_orientation.z;kinect_shoulder_left_orientation.w;" +
+            "kinect_elbow_left_orientation.x;kinect_elbow_left_orientation.y;kinect_elbow_left_orientation.z;kinect_elbow_left_orientation.w;" +
+            "kinect_elbow_right_orientation.x;kinect_elbow_right_orientation.y;kinect_elbow_right_orientation.z;kinect_elbow_right_orientation.w;" +
+            "kinect_wrist_right_orientation.x;kinect_wrist_right_orientation.y;kinect_wrist_right_orientation.z;kinect_wrist_right_orientation.w;" +
+            "kinect_wrist_left_orientation.x;kinect_wrist_left_orientation.y;kinect_wrist_left_orientation.z;kinect_wrist_left_orientation.w;" +
             "kinect_foot_right_orientation.x;kinect_foot_right_orientation.y;kinect_foot_right_orientation.z;kinect_foot_right_orientation.w;" +
             "kinect_foot_left_orientation.x;kinect_foot_left_orientation.y;kinect_foot_left_orientation.z;kinect_foot_left_orientation.w;" +
             "kinect_hand_right_orientation.x;kinect_hand_right_orientation.y;kinect_hand_right_orientation.z;kinect_hand_right_orientation.w;" +
@@ -69,11 +79,28 @@ public class PrintData : MonoBehaviour
                     (int) KinectWrapper.NuiSkeletonPositionIndex.HandLeft, false);
                 Vector3 handLeftPosition = _manager.GetRawSkeletonJointPos(_manager.GetPlayer1ID(),
                     (int) KinectWrapper.NuiSkeletonPositionIndex.HandLeft);
+                Quaternion headOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.Head, false);
+                Quaternion shoulderOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.ShoulderCenter, false);
+                Quaternion shoulderLeftOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.ShoulderLeft, false);
+                Quaternion shoulderRightOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.ShoulderRight, false);
+                Quaternion elbowLeftOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.ElbowLeft, false);
+                Quaternion elbowRightOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.ElbowRight, false);
+                Quaternion wristLeftOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.WristLeft, false);
+                Quaternion wristRightOrientation = _manager.GetJointOrientation(_manager.GetPlayer1ID(),
+                    (int) KinectWrapper.NuiSkeletonPositionIndex.WristRight, false);
 
                 Vector3 imuAcceleration = _readWrite.orientations.ring.accelerometer.ToVector3();
                 Quaternion imuOrientation = _readWrite.orientations.ring.gyroscope.ToQuat();
                 Vector3 imuGravity = _readWrite.orientations.ring.gravity.ToVector3();
                 Vector3 imuEulerAngles = _readWrite.orientations.ring.gyroscope.ToYawPitchRollVector();
+                Vector3 imuEulerAnglesVelocity = imuEulerAngles - previous_ypr;
 
                 Debug.Log($"{imuEulerAngles.x};{imuEulerAngles.y};{imuEulerAngles.z};");
                 printText.AppendLine( 
@@ -86,11 +113,22 @@ public class PrintData : MonoBehaviour
                     $"{imuGravity.x};{imuGravity.y};{imuGravity.z};" +
                     $"{imuOrientation.x};{imuOrientation.y};{imuOrientation.z};{imuOrientation.w};" +
                     $"{imuEulerAngles.x};{imuEulerAngles.y};{imuEulerAngles.z};" +
+                    $"{imuEulerAnglesVelocity.x};{imuEulerAnglesVelocity.y};{imuEulerAnglesVelocity.z};" +
+                    $"{headOrientation.x};{headOrientation.y};{headOrientation.z};{headOrientation.w};" +
+                    $"{shoulderOrientation.x};{shoulderOrientation.y};{shoulderOrientation.z};{shoulderOrientation.w};" +
+                    $"{shoulderLeftOrientation.x};{shoulderLeftOrientation.y};{shoulderLeftOrientation.z};{shoulderLeftOrientation.w};" +
+                    $"{shoulderRightOrientation.x};{shoulderRightOrientation.y};{shoulderRightOrientation.z};{shoulderRightOrientation.w};" +
+                    $"{elbowLeftOrientation.x};{elbowLeftOrientation.y};{elbowLeftOrientation.z};{elbowLeftOrientation.w};" +
+                    $"{elbowRightOrientation.x};{elbowRightOrientation.y};{elbowRightOrientation.z};{elbowRightOrientation.w};" +
+                    $"{wristLeftOrientation.x};{wristLeftOrientation.y};{wristLeftOrientation.z};{wristLeftOrientation.w};" +
+                    $"{wristRightOrientation.x};{wristRightOrientation.y};{wristRightOrientation.z};{wristRightOrientation.w};" +
                     $"{rightFootOrientation.x};{rightFootOrientation.y};{rightFootOrientation.z};{rightFootOrientation.w};" +
                     $"{leftFootOrientation.x};{leftFootOrientation.y};{leftFootOrientation.z};{leftFootOrientation.w};" +
                     $"{handRightOrientation.x};{handRightOrientation.y};{handRightOrientation.z};{handRightOrientation.w};" +
                     $"{handLeftOrientation.x};{handLeftOrientation.y};{handLeftOrientation.z};{handLeftOrientation.w}"
                 );
+
+                previous_ypr = imuEulerAngles;
             }
         }
     }

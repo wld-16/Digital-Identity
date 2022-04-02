@@ -59,7 +59,6 @@ public class Accelerometer
 [Serializable]
 public class Gyroscope
 {
-    
     public float yaw;
     public float pitch;
     public float roll;

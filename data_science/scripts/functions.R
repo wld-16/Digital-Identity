@@ -17,15 +17,15 @@ simulated_orientation_transition_at_index <- function(i){
 }
 
 orientation_transition_at_index <- function(i){
-  return(processOrientationModel$Ad + matrix(
+  return( matrix(
     data = c(
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,-imkDf$kinect_hand_right_orientation.z[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.w[i] * Ts/2,
-      0,0,0,0, imkDf$kinect_hand_right_orientation.x[i] * Ts/2,-imkDf$kinect_hand_right_orientation.w[i]*Ts/2 , imkDf$kinect_hand_right_orientation.z[i] * Ts/2,
-      0,0,0,0, imkDf$kinect_hand_right_orientation.w[i] * Ts/2, imkDf$kinect_hand_right_orientation.x[i]*Ts/2 ,-imkDf$kinect_hand_right_orientation.y[i] * Ts/2,
-      0,0,0,0,-imkDf$kinect_hand_right_orientation.z[i] * Ts/2, imkDf$kinect_hand_right_orientation.y[i]*Ts/2 , imkDf$kinect_hand_right_orientation.x[i] * Ts/2,
-      0,0,0,0, 0,0,0,
-      0,0,0,0, 0,0,0,
-      0,0,0,0, 0,0,0
+      1,0,0,0,-kinect_head_to_wrist_quat$y[i] * Ts/2,-kinect_head_to_wrist_quat$z[i]*Ts/2 ,-kinect_head_to_wrist_quat$w[i] * Ts/2,
+      0,1,0,0, kinect_head_to_wrist_quat$x[i] * Ts/2,-kinect_head_to_wrist_quat$w[i]*Ts/2 , kinect_head_to_wrist_quat$z[i] * Ts/2,
+      0,0,1,0, kinect_head_to_wrist_quat$w[i] * Ts/2, kinect_head_to_wrist_quat$x[i]*Ts/2 ,-kinect_head_to_wrist_quat$y[i] * Ts/2,
+      0,0,0,1,-kinect_head_to_wrist_quat$z[i] * Ts/2, kinect_head_to_wrist_quat$y[i]*Ts/2 , kinect_head_to_wrist_quat$x[i] * Ts/2,
+      0,0,0,0, 1,0,0,
+      0,0,0,0, 0,1,0,
+      0,0,0,0, 0,0,1
     ), nrow=7, ncol=7, byrow = TRUE))
 }
 
@@ -303,4 +303,55 @@ rotateVectorByQuaternion <- function(vec, quat) {
   
   return(rightSide_qp_q)
   
+}
+
+quaternion_head_to_right_hand_chain <- function(imkDf) {
+  localizationQuat = data.frame(
+    w = rep(1,times=length(imkDf$t.m)),
+    x = rep(0,times=length(imkDf$t.m)),
+    y = rep(0,times=length(imkDf$t.m)),
+    z = rep(0,times=length(imkDf$t.m))
+  )
+  
+  headQuat = data.frame(
+    w = imkDf$kinect_head_orientation.w,
+    x = imkDf$kinect_head_orientation.x,
+    y = imkDf$kinect_head_orientation.y,
+    z = imkDf$kinect_head_orientation.z
+  )
+  
+  shoulderQuat = data.frame(
+    w = imkDf$kinect_shoulder_center_orientation.w,
+    x = imkDf$kinect_shoulder_center_orientation.x,
+    y = imkDf$kinect_shoulder_center_orientation.y,
+    z = imkDf$kinect_shoulder_center_orientation.z
+  )
+  
+  shoulderRightQuat = data.frame(
+    w = imkDf$kinect_shoulder_right_orientation.w,
+    x = imkDf$kinect_shoulder_right_orientation.x,
+    y = imkDf$kinect_shoulder_right_orientation.y,
+    z = imkDf$kinect_shoulder_right_orientation.z
+  )
+  
+  elbowRightQuat = data.frame(
+    w = imkDf$kinect_elbow_right_orientation.w,
+    x = imkDf$kinect_elbow_right_orientation.x,
+    y = imkDf$kinect_elbow_right_orientation.y,
+    z = imkDf$kinect_elbow_right_orientation.z
+  )
+  
+  wristRightQuat = data.frame(
+    w = imkDf$kinect_wrist_right_orientation.w,
+    x = imkDf$kinect_wrist_right_orientation.x,
+    y = imkDf$kinect_wrist_right_orientation.y,
+    z = imkDf$kinect_wrist_right_orientation.z
+  )
+  L_H_qua = quaternion_multi(localizationQuat, headQuat)
+  L_H_S_quat = quaternion_multi(L_H_qua, shoulderQuat)
+  L_H_S_SR_quat = quaternion_multi(L_H_S_quat, shoulderRightQuat)
+  L_H_S_SR_ER_quat = quaternion_multi(L_H_S_SR_quat, shoulderRightQuat)
+  L_H_S_SR_ER_WR_quat = quaternion_multi(L_H_S_SR_ER_quat, wristRightQuat)
+  norm = normalizeQuaternion(L_H_S_SR_ER_WR_quat$w, L_H_S_SR_ER_WR_quat$x, L_H_S_SR_ER_WR_quat$y, L_H_S_SR_ER_WR_quat$z)
+  return(norm)
 }
