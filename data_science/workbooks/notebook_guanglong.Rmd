@@ -4,7 +4,7 @@ params:
   base_import_path:
     value: "D:/Projekte/Digital-Identity/data_science/"
   data_import_path:
-    value: "res/imu_and_kinect_with_euler_and_head.csv"
+    value: "res/imu_and_kinect_with_euler_and_head_2_raw.csv"
     input: file
   output_path: 
     value: "D:/Projekte/Digital-Identity/data_science/workbooks/plots/real_data/"
@@ -226,7 +226,8 @@ Here are some operations on the raw kinect data, to interpolate values
 
 # Zeit in Millisekunden ?bersetzen
 
-imkDfRaw$t = (imkDfRaw$t.m * 60 * 1000 + imkDfRaw$t.s * 1000 + imkDfRaw$t.ms)
+imkDfRaw$t = (imkDfRaw$t.m * 60 + imkDfRaw$t.s + imkDfRaw$t.ms / 1000)
+imkDfRaw$t = imkDfRaw$t - imkDfRaw$t[1]
 
 # Erstelle Data Frame f?r kinect daten
 # Darauf achten das datens?tze gleiche L?nge aufweisen
@@ -352,7 +353,7 @@ imkDf$imu_roll_velocity = imkDf$imu_roll
 imkDf$imu_yaw_velocity = imkDf$imu_yaw
 
 # Only works for specific cases
-imkDf$imu_yaw_velocity[imkDf$imu_yaw_velocity > 90] = imkDf$imu_yaw_velocity[imkDf$imu_yaw_velocity > 90] - 360
+#imkDf$imu_yaw_velocity[imkDf$imu_yaw_velocity > 90] = imkDf$imu_yaw_velocity[imkDf$imu_yaw_velocity > 90] - 360
 
 imkDf$imu_pitch_velocity = deg2rad(imkDf$imu_pitch_velocity)
 imkDf$imu_roll_velocity = deg2rad(imkDf$imu_roll_velocity)
@@ -402,8 +403,8 @@ gravity = gravity * 9.81
 
 # Von Imu zu Kinect Punktspiegelung an z,y ebenen
 temporary_var = imkDf$imu_acceleration.y
-#imkDf$imu_acceleration.y[1:oMTMax] = -imkDf$imu_acceleration.z[1:oMTMax]
-#imkDf$imu_acceleration.z[1:oMTMax] = -temporary_var[1:oMTMax]
+imkDf$imu_acceleration.y[1:oMTMax] = imkDf$imu_acceleration.z[1:oMTMax]
+imkDf$imu_acceleration.z[1:oMTMax] = temporary_var[1:oMTMax]
 
 
 quat = normalized_kalman_imu_Quat
@@ -429,10 +430,10 @@ fkfGuanglongAccelerationModel = fkf(
   HHt = processAccelerationModel$Q,
   yt = matrix(data = c(
     imkDf$kinect_hand_right.x[1:aMTMax],
-    imkDf$kinect_hand_right.y[1:aMTMax],
-    imkDf$kinect_hand_right.z[1:aMTMax],
     imkDf$imu_acceleration.x[1:oMTMax],
+    imkDf$kinect_hand_right.y[1:aMTMax],
     imkDf$imu_acceleration.y[1:oMTMax],
+    imkDf$kinect_hand_right.z[1:aMTMax],
     imkDf$imu_acceleration.z[1:oMTMax]
   ), nrow = 6, ncol = aMTMax, byrow = TRUE)
 )
@@ -494,7 +495,7 @@ legend("bottomright", legend = c(expression(q[z] ~ "state"), "process uncertaint
 
 
 
-plot(imkDf$imu_pitch_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[x]), ylab = expression(omega[x] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
+plot(imkDf$imu_pitch_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[x]), ylab = expression(omega[x] ~ " in rad/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[5,1:oMTMax], imkDf$imu_pitch_velocity[1:oMTMax]) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[5,1:oMTMax], imkDf$imu_pitch_velocity[1:oMTMax]) + plot_limit_offset))
 polygon(
@@ -506,7 +507,7 @@ lines(fkfGuanglongOrientationModel$att[5,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "b
 lines(imkDf$imu_pitch_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax])
 legend("bottomright", legend = c(expression(omega[x] ~ " state"), expression("imu " ~ omega[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(imkDf$imu_roll_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[y]), ylab = expression(omega[y] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
+plot(imkDf$imu_roll_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[y]), ylab = expression(omega[y] ~ " in rad/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[6,1:oMTMax], imkDf$imu_roll_velocity[1:oMTMax]) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[6,1:oMTMax], imkDf$imu_roll_velocity[1:oMTMax]) + plot_limit_offset))
 polygon(
@@ -518,7 +519,7 @@ lines(fkfGuanglongOrientationModel$att[6,1:oMTMax] ~ imkDf$t[1:oMTMax], col = "b
 lines(imkDf$imu_roll_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax])
 legend("bottomright", legend = c(expression(omega[y] ~ " state"), expression("imu " ~ omega[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(imkDf$imu_yaw_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[z]), ylab = expression(omega[z] ~ " in °/s"), xlab="t in s", type='l', ylim=c(
+plot(imkDf$imu_yaw_velocity[1:oMTMax] ~ imkDf$t[1:oMTMax], pch  = 4, main = expression("Orientation Kalman for" ~ omega[z]), ylab = expression(omega[z] ~ " in rad/s"), xlab="t in s", type='l', ylim=c(
   min(fkfGuanglongOrientationModel$att[7,1:oMTMax], imkDf$imu_yaw_velocity[1:oMTMax]) - plot_limit_offset,
   max(fkfGuanglongOrientationModel$att[7,1:oMTMax], imkDf$imu_yaw_velocity[1:oMTMax]) + plot_limit_offset))
 polygon(
@@ -581,30 +582,33 @@ orientation_kalman_statistics = data.frame(
   last_v_z = fkfGuanglongOrientationModel$att[7,oMTMax]
 )
 
-orientation_simulation_measurement_statistics = data.frame(
+orientation_measurement_statistics = data.frame(
   max_v_x = max(imkDf$imu_pitch_velocity),
   min_v_x = min(imkDf$imu_pitch_velocity),
   var_v_x = var(imkDf$imu_pitch_velocity),
   mean_v_x = mean(imkDf$imu_pitch_velocity),
   first_v_x = imkDf$imu_pitch_velocity[1],
   last_v_x = imkDf$imu_pitch_velocity[oMTMax],
+  mean_res_v_x = mean(abs(imkDf$imu_pitch_velocity[1:oMTMax] - fkfGuanglongOrientationModel$att[5,1:oMTMax])),
   max_v_y = max(imkDf$imu_yaw_velocity[1:oMTMax]),
   min_v_y = min(imkDf$imu_yaw_velocity[1:oMTMax]),
   var_v_y = var(imkDf$imu_yaw_velocity[1:oMTMax]),
   mean_v_y = mean(imkDf$imu_yaw_velocity[1:oMTMax]),
   first_v_y = imkDf$imu_yaw_velocity[1:oMTMax][1],
   last_v_y = imkDf$imu_yaw_velocity[1:oMTMax][oMTMax],
+  mean_res_v_y = mean(abs(imkDf$imu_roll_velocity[1:oMTMax] - fkfGuanglongOrientationModel$att[6,1:oMTMax])),
   max_v_z = max(imkDf$imu_roll_velocity[1:oMTMax]),
   min_v_z = min(imkDf$imu_roll_velocity[1:oMTMax]),
   var_v_z = var(imkDf$imu_roll_velocity[1:oMTMax]),
   mean_v_z = mean(imkDf$imu_roll_velocity[1:oMTMax]),
   first_v_z = imkDf$imu_roll_velocity[oMTMax][1],
-  last_v_z = imkDf$imu_roll_velocity[oMTMax]
+  last_v_z = imkDf$imu_roll_velocity[oMTMax],
+  mean_res_v_z = mean(abs(imkDf$imu_yaw_velocity[1:oMTMax] - fkfGuanglongOrientationModel$att[7,1:oMTMax]))
 )
 
 
 fileConn<-file(paste(params$output_path,"orientation_measurement_stats.txt", sep = ""))
-  writeLines(as.yaml(orientation_simulation_measurement_statistics), fileConn)
+  writeLines(as.yaml(orientation_measurement_statistics), fileConn)
   close(fileConn)
 
 fileConn<-file(paste(params$output_path,"orientation_kalman_stats.txt", sep = ""))
@@ -742,46 +746,52 @@ plot(fkfGuanglongAccelerationModel, type = "resid.qq")
 ```
 
 ```{r}
-acceleration_simulation_measurement_statistics = data.frame(
+acceleration_measurement_statistics = data.frame(
   max_p_x = max(imkDf$kinect_hand_right.x[1:aMTMax]),
   min_p_x = min(imkDf$kinect_hand_right.x[1:aMTMax]),
   var_p_x = var(imkDf$kinect_hand_right.x[1:aMTMax]),
   mean_p_x = mean(imkDf$kinect_hand_right.x[1:aMTMax]),
   first_p_X = imkDf$kinect_hand_right.x[1:aMTMax][1],
   last_p_X = imkDf$kinect_hand_right.x[1:aMTMax][aMTMax],
+  mean_res_p_x = mean(abs(imkDf$kinect_hand_right.x[1:aMTMax] - fkfGuanglongAccelerationModel$att[1,1:aMTMax])),
   max_a_x = max(imkDf$imu_acceleration.x[1:aMTMax]),
   min_a_x = min(imkDf$imu_acceleration.x[1:aMTMax]),
   var_a_x = var(imkDf$imu_acceleration.x[1:aMTMax]),
   mean_a_x = mean(imkDf$imu_acceleration.x[1:aMTMax]),
   first_a_X = imkDf$imu_acceleration.x[1],
   last_a_X = imkDf$imu_acceleration.x[aMTMax],
+  mean_res_a_x = mean(abs(imkDf$imu_acceleration.x[1:aMTMax] - fkfGuanglongAccelerationModel$att[3,1:aMTMax])),
   max_p_y = max(imkDf$kinect_hand_right.y[1:aMTMax]),
   min_p_y = min(imkDf$kinect_hand_right.y[1:aMTMax]),
   var_p_y = var(imkDf$kinect_hand_right.y[1:aMTMax]),
   mean_p_y = mean(imkDf$kinect_hand_right.y[1:aMTMax]),
   first_p_y = imkDf$kinect_hand_right.y[1:aMTMax][1],
   last_p_y = imkDf$kinect_hand_right.y[1:aMTMax][aMTMax],
+  mean_res_p_y = mean(abs(imkDf$kinect_hand_right.y[1:aMTMax] - fkfGuanglongAccelerationModel$att[4,1:aMTMax])),
   max_a_y = max(imkDf$imu_acceleration.y),
   min_a_y = min(imkDf$imu_acceleration.y),
   var_a_y = var(imkDf$imu_acceleration.y),
   mean_a_y = mean(imkDf$imu_acceleration.y),
   first_a_y = imkDf$imu_acceleration.y[1],
   last_a_y = imkDf$imu_acceleration.y[aMTMax],
+  mean_res_a_y = mean(abs(imkDf$imu_acceleration.y[1:aMTMax] - fkfGuanglongAccelerationModel$att[6,1:aMTMax])),
   max_p_z = max(imkDf$kinect_hand_right.z[1:aMTMax]),
   min_p_z = min(imkDf$kinect_hand_right.z[1:aMTMax]),
   var_p_z = var(imkDf$kinect_hand_right.z[1:aMTMax]),
   mean_p_z = mean(imkDf$kinect_hand_right.z[1:aMTMax]),
   first_p_z = imkDf$kinect_hand_right.z[1:aMTMax][1],
-  last_p_z = imkDf$kinect_hand_right.z[1:aMTMax],
+  last_p_z = imkDf$kinect_hand_right.z[1:aMTMax][aMTMax],
+  mean_res_p_z = mean(abs(imkDf$kinect_hand_right.z[1:aMTMax] - fkfGuanglongAccelerationModel$att[7,1:aMTMax])),
   max_a_z = max(imkDf$imu_acceleration.z),
   min_a_z = min(imkDf$imu_acceleration.z),
   var_a_z = var(imkDf$imu_acceleration.z),
   mean_a_z = mean(imkDf$imu_acceleration.z),
   first_a_z = imkDf$imu_acceleration.z[1],
-  last_a_z = imkDf$imu_acceleration.z[aMTMax]
+  last_a_z = imkDf$imu_acceleration.z[1:aMTMax][aMTMax],
+  mean_res_a_z = mean(abs(imkDf$imu_acceleration.z[1:aMTMax] - fkfGuanglongAccelerationModel$att[9,1:aMTMax]))
 )
 
-acceleration_simulation_kalman_statistics = data.frame(
+acceleration_kalman_statistics = data.frame(
   max_p_x = max(fkfGuanglongAccelerationModel$att[1,1:aMTMax]),
   min_p_x = min(fkfGuanglongAccelerationModel$att[1,1:aMTMax]),
   var_p_x = var(fkfGuanglongAccelerationModel$att[1,1:aMTMax]),
@@ -839,11 +849,11 @@ acceleration_simulation_kalman_statistics = data.frame(
   )
   
   fileConn<-file(paste(params$output_path,"data_position_acceleration_stats.txt", sep = ""))
-  writeLines(as.yaml(acceleration_simulation_measurement_statistics), fileConn)
+  writeLines(as.yaml(acceleration_measurement_statistics), fileConn)
   close(fileConn)
   
   fileConn<-file(paste(params$output_path,"position_kalman_stats.txt", sep = ""))
-  writeLines(as.yaml(acceleration_simulation_kalman_statistics), fileConn)
+  writeLines(as.yaml(acceleration_kalman_statistics), fileConn)
   close(fileConn)
 ```
 

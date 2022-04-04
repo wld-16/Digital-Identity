@@ -74,7 +74,6 @@ getGuanglongOrientationModel <- function(Ts, initialState, initialBelief, proces
   return(processModel)
 }
 
-# TODO: Transformationsmatrix berechnen 
 getGuanglongAccelerationModel <- function(Ts, initialState, initialBelief, matrixHandToLocal, gravityVector, processNoise, sensorNoise) {
   #Currently used variable names -> variable names from Slides
   # F -> A: State Transition Matrix
@@ -101,7 +100,7 @@ getGuanglongAccelerationModel <- function(Ts, initialState, initialBelief, matri
   
   
   processModel$x = matrix(data = as.double(initialState), nrow = 9, ncol = 1) ## state vector
-  processModel$B = matrix(data = c(0,0,0,0,0,0, -vectorLength(gravityVector) * Ts**2/2, -vectorLength(gravityVector) * Ts, 0), nrow = 9, ncol = 1)
+  #processModel$B = matrix(data = c(0,0,0,0,0,0, -vectorLength(gravityVector) * Ts**2/2, -vectorLength(gravityVector) * Ts, 0), nrow = 9, ncol = 1)
   
   processModel$H = matrix(data = c(
     1,0,0,0,0,0,0,0,0,

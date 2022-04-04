@@ -603,7 +603,7 @@ polygon(
 lines(normalizedOrientationState$z[1:simulatedMax] ~ sim_time, col = "blue")
 legend("bottomright", legend = c(expression(q[z] ~ "state"), "process uncertainty"), lwd = 3, col = c("blue", "lightsteelblue"))
 
-plot(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = expression(omega[x] ~ "in simulation"), ylab = expression(omega[x] ~ "in °/s"), xlab="t in s", type='l', ylim=c(
+plot(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time, pch  = 20, main = expression(omega[x] ~ "in simulation"), ylab = expression(omega[x] ~ "in rad/s"), xlab="t in s", type='l', ylim=c(
   min(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[1,]) - plot_limit_offset, 
   max(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[1,]) + plot_limit_offset))
 polygon(
@@ -615,7 +615,7 @@ lines(simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax] ~ sim_time, co
 lines(simulationOrientationMeasurementsAsMatrix[1,] ~ sim_time)
 legend("bottomright", legend = c(expression(omega[x] ~ "state"), expression("simulated " ~ omega[x]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
-plot(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = expression(omega[y] ~ "in simulation"), ylab = expression(omega[y] ~ "in °/s"), xlab="t in s", type='l', ylim=c(
+plot(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time, pch  = 20, main = expression(omega[y] ~ "in simulation"), ylab = expression(omega[y] ~ "in rad/s"), xlab="t in s", type='l', ylim=c(
   min(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[2,]) - plot_limit_offset,
   max(simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[2,]) + plot_limit_offset))
 polygon(
@@ -628,7 +628,7 @@ lines(simulationOrientationMeasurementsAsMatrix[2,] ~ sim_time)
 legend("bottomright", legend = c(expression(omega[y] ~ "state"), expression("simulated " ~ omega[y]), "process uncertainty"), lwd = 3, col = c("blue", "black", "lightsteelblue"))
 
 
-plot(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = expression(omega[z] ~ "in simulation"), ylab = expression(omega[z] ~ "in °/s"), xlab="t in s", type='l', ylim=c(
+plot(simulationOrientationMeasurementsAsMatrix[3,] ~ sim_time, pch  = 20, main = expression(omega[z] ~ "in simulation"), ylab = expression(omega[z] ~ "in rad/s"), xlab="t in s", type='l', ylim=c(
   min(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[3,]) - plot_limit_offset,
   max(simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax], simulationOrientationMeasurementsAsMatrix[3,]) + plot_limit_offset))
 polygon(
@@ -698,18 +698,21 @@ orientation_simulation_measurement_statistics = data.frame(
   mean_v_x = mean(simulationOrientationMeasurementsAsMatrix[1,]),
   first_v_x = simulationOrientationMeasurementsAsMatrix[1,][1],
   last_v_x = simulationOrientationMeasurementsAsMatrix[1,][simulatedMax],
+  mean_res_v_x = mean(simulationOrientationMeasurementsAsMatrix[1,][1:simulatedMax] - simulatedfkfGuanglongOrientationModel$att[5,1:simulatedMax]),
   max_v_y = max(simulationOrientationMeasurementsAsMatrix[2,]),
   min_v_y = min(simulationOrientationMeasurementsAsMatrix[2,]),
   var_v_y = var(simulationOrientationMeasurementsAsMatrix[2,]),
   mean_v_y = mean(simulationOrientationMeasurementsAsMatrix[2,]),
   first_v_y = simulationOrientationMeasurementsAsMatrix[2,][1],
   last_v_y = simulationOrientationMeasurementsAsMatrix[2,][simulatedMax],
+  mean_res_v_y = mean(simulationOrientationMeasurementsAsMatrix[2,][1:simulatedMax] - simulatedfkfGuanglongOrientationModel$att[6,1:simulatedMax]),
   max_v_z = max(simulationOrientationMeasurementsAsMatrix[3,]),
   min_v_z = min(simulationOrientationMeasurementsAsMatrix[3,]),
   var_v_z = var(simulationOrientationMeasurementsAsMatrix[3,]),
   mean_v_z = mean(simulationOrientationMeasurementsAsMatrix[3,]),
   first_v_z = simulationOrientationMeasurementsAsMatrix[3,][1],
-  last_v_z = simulationOrientationMeasurementsAsMatrix[3,][simulatedMax]
+  last_v_z = simulationOrientationMeasurementsAsMatrix[3,][simulatedMax],
+  mean_res_v_z = mean(simulationOrientationMeasurementsAsMatrix[3,][1:simulatedMax] - simulatedfkfGuanglongOrientationModel$att[7,1:simulatedMax])
 )
 
 
@@ -842,36 +845,42 @@ acceleration_simulation_measurement_statistics = data.frame(
   mean_p_x = mean(simulationAccelerationMeasurementsAsMatrix[1,]),
   first_p_X = simulationAccelerationMeasurementsAsMatrix[1,][1],
   last_p_X = simulationAccelerationMeasurementsAsMatrix[1,][simulatedMax],
+  mean_res_p_x = mean(abs(simulationAccelerationMeasurementsAsMatrix[1,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[1,1:simulatedMax])),
   max_a_x = max(simulationAccelerationMeasurementsAsMatrix[2,]),
   min_a_x = min(simulationAccelerationMeasurementsAsMatrix[2,]),
   var_a_x = var(simulationAccelerationMeasurementsAsMatrix[2,]),
   mean_a_x = mean(simulationAccelerationMeasurementsAsMatrix[2,]),
   first_a_X = simulationAccelerationMeasurementsAsMatrix[2,][1],
   last_a_X = simulationAccelerationMeasurementsAsMatrix[2,][simulatedMax],
+  mean_res_a_x = mean(abs(simulationAccelerationMeasurementsAsMatrix[2,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[3,1:simulatedMax])),
   max_p_y = max(simulationAccelerationMeasurementsAsMatrix[3,]),
   min_p_y = min(simulationAccelerationMeasurementsAsMatrix[3,]),
   var_p_y = var(simulationAccelerationMeasurementsAsMatrix[3,]),
   mean_p_y = mean(simulationAccelerationMeasurementsAsMatrix[3,]),
   first_p_y = simulationAccelerationMeasurementsAsMatrix[3,][1],
   last_p_y = simulationAccelerationMeasurementsAsMatrix[3,][simulatedMax],
+  mean_res_p_y = mean(abs(simulationAccelerationMeasurementsAsMatrix[3,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[4,1:simulatedMax])),
   max_a_y = max(simulationAccelerationMeasurementsAsMatrix[4,]),
   min_a_y = min(simulationAccelerationMeasurementsAsMatrix[4,]),
   var_a_y = var(simulationAccelerationMeasurementsAsMatrix[4,]),
   mean_a_y = mean(simulationAccelerationMeasurementsAsMatrix[4,]),
   first_a_y = simulationAccelerationMeasurementsAsMatrix[4,][1],
   last_a_y = simulationAccelerationMeasurementsAsMatrix[4,][simulatedMax],
+  mean_res_a_y = mean(abs(simulationAccelerationMeasurementsAsMatrix[4,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[6,1:simulatedMax])),
   max_p_z = max(simulationAccelerationMeasurementsAsMatrix[5,]),
   min_p_z = min(simulationAccelerationMeasurementsAsMatrix[5,]),
   var_p_z = var(simulationAccelerationMeasurementsAsMatrix[5,]),
   mean_p_z = mean(simulationAccelerationMeasurementsAsMatrix[5,]),
   first_p_z = simulationAccelerationMeasurementsAsMatrix[5,][1],
   last_p_z = simulationAccelerationMeasurementsAsMatrix[5,][simulatedMax],
+  mean_res_p_z = mean(abs(simulationAccelerationMeasurementsAsMatrix[5,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[7,1:simulatedMax])),
   max_a_z = max(simulationAccelerationMeasurementsAsMatrix[6,]),
   min_a_z = min(simulationAccelerationMeasurementsAsMatrix[6,]),
   var_a_z = var(simulationAccelerationMeasurementsAsMatrix[6,]),
   mean_a_z = mean(simulationAccelerationMeasurementsAsMatrix[6,]),
   first_a_z = simulationAccelerationMeasurementsAsMatrix[6,][1],
-  last_a_z = simulationAccelerationMeasurementsAsMatrix[6,][simulatedMax]
+  last_a_z = simulationAccelerationMeasurementsAsMatrix[6,][simulatedMax],
+  mean_res_a_z = mean(abs(simulationAccelerationMeasurementsAsMatrix[6,][1:simulatedMax] - simulatedfkfGuanglongAccelerationModel$att[9,1:simulatedMax]))
 )
 
 acceleration_simulation_kalman_statistics = data.frame(

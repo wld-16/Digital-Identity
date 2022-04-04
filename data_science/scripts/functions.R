@@ -114,7 +114,7 @@ acceleration_transition_at_index <- function(i){
     quat$x[i],
     quat$y[i],
     quat$z[i])
-  
+
   return(matrix(data = c(
     1,Ts, rotation_matrix[1,1] * Ts**2/2,  0,0,rotation_matrix[2,1] * Ts**2/2,  0,0,rotation_matrix[3,1] * Ts**2/2,
     0,1,rotation_matrix[1,1] * Ts,         0,0,rotation_matrix[2,1] * Ts,       0,0,rotation_matrix[3,1] * Ts,
@@ -354,4 +354,5 @@ quaternion_head_to_right_hand_chain <- function(imkDf) {
   L_H_S_SR_ER_WR_quat = quaternion_multi(L_H_S_SR_ER_quat, wristRightQuat)
   norm = normalizeQuaternion(L_H_S_SR_ER_WR_quat$w, L_H_S_SR_ER_WR_quat$x, L_H_S_SR_ER_WR_quat$y, L_H_S_SR_ER_WR_quat$z)
   return(norm)
+  #return(localizationQuat)
 }
