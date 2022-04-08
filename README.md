@@ -19,6 +19,7 @@ The unity-skelton-visulize contains an Unity Project that was presented at the [
 
 Tested with:
 - Unity 2019.4.8f1
+- Kinect SDK 1.8
 
 Also make sure to install the Kinect with MS-SDK Package published by RF Solutions from the Asset store.
 
