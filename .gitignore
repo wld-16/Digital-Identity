@@ -7,13 +7,14 @@ node_modules/
 dist/
 dist
 .idea
-*/cmake-build-debug/
+/prototype/kinect-api/cmake-build-debug/
+/prototype/kinect-api/build/
+/prototype/opengl-frontend/cmake-build-debug/
 */build
 *.obj
 *.fbx
 *.mtl
 *.jpg
-*.png
 *.tif
 *.tga
 *.md5anim
@@ -24,4 +25,4 @@ dist
 *.xlsx
 */libs/
 .Rproj.user
-research/*
+studies/research/*

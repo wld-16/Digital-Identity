@@ -1,0 +1,22 @@
+max_v_x: 0.0226814
+min_v_x: -0.0617987
+var_v_x: 0.0003074
+mean_v_x: -0.0228401
+first_v_x: -0.0040521
+last_v_x: -0.0226309
+mean_res_v_x: -5.4298333e-05
+max_v_y: 0.0169676
+min_v_y: -0.0714288
+var_v_y: 0.0003238
+mean_v_y: -0.0241158
+first_v_y: -0.0060133
+last_v_y: -0.0018212
+mean_res_v_y: 1.4744418e-05
+max_v_z: 3.093473
+min_v_z: 2.9801094
+var_v_z: 0.0008712
+mean_v_z: 3.0460898
+first_v_z: 3.0031172
+last_v_z: 3.0629247
+mean_res_v_z: 0.0007733
+

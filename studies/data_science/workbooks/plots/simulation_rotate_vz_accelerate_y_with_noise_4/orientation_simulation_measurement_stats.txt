@@ -1,0 +1,22 @@
+max_v_x: 0.1229695
+min_v_x: -0.0198984
+var_v_x: 0.0015444
+mean_v_x: 0.0560988
+first_v_x: 0.0002333
+last_v_x: 0.0947315
+mean_res_v_x: 0.0013193
+max_v_y: 0.023126
+min_v_y: -0.1786147
+var_v_y: 0.0029026
+mean_v_y: -0.0532652
+first_v_y: -0.0109269
+last_v_y: -0.1165901
+mean_res_v_y: -0.0015445
+max_v_z: 3.2173557
+min_v_z: 2.9980178
+var_v_z: 0.0030881
+mean_v_z: 3.1019315
+first_v_z: 3.0041687
+last_v_z: 3.2089478
+mean_res_v_z: 0.0026607
+

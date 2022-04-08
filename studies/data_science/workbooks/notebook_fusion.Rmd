@@ -1,0 +1,484 @@
+---
+title: "Improving inertial Measurement data with visual sensor data from Kinect Camera"
+params: 
+  data_import_path: "D:/Projekte/Digital-Identity/data_science/imu_and_kinect_with_orientation.csv"
+  x_initial_sx: 1
+  x_initial_vx: 1
+  x_initial_ax: 1
+  x_initial_gx: 1
+  x_initial_sy: 1
+  x_initial_vy: 1
+  x_initial_ay: 1
+  x_initial_gy: 1
+  x_initial_sz: 1
+  x_initial_vz: 1
+  x_initial_az: 1
+  x_initial_gz: 1
+  initial_belief_11: 0.05
+  initial_belief_22: 0.05
+  initial_belief_33: 0.05
+  initial_belief_44: 0.05
+  initial_belief_55: 0.05
+  initial_belief_66: 0.05
+  initial_belief_77: 0.05
+  initial_belief_88: 0.05
+  initial_belief_99: 0.05
+  initial_belief_00: 0.05
+  initial_belief_AA: 0.05
+  initial_belief_BB: 0.05
+  process_noise_sigma_x: 0.001
+  process_noise_sigma_y: 0.001
+  process_noise_sigma_z: 0.001
+  sensor_noise_imu_sigma_x: 0.05
+  sensor_noise_imu_sigma_y: 0.05
+  sensor_noise_imu_sigma_z: 0.05
+  sensor_noise_kinect_sigma_x: 0.05
+  sensor_noise_kinect_sigma_y: 0.05
+  sensor_noise_kinect_sigma_z: 0.05
+  sensor_noise_imu_gravity_x: 0.05
+  sensor_noise_imu_gravity_y: 0.05
+  sensor_noise_imu_gravity_z: 0.05
+output:
+  html_document:
+    df_print: paged
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Execute this chunk to load install the required libraries
+
+```{r}
+#install.packages("RMThreshold")
+#install.packages("jsonlite")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("patchwork")
+#install.packages("reshape2")
+#install.packages("RSpincalc")
+#install.packages("LaplacesDemon")
+#install.packages('Rcpp')
+```
+
+
+Execute this chunk of code to load all the libraries
+
+```{r}
+library(dplyr)
+library(RMThreshold)
+library(ggplot2)
+library(RSpincalc)
+library(reshape2)
+library(LaplacesDemon)
+library(Rcpp)
+```
+
+Execute this line of code to load all the functions
+
+```{r}
+interpolateDataChunk <- function(index, chunk){
+  if(index == 1){
+    index_of_first_non_zero = subset(data.frame(i = 1:length(chunk), x = chunk), x != 0)[1,1]
+    chunk[0:(index_of_first_non_zero-1)] = chunk[index_of_first_non_zero]
+    return(chunk[1:index_of_first_non_zero])
+  }
+  else{
+    if(length(chunk) == 2)
+      return(chunk[1])
+    else if(length(chunk) > 2)
+      numberOfIncrements = length(chunk[2:(length(chunk))])
+    interpolationIncrement = (chunk[length(chunk)] - chunk[1]) / numberOfIncrements
+    return(c(chunk[1], chunk[1] + 1:(numberOfIncrements-1) * interpolationIncrement))
+  }
+}
+
+accumulateChunks <- function(vals){
+  if(vals[1] == 0) {
+  } else {
+    index_of_first_non_zero = subset(data.frame(i = 1:length(vals), x = vals), x != 0)[1,1]
+    index_of_second_non_zero = subset(data.frame(i = 1:(length(vals)-1), x = vals[(index_of_first_non_zero+1):length(vals)]), x != 0)[1,1]
+    if(is.na(index_of_second_non_zero)){
+      vals[length(vals)] = vals[index_of_first_non_zero]
+      return(list(vals))
+    } else {
+      return(list(vals[index_of_first_non_zero:(index_of_second_non_zero+1)]))
+    }
+  }
+}
+
+# Function to interpolate values inbetween
+interpolateZeroesInbetween <- function(measurements){
+  chunks = list()
+  measurements_temp=measurements
+  for(v in 1:length(measurements)){
+    if(length(measurements_temp) > 1){
+      chunks[v] = accumulateChunks(measurements_temp)
+      measurements_temp = measurements_temp[2:length(measurements_temp)]
+    }
+  }
+  names(chunks) <- seq_along(chunks)
+  chunks[sapply(chunks, is.null)] <- NULL
+  return(unlist(mapply(interpolateDataChunk, 1:length(chunks), chunks)))
+}
+
+```
+
+Here is the definition of the kalman filter
+```{r}
+get12DimensionsAccelerationModel <- function(initialState, initialBelief){
+  #Currently used variable names -> variable names from Slides
+  # F -> A: State Transition Matrix
+  # a -> x: State Vector
+  # H -> C: Observation Matrix
+  # Q -> Q: Process Noise Matrix
+  # R -> R: Sensor Noise Matrix
+  # P -> P: Sensor Belief
+  
+  processModel = list()
+  Ts = 0.014
+  processModel$Ad = matrix(data = c(
+    1,Ts,Ts**2/2,0, 0,0,0,0,         0,0,0,0,
+    0,1,Ts,0,       0,0,0,0,         0,0,0,0,
+    0,0,1,0,        0,0,0,0,         0,0,0,0,
+    0,0,0,1,        0,0,0,0,         0,0,0,0,
+    0,0,0,0,        1,Ts,Ts**2/2,0,  0,0,0,0,
+    0,0,0,0,        0,1,Ts,0,        0,0,0,0,
+    0,0,0,0,        0,0,1,0,         0,0,0,0,
+    0,0,0,0,        0,0,0,1,         0,0,0,0,
+    0,0,0,0,        0,0,0,0,         1,Ts,Ts**2/2,0,
+    0,0,0,0,        0,0,0,0,         0,1,Ts,0,  
+    0,0,0,0,        0,0,0,0,         0,0,1,0,    
+    0,0,0,0,        0,0,0,0,         0,0,0,1
+  )
+  ,nrow = 12, ncol = 12, byrow=TRUE)
+  
+  processModel$x = matrix(data = initialState, nrow = 12, ncol = 1) ## state vector
+  
+  processModel$C = matrix(data = c(
+    1,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,1,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,1,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,1,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,1
+  ), nrow = 9, ncol = 12, byrow=TRUE) ## observation/ measurment vector 
+  
+  Q = matrix(data = c(
+    params$process_noise_sigma_x**2,0,0,
+    0,params$process_noise_sigma_y**2,0,
+    0,0,params$process_noise_sigma_z**2
+  ), nrow = 3, ncol = 3, byrow=TRUE)
+  
+   processModel$Gd = matrix(data = c(
+    Ts**2/2,0,0,
+    Ts,     0,0,
+    1,      0,0,
+    0,      0,0,
+    0,Ts**2/2,0,
+    0,Ts,     0,
+    0,1,      0,
+    0,0,      0,
+    0,0,Ts**2/2,
+    0,0,Ts     ,
+    0,0,1      ,
+    0,0,0      
+  ), nrow=12, ncol=3, byrow = TRUE)
+  
+  
+  processModel$Q = processModel$Gd %*% Q %*% t(processModel$Gd)
+  
+  processModel$P = initialBelief
+  
+  processModel$R = matrix(data = c(params$sensor_noise_kinect_sigma_x**2,0,0,0,0,0,0,0,0,
+                                    0,params$sensor_noise_kinect_sigma_y**2,0,0,0,0,0,0,0,
+                                    0,0,params$sensor_noise_kinect_sigma_z**2,0,0,0,0,0,0,
+                                    0,0,0,params$sensor_noise_imu_sigma_x**2,0,0,0,0,0,
+                                    0,0,0,0,params$sensor_noise_imu_sigma_y**2,0,0,0,0,
+                                    0,0,0,0,0,params$sensor_noise_imu_sigma_z**2,0,0,0,
+                                    0,0,0,0,0,0,params$sensor_noise_imu_gravity_x**2,0,0,
+                                    0,0,0,0,0,0,0,params$sensor_noise_imu_gravity_y**2,0,
+                                    0,0,0,0,0,0,0,0,params$sensor_noise_imu_gravity_z**2
+  ), nrow = 9, ncol = 9)
+  
+  processModel$colNames = c("x","v_x","a_x","y","v_y","a_y","z","v_z","a_z","g_x","g_y","g_z")
+  
+  return(processModel)
+}
+```
+
+
+```{r}
+
+dlm_init <- function(x,P,Q,C,A,R){
+  # V, W (covariance matrices of the measurement and state equations, respectively)
+  # FF and GG (measurement equation matrix and transition matrix respectively)
+  # m0, C0 (prior mean and covariance matrix of the state vector)
+
+  return(dlm::dlm(FF = C, V = R, GG = A, W = Q, m0 = x, C0 = P))
+}
+```
+
+```{r}
+crossProduct <- function(a1,a2,a3,b1,b2,b3){
+  return(
+    data.frame(
+      x=a2*b3-a3*b2, 
+      y=a3*b1-a1*b3,
+      z=a1*b2-a2*b1
+      )
+    )
+}
+
+scalarProduct <- function(a1,a2,a3,b1,b2,b3){
+  return(a1*b1+a2*b2+a3*b3)
+}
+```
+
+
+
+To load the data from the sensors execute this snippet of code 
+
+```{r}
+imu_and_kinect <- read.csv2(params$data_import_path)
+```
+
+
+Here are some operations on the raw kinect data, to interpolate values
+```{r}
+interpolated_kinect_foot_right_x = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.x)
+interpolated_kinect_foot_right_y = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.y)
+interpolated_kinect_foot_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_foot_right.z)
+
+interpolated_kinect_hand_right_x = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.x)
+interpolated_kinect_hand_right_y = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.y)
+interpolated_kinect_hand_right_z = interpolateZeroesInbetween(imu_and_kinect$kinect_hand_right.z)
+
+imu_and_kinect = imu_and_kinect[0:length(interpolated_kinect_hand_right_z),]
+
+matrix(data=c(imu_and_kinect$kinect_hand_right_orientation.x[1], imu_and_kinect$kinect_hand_right_orientation.y[1], imu_and_kinect$kinect_hand_right_orientation.z[1]),nrow=3, ncol=1)
+
+matrix(data=c(imu_and_kinect$kinect_hand_right_orientation.x[1], imu_and_kinect$kinect_hand_right_orientation.y[1], imu_and_kinect$kinect_hand_right_orientation.z[1]),nrow=3, ncol=1)
+
+uXP = crossProduct(imu_and_kinect$kinect_hand_right_orientation.x, imu_and_kinect$kinect_hand_right_orientation.x, imu_and_kinect$kinect_hand_right_orientation.x, imu_and_kinect$imu_acceleration.x, imu_and_kinect$imu_acceleration.y, imu_and_kinect$imu_acceleration.z)
+
+
+rightSide_qp = imu_and_kinect$kinect_hand_left_orientation.w * c(imu_and_kinect$imu_acceleration.x, imu_and_kinect$imu_acceleration.y, imu_and_kinect$imu_acceleration.z) + uXP
+
+qp = data.frame(w = scalarProduct(
+  -imu_and_kinect$kinect_hand_right_orientation.x,
+  -imu_and_kinect$kinect_hand_right_orientation.y, 
+  -imu_and_kinect$kinect_hand_right_orientation.z,
+  imu_and_kinect$imu_acceleration.x,
+  imu_and_kinect$imu_acceleration.y,
+  imu_and_kinect$imu_acceleration.z
+  ),x = rightSide_qp$x,y = rightSide_qp$y,z = rightSide_qp$z)
+
+uXP = crossProduct(qp$x,qp$y,qp$z,
+                   imu_and_kinect$kinect_hand_right_orientation.x,
+                   imu_and_kinect$kinect_hand_right_orientation.y,
+                   imu_and_kinect$kinect_hand_right_orientation.z)
+
+rightSide_qp_q = qp$w * c( 
+  -imu_and_kinect$kinect_hand_right_orientation.x,
+  -imu_and_kinect$kinect_hand_right_orientation.y, 
+  -imu_and_kinect$kinect_hand_right_orientation.z) + uXP
+
+# Ist das Skalarprodukt hier überhaupt notwendig??
+qp_q = data.frame(w = scalarProduct(
+  -qp$x,
+  -qp$y,
+  -qp$z,
+  -imu_and_kinect$kinect_hand_right_orientation.x,
+  -imu_and_kinect$kinect_hand_right_orientation.y, 
+  -imu_and_kinect$kinect_hand_right_orientation.z
+), x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
+
+
+rotatedValues = data.frame(x = rightSide_qp_q$x, y = rightSide_qp_q$y, z = rightSide_qp_q$z)
+
+
+# Zeit in Millisekunden ?bersetzen
+
+imu_and_kinect$t = (imu_and_kinect$t.m * 60 * 1000 + imu_and_kinect$t.s * 1000 + imu_and_kinect$t.ms)
+
+# Erstelle Data Frame f?r kinect daten
+# Darauf achten das datens?tze gleiche L?nge aufweisen
+
+interpolatedKinectValues = data.frame(
+  t = imu_and_kinect$t[1:length(imu_and_kinect$t)],
+  x = interpolated_kinect_hand_right_x,
+  y = interpolated_kinect_hand_right_y,
+  z = interpolated_kinect_hand_right_z
+)
+
+```
+
+Init the state space models
+
+```{r}
+
+data_lower_lim = 0
+data_upper_lim = 4000
+
+
+processModel = get12DimensionsAccelerationModel(
+  c(params$x_initial_sx,params$x_initial_vx,params$x_initial_ax,params$x_initial_gx,
+    params$x_initial_sy,params$x_initial_vy,params$x_initial_ay,params$x_initial_gy,
+    params$x_initial_sz,params$x_initial_vz,params$x_initial_az,params$x_initial_gz),
+  diag(c(
+    params$initial_belief_11,
+    params$initial_belief_22,
+    params$initial_belief_33,
+    params$initial_belief_44,
+    params$initial_belief_55,
+    params$initial_belief_66,
+    params$initial_belief_77,
+    params$initial_belief_88,
+    params$initial_belief_99,
+    params$initial_belief_00,
+    params$initial_belief_AA,
+    params$initial_belief_BB)))
+
+dlmFusionModel = dlm_init(x = processModel$x, P = processModel$P, Q = processModel$Q, C = processModel$C, A = processModel$Ad, R = processModel$R)
+
+```
+
+Apply the kalman filter
+
+```{r}
+
+dlmFilterResult = dlm::dlmFilter(
+  rbind(
+    interpolatedKinectValues$x[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$y[data_lower_lim:data_upper_lim],
+    interpolatedKinectValues$z[data_lower_lim:data_upper_lim],
+    rotatedValues$x[data_lower_lim:data_upper_lim],
+    rotatedValues$y[data_lower_lim:data_upper_lim],
+    rotatedValues$z[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_gravity.x[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_gravity.y[data_lower_lim:data_upper_lim],
+    imu_and_kinect$imu_gravity.z[data_lower_lim:data_upper_lim]
+    
+  ), dlmFusionModel, debug = FALSE, simplify = FALSE
+)
+
+```
+
+Convert the data into the accurate format
+```{r}
+
+resultDlmFusion = data.frame(
+  s_x=dlmFilterResult[["f"]][1,],
+  s_y=dlmFilterResult[["f"]][2,],
+  s_z=dlmFilterResult[["f"]][3,],
+  a_x=dlmFilterResult[["f"]][4,],
+  a_y=dlmFilterResult[["f"]][5,],
+  a_z=dlmFilterResult[["f"]][6,]
+  )
+
+
+colnames(resultDlmFusion) = c("s_x","s_y","s_z","a_x","a_y","a_z")
+resultDlmFusion = data.frame(resultDlmFusion)
+
+
+```
+
+Plot the data
+
+
+```{r}
+
+plot_up_limit = 1600
+plot_low_limit = 0
+
+
+
+plotDf = data.frame(t = imu_and_kinect$t[1:length(imu_and_kinect$t)-1],
+                    acc.x = rotatedValues$x[1:length(imu_and_kinect$t)-1],
+                    acc.y = rotatedValues$y[1:length(imu_and_kinect$t)-1],
+                    acc.z = rotatedValues$z[1:length(imu_and_kinect$t)-1],
+                    kin.x = interpolatedKinectValues$x[1:length(imu_and_kinect$t)-1],
+                    kin.y = interpolatedKinectValues$y[1:length(imu_and_kinect$t)-1],
+                    kin.z = interpolatedKinectValues$z[1:length(imu_and_kinect$t)-1]
+)
+
+isPlottingDlmResults = data.frame(
+  s_x=TRUE,
+  s_y=TRUE,
+  s_z=TRUE,
+  a_x=TRUE,
+  a_y=TRUE,
+  a_z=TRUE
+)
+
+
+if(isPlottingDlmResults$s_x) {
+  # x position plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_x_upscaled = plotDf$kin.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 5000-2500)
+  accxdf$K_x = as.double(resultDlmFusion$s_x[plot_low_limit:plot_up_limit])
+  accxdf_long = reshape2::melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+}
+if(isPlottingDlmResults$s_y) {
+  # y position plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_y_upscaled = plotDf$kin.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit] * 2500+900)
+  accydf$K_y = as.double(resultDlmFusion$s_y[plot_low_limit:plot_up_limit])
+  accydf_long = reshape2::melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
+if(isPlottingDlmResults$s_z) {
+  # z position plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      kinect_z_upscaled = plotDf$kin.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit]* 5000-4500)
+  acczdf$K_z = as.double(resultDlmFusion$s_z[plot_low_limit:plot_up_limit])
+  acczdf_long = reshape2::melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+  
+}
+
+if(isPlottingDlmResults$a_x) {
+  # x accelerometer plot
+  accxdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_x = plotDf$acc.x[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accxdf$K_x = as.integer(resultDlmFusion$a_x[plot_low_limit:plot_up_limit])
+  accxdf_long = reshape2::melt(accxdf, id = "t")
+  ggplot(accxdf_long, aes(x=t, y=value, color=variable)) + geom_line() 
+  
+}
+if(isPlottingDlmResults$a_y) {
+  # y accelerometer plot
+  accydf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_y = plotDf$acc.y[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  accydf$K_y = as.integer(resultDlmFusion$a_y[plot_low_limit:plot_up_limit])
+  accydf_long = reshape2::melt(accydf, id = "t")
+  ggplot(accydf_long, aes(x=t, y=value, color=variable)) + geom_line()
+}
+
+if(isPlottingDlmResults$a_z) {
+  # z accelerometer plot
+  acczdf = data.frame(t = plotDf$t[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit],
+                      accelerometer_z = plotDf$acc.z[data_lower_lim:data_upper_lim][plot_low_limit:plot_up_limit])
+  acczdf$K_z = as.integer(resultDlmFusion$a_z[plot_low_limit:plot_up_limit])
+  acczdf_long = reshape2::melt(acczdf, id = "t")
+  ggplot(acczdf_long, aes(x=t, y=value, color=variable)) + geom_line()  
+}
+
+```
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+
+
