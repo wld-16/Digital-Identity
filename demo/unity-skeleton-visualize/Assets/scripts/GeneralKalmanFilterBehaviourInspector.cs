@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+
+using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(GeneralKalmanFilterBehaviour))]
@@ -27,3 +29,4 @@ public class GeneralKalmanFilterBehaviourInspector : Editor
         }
     }
 }
+#endif

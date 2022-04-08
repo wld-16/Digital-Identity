@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿#if UNITY_EDITOR
+
+using System.Collections;
 using System.Collections.Generic;
 using MathNet.Numerics.LinearAlgebra;
 using UnityEditor;
@@ -63,3 +65,4 @@ public class MatrixPropertyDrawer : PropertyDrawer
         EditorGUI.EndProperty();
     }
 }
+#endif

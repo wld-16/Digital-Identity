@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using UnityEditor;
 using UnityEngine;
 
@@ -29,3 +31,4 @@ public class ApplyPositionToTransformInspector : Editor
         }
     }
 }
+#endif

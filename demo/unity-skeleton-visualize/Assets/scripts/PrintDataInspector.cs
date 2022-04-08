@@ -1,3 +1,5 @@
+
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
@@ -24,3 +26,4 @@ public class PrintDataInspector : Editor
     }
 
 }
+#endif

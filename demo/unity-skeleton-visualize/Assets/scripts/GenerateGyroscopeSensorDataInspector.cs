@@ -1,4 +1,5 @@
 
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,3 +39,4 @@ public class GenerateGyroscopeSensorDataInspector : Editor
         }
     }
 }
+#endif

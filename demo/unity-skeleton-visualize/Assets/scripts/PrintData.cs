@@ -133,9 +133,11 @@ public class PrintData : MonoBehaviour
         }
     }
 
+    
     public bool WriteData()
     {
         bool retValue = false;
+#if UNITY_EDITOR
         try
         {
             if (!Directory.Exists(path))
@@ -147,6 +149,7 @@ public class PrintData : MonoBehaviour
         {
             retValue = false;
         }
+#endif
 
         return retValue;
     }

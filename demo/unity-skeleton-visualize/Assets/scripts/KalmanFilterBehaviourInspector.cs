@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using MathNet.Numerics;
-using MathNet.Numerics.Distributions;
+﻿
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Single;
-using static MathNet.Numerics.SpecialFunctions;
-using static System.Math;
-using Vector = MathNet.Numerics.LinearAlgebra.Double.Vector;
+
 
 [CustomEditor(typeof(KalmanFilterBehaviour))]
 public class KalmanFilterBehaviourInspector : Editor
@@ -36,3 +28,4 @@ public class KalmanFilterBehaviourInspector : Editor
         }
     }
 }
+#endif
